@@ -306,3 +306,204 @@ controllers/usuarioController.js) — fix de fuga de passwordHash y de
 CORS con múltiples orígenes. Esos cambios ya se hicieron commit y push
 (commit 2e57f25) y ya están desplegados en Render. No hay nada
 pendiente de aplicar en el backend al cierre de esta sesión.
+
+Sesión 3 — 05/07/2026 — Datos de prueba, páginas públicas restantes, y bloque completo de Auth (AuthContext, Login, Registro, Dashboard, Navbar)
+
+Se hizo:
+
+- Backend confirmado sin cambios desde la Sesión 2 (verificado con la persona
+  al inicio, siguiendo el protocolo de esta bitácora).
+- Poblado de datos de prueba para FAQ y Testimonios (estaban vacíos desde que
+  se construyeron, ver Sesión 2): se creó un script en Node
+  (`seed.js`, usa `fetch` nativo, sin dependencias) que hace login y crea 8
+  FAQs y 5 testimonios reales sobre el curso (inscripción, pago, sesiones,
+  exámenes, diploma, INTRANT, recuperación de contraseña, y testimonios de
+  "graduadas"). Es un script de un solo uso, no vive en ningún repo — se
+  corrió localmente y se puede borrar.
+- Hallazgo importante: el script falló con "No tienes permisos para realizar
+  esta acción" al autenticarse como `ana@test.com` (coordinadora) para crear
+  FAQ/testimonios, a pesar de que `Arquitectura_Backend.md` documenta esas
+  rutas como `coordinadora, admin`. Se resolvió usando `maria@test.com`
+  (admin) en su lugar, y el seed se completó con éxito (8/8 FAQs, 5/5
+  testimonios). **Pendiente de investigar en el backend**: revisar
+  `middleware/permitirRoles` en las rutas de `faqs` y `testimonios` para
+  confirmar si el middleware solo acepta `admin` (documentación desactualizada)
+  o si la cuenta de `ana` en Atlas no tiene el rol `coordinadora` como se
+  asume. No bloquea el frontend, pero si una coordinadora real intenta crear
+  FAQ/testimonios desde el futuro panel y le pasa lo mismo, va a parecer un
+  bug del frontend cuando en realidad es de permisos del backend.
+- Construida `app/kit-preparacion/page.tsx` + componente cliente
+  `components/kit-preparacion/ModulosVideo.tsx` (acordeón de video, no carga
+  los 21 iframes de una vez). Contenido migrado del sitio Weebly anterior
+  (`aula-virtual.html`): simulador de examen INTRANT, link para agendar cita
+  INTRANT, minimanual de vehículos livianos en PDF, y 21 módulos en video de
+  YouTube. Los 21 módulos están hardcodeados en el archivo (no hay endpoint
+  para esto en el backend, es contenido estático de marketing).
+  - Nota: el link del PDF del minimanual traía un caracter `^` roto en el
+    nombre de archivo original de Weebly; se dejó el link tal cual pero
+    codificado como URL — no se confirmó si el PDF realmente carga, falta
+    probarlo.
+  - Nota: el link de "Agenda tu cita INTRANT" es `http://` (sin SSL, es un
+    sistema gubernamental viejo en el puerto 82). Confirmado con la persona
+    que en su navegador daba `ERR_SSL_PROTOCOL_ERROR` por tener activado el
+    modo "HTTPS-only"/"usar siempre conexiones seguras". Se decidió NO agregar
+    ninguna advertencia en la página por ahora — queda como riesgo conocido
+    y aceptado: otras usuarias con ese modo activado en Chrome/Edge van a
+    tener el mismo problema. Revisar si conviene agregar la advertencia más
+    adelante si se reportan quejas.
+- Construidas las páginas de Noticias:
+  - `app/noticias/page.tsx` (listado, Server Component, mismo patrón de
+    "distinguir error de conexión vs. lista vacía" que ya se usó en
+    FAQ/Testimonios).
+  - `app/noticias/[id]/page.tsx` (detalle, Server Component). Usa `params`
+    como `Promise<{ id: string }>` con `await` (patrón Next 15+/16) —
+    **confirmado sin errores de compilación**.
+  - `components/noticias/NoticiaAcciones.tsx` (cliente): maneja like y
+    comentarios. En el momento en que se construyó todavía no existía
+    `AuthContext`, así que lee el token directamente con
+    `useSyncExternalStore` sobre `localStorage` (no con `useEffect` +
+    `setState`, que dispara el warning de lint `react-hooks/set-state-in-effect`
+    de React 19 — se encontró y corrigió este error durante la sesión). Sin
+    token, muestra "Inicia sesión para dar like o comentar" en vez de los
+    controles activos. **Sigue pendiente** (ver más abajo): ahora que
+    `AuthContext` ya existe, integrar este componente con `useAuth()` en vez
+    de leer `localStorage` a mano — quedó marcado con un comentario `TODO`
+    en el archivo, no se llegó a hacer en esta misma sesión.
+  - `components/noticias/CompartirBotones.tsx` (cliente): Facebook, WhatsApp,
+    X, y botón "Otra app" con Web Share API nativo (fallback: copiar link con
+    `alert`, en vez de un toast — mejorar más adelante si se agrega un
+    sistema de notificaciones visual).
+  - Probado en el navegador con la noticia de prueba existente: funcionó
+    correctamente.
+- Construida `app/verificar-diploma/page.tsx` (client component simple, sin
+  necesidad de dividir en subcomponentes). Consulta pública
+  `GET /api/diplomas/verificar/:codigo`, sin login. Convierte el código a
+  mayúsculas antes de consultar. Probado con el código real
+  `MAV-2026-000001`: la respuesta trajo `nombreCompleto`, `codigoVerificacion`
+  y `fechaEmision` tal como se había asumido. **Queda confirmado**: la forma
+  de la respuesta de este endpoint es la que está documentada ahora en este
+  archivo (ver sección de endpoints verificados, arriba).
+- Con estas tres páginas, **quedaron completas las 7 páginas públicas** del
+  sitio: Inicio, Acerca de Nosotros, Kit de Preparación, Noticias,
+  Testimonios, FAQ y Verificar Diploma.
+- Cambio de flujo de trabajo acordado con la persona: de ahora en adelante,
+  cualquier código para pegar en el repo se entrega como archivo descargable
+  (usando la herramienta de archivos), no pegado directamente en el chat —
+  se detectó que copiar bloques de código largos desde el chat corrompía
+  caracteres especiales al pegarlos en Windows.
+- **Bloque de Auth construido completo en la misma sesión** (no se cerró
+  después de las páginas públicas, se decidió seguir):
+  - `contexts/AuthContext.tsx`: expone `usuario`, `token`, `cargando`,
+    `login()`, `registro()`, `logout()`. Al montar la app, si hay token en
+    `localStorage`, lo valida contra `GET /api/auth/perfil`; si el backend
+    responde con error (token vencido), lo borra. `login()` y `registro()`
+    guardan token + usuario en `localStorage` y en el estado del contexto.
+  - **Confirmado con una cuenta de prueba real**: `POST /api/auth/registro`
+    SÍ devuelve `{ usuario, token }` igual que login (auto-loguea a la
+    persona recién registrada). Esto no estaba documentado explícitamente en
+    `Arquitectura_Backend.md` y ahora queda confirmado — el código de
+    `AuthContext.tsx` ya lo maneja bien, no requiere cambios, pero vale la
+    pena reflejarlo en la documentación del backend si se actualiza.
+  - `components/auth/RutaProtegida.tsx`: componente cliente
+    `<RutaProtegida rolesPermitidos={[...]}>` que redirige a `/login` si no
+    hay sesión o el rol no encaja. Construido y usado por primera vez en el
+    Dashboard, pero **todavía no probado con un rol que NO tenga acceso**
+    (por ejemplo, entrar a `/dashboard` logueada como `admin`) — falta
+    verificar que la redirección funcione en ese caso.
+  - `app/login/page.tsx` y `app/registro/page.tsx`: formularios completos.
+    Registro incluye los 8 campos obligatorios del backend (nombre, apellido,
+    cédula, teléfono, email, password, provincia, fechaNacimiento), con
+    `provincia` como lista desplegable de las 32 provincias de RD (decisión
+    tomada con la persona). No incluyen "olvidé mi contraseña" porque no
+    existe en el backend.
+  - `app/dashboard/page.tsx`: primera pantalla protegida real, envuelta en
+    `<RutaProtegida rolesPermitidos={["estudiante"]}>`. Consulta
+    `GET /api/progreso/me` para mostrar el estado de las 3 sesiones (bloqueada
+    / disponible / aprobada) y un link a "Ver mi diploma" si
+    `cursoCompletado`. **Decisión/suposición importante sin confirmar
+    todavía**: el backend NO tiene ningún endpoint para que una estudiante
+    consulte el estado de su propia inscripción/pago (`/api/inscripciones`
+    es exclusivo de coordinadora/admin). Se asumió que si
+    `GET /api/progreso/me` falla, es porque el pago sigue pendiente (ya que
+    `ProgresoEstudiante` solo se crea al confirmar el pago, según
+    `DATABASE.md`). Falta probar este flujo con una cuenta sin pago
+    confirmado para confirmar que el mensaje "pago pendiente" se muestra
+    correctamente y no un error genérico.
+  - Los links a `/aula-virtual/[numero]` y `/diploma` desde el Dashboard dan
+    404 por ahora — es esperado, esas páginas son el siguiente pendiente.
+  - `components/layout/Navbar.tsx` actualizado para integrarse con
+    `AuthContext`: si hay sesión, muestra "Hola, {nombre}" + link "Mi panel"
+    - botón "Cerrar sesión" (tanto en desktop como en el menú móvil); si no
+      hay sesión, se ve igual que antes (Iniciar sesión / Crear cuenta). El
+      link "Mi panel" apunta a `/dashboard` solo si `rol === "estudiante"` — se
+      dejó un `TODO` en el código para actualizarlo cuando existan los paneles
+      de coordinadora/admin.
+  - **Dos bugs visuales encontrados y corregidos en el Navbar durante la
+    prueba**, ambos relacionados con el layout, no con la lógica de auth:
+    1. El breakpoint para pasar de menú hamburguesa a fila completa estaba en
+       `lg:` (1024px). Con 7 links + botones de sesión, en el rango
+       1024–1280px (típico de un navegador windowed en laptop, no
+       maximizado) no cabía todo en una fila y el texto de cada link se
+       partía en dos líneas. Se subió el breakpoint a `xl:` (1280px) en todo
+       el archivo, y se agregó `whitespace-nowrap` como resguardo.
+    2. El título y el primer link, y el último link con el bloque de sesión,
+       quedaban pegados sin espacio. Causa: el contenedor usa
+       `justify-between` con 3 hijos (logo, nav, bloque de sesión); cuando el
+       contenido ya llena casi todo el ancho disponible, no queda espacio
+       "extra" que `justify-between` pueda repartir entre esos 3 bloques,
+       aunque el `gap-5` interno de los links sí seguía funcionando entre
+       ellos. Se corrigió agregando un `gap-6` fijo al contenedor principal,
+       que garantiza una separación mínima entre bloques sin importar cuánto
+       espacio sobre.
+  - Se detectó y corrigió una duplicidad: el Dashboard tenía su propio saludo
+    - botón "Cerrar sesión" en el header de la página, redundante con el que
+      ya se agregó al Navbar. Se quitó el botón del Dashboard y se centró el
+      saludo (el botón de cerrar sesión que queda es el del Navbar, siempre
+      visible).
+  - Todo probado en el navegador por la persona: registro, login, logout
+    (implícito), navegación responsive, y el Dashboard con una cuenta con
+    pago ya confirmado.
+
+Pendiente para la próxima sesión:
+
+- Construir el Aula Virtual: `app/aula-virtual/[sesion]/page.tsx` (teoría +
+  videos de la sesión, según `numero <= sesionActualDesbloqueada`) y
+  `app/examen/[intentoId]/page.tsx` (tomar examen, timer de 30 min, entrega
+  y calificación). Revisar bien el flujo de `POST /api/examenes/:examenId/desbloquear`
+  (lo hace la coordinadora, no la estudiante) antes de diseñar la pantalla.
+- Construir `app/diploma/page.tsx` (vista de la estudiante para ver/descargar
+  su propio diploma una vez `cursoCompletado`).
+- Integrar `components/noticias/NoticiaAcciones.tsx` con `AuthContext` en vez
+  de la lectura directa de `localStorage` (ver el `TODO` ya dejado en el
+  archivo) — es un ajuste pequeño ahora que `useAuth()` ya existe.
+- Probar `RutaProtegida` con un rol sin acceso (ej. loguearse como `admin` y
+  entrar a `/dashboard` manualmente) para confirmar que redirige bien.
+- Probar el Dashboard con una cuenta de estudiante SIN pago confirmado, para
+  confirmar que el mensaje de "pago pendiente" se muestra correctamente (ver
+  la suposición documentada arriba en "Se hizo").
+- Empezar a planear los paneles de coordinadora y admin (inscripciones,
+  pagos, desbloqueo de exámenes, diplomas, contabilidad) — es el bloque
+  grande que queda después del Aula Virtual.
+- Revisar en el backend (no bloquea el frontend, hacerlo cuando haya tiempo):
+  por qué `ana@test.com` (coordinadora) no pudo crear FAQ/testimonios — ver
+  el hallazgo documentado arriba en "Se hizo".
+- Verificar si el link del minimanual PDF (Kit de Preparación) realmente
+  carga o está roto — no se probó en esta sesión.
+
+Dudas / decisiones abiertas:
+
+- Confirmar si existe o conviene pedir un endpoint real
+  `GET /api/inscripciones/me` (o similar) para que la estudiante consulte su
+  propio estado de pago, en vez de inferirlo indirectamente de si
+  `GET /api/progreso/me` tiene o no datos. Es una suposición razonable pero
+  no es lo mismo que un endpoint explícito, y podría dar falsos positivos si
+  el backend responde error por otra razón (token vencido, servidor caído,
+  etc. — hoy todos esos casos se muestran igual como "pago pendiente").
+- Decidir a qué ruta debe apuntar "Mi panel" en el Navbar para coordinadora y
+  admin una vez existan esas páginas (hoy apunta a `/`, con un `TODO` en el
+  código).
+- Decidir si se agrega una advertencia visible sobre el link `http://` de
+  cita INTRANT para usuarias con "HTTPS-only" activado (se decidió que no,
+  por ahora, ver "Se hizo").
+- Las dudas heredadas del backend (montos de planes, contenido teórico real,
+  logo oficial) siguen sin resolver, ver `BITACORA_1.md`.

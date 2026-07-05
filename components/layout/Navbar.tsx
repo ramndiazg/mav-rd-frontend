@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useAuth } from "@/contexts/AuthContext";
 
 const enlaces = [
   { href: "/", label: "Inicio" },
@@ -15,47 +16,77 @@ const enlaces = [
 
 export default function Navbar() {
   const [menuAbierto, setMenuAbierto] = useState(false);
+  const { usuario, cargando, logout } = useAuth();
+
+  // TODO: cuando existan las rutas de panel de coordinadora/admin, actualizar
+  // este destino segun el rol (ahora mismo solo existe /dashboard).
+  const destinoPanel = usuario?.rol === "estudiante" ? "/dashboard" : "/";
 
   return (
     <header className="sticky top-0 z-50 bg-brand-blue text-white">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-        <Link href="/" className="font-display text-lg font-semibold">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-6 px-4 py-3">
+        <Link href="/" className="font-display text-lg font-semibold whitespace-nowrap">
           Mujeres al Volante <span className="text-brand-pink-light">RD</span>
         </Link>
 
         {/* Navegación de escritorio */}
-        <nav className="hidden items-center gap-6 lg:flex">
+        <nav className="hidden items-center gap-5 xl:flex">
           {enlaces.map((enlace) => (
             <Link
               key={enlace.href}
               href={enlace.href}
-              className="text-sm text-white/85 transition hover:text-white"
+              className="whitespace-nowrap text-sm text-white/85 transition hover:text-white"
             >
               {enlace.label}
             </Link>
           ))}
         </nav>
 
-        <div className="hidden items-center gap-3 lg:flex">
-          <Link
-            href="/login"
-            className="text-sm font-medium text-white/85 transition hover:text-white"
-          >
-            Iniciar sesión
-          </Link>
-          <Link
-            href="/registro"
-            className="rounded-full bg-brand-pink px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-pink/90"
-          >
-            Crear cuenta
-          </Link>
+        <div className="hidden items-center gap-3 xl:flex">
+          {!cargando && usuario && (
+            <>
+              <span className="whitespace-nowrap text-sm text-white/85">
+                Hola, {usuario.nombre}
+              </span>
+              <Link
+                href={destinoPanel}
+                className="whitespace-nowrap text-sm font-medium text-white/85 transition hover:text-white"
+              >
+                Mi panel
+              </Link>
+              <button
+                type="button"
+                onClick={logout}
+                className="whitespace-nowrap rounded-full bg-brand-pink px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-pink/90"
+              >
+                Cerrar sesión
+              </button>
+            </>
+          )}
+
+          {!cargando && !usuario && (
+            <>
+              <Link
+                href="/login"
+                className="whitespace-nowrap text-sm font-medium text-white/85 transition hover:text-white"
+              >
+                Iniciar sesión
+              </Link>
+              <Link
+                href="/registro"
+                className="whitespace-nowrap rounded-full bg-brand-pink px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-pink/90"
+              >
+                Crear cuenta
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Botón de menú móvil */}
         <button
           type="button"
           onClick={() => setMenuAbierto((abierto) => !abierto)}
-          className="flex flex-col gap-1.5 p-2 lg:hidden"
+          className="flex flex-col gap-1.5 p-2 xl:hidden"
           aria-label={menuAbierto ? "Cerrar menú" : "Abrir menú"}
           aria-expanded={menuAbierto}
         >
@@ -73,7 +104,7 @@ export default function Navbar() {
 
       {/* Menú móvil desplegable */}
       {menuAbierto && (
-        <nav className="flex flex-col gap-1 border-t border-white/10 bg-brand-blue px-4 pb-4 lg:hidden">
+        <nav className="flex flex-col gap-1 border-t border-white/10 bg-brand-blue px-4 pb-4 xl:hidden">
           {enlaces.map((enlace) => (
             <Link
               key={enlace.href}
@@ -84,22 +115,50 @@ export default function Navbar() {
               {enlace.label}
             </Link>
           ))}
-          <div className="mt-2 flex flex-col gap-2 border-t border-white/10 pt-3">
-            <Link
-              href="/login"
-              onClick={() => setMenuAbierto(false)}
-              className="rounded-md px-2 py-2.5 text-center text-sm font-medium text-white/85 hover:bg-white/10"
-            >
-              Iniciar sesión
-            </Link>
-            <Link
-              href="/registro"
-              onClick={() => setMenuAbierto(false)}
-              className="rounded-full bg-brand-pink px-4 py-2.5 text-center text-sm font-semibold text-white"
-            >
-              Crear cuenta
-            </Link>
-          </div>
+
+          {!cargando && usuario && (
+            <div className="mt-2 flex flex-col gap-2 border-t border-white/10 pt-3">
+              <span className="px-2 text-sm text-white/85">
+                Hola, {usuario.nombre}
+              </span>
+              <Link
+                href={destinoPanel}
+                onClick={() => setMenuAbierto(false)}
+                className="rounded-md px-2 py-2.5 text-center text-sm font-medium text-white/85 hover:bg-white/10"
+              >
+                Mi panel
+              </Link>
+              <button
+                type="button"
+                onClick={() => {
+                  logout();
+                  setMenuAbierto(false);
+                }}
+                className="rounded-full bg-brand-pink px-4 py-2.5 text-center text-sm font-semibold text-white"
+              >
+                Cerrar sesión
+              </button>
+            </div>
+          )}
+
+          {!cargando && !usuario && (
+            <div className="mt-2 flex flex-col gap-2 border-t border-white/10 pt-3">
+              <Link
+                href="/login"
+                onClick={() => setMenuAbierto(false)}
+                className="rounded-md px-2 py-2.5 text-center text-sm font-medium text-white/85 hover:bg-white/10"
+              >
+                Iniciar sesión
+              </Link>
+              <Link
+                href="/registro"
+                onClick={() => setMenuAbierto(false)}
+                className="rounded-full bg-brand-pink px-4 py-2.5 text-center text-sm font-semibold text-white"
+              >
+                Crear cuenta
+              </Link>
+            </div>
+          )}
         </nav>
       )}
     </header>
