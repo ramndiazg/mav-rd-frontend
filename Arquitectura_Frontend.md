@@ -1,3 +1,41 @@
+Correcciones a aplicar en FRONTEND.md (el que ya está en el repo)
+
+El documento original asumía JWT en cookie httpOnly + middleware de Next.js
+verificándola. Eso no existe en el backend real. Reemplazar la sección
+"Rutas protegidas por rol" por esto:
+
+Autenticación real (reemplaza la sección anterior)
+
+El backend devuelve el JWT en el body de la respuesta de login/registro, no en
+una cookie. Estrategia recomendada para el frontend:
+
+Al hacer login/registro, guardar token y usuario en un Context de React
+(AuthContext) + localStorage (para persistir entre recargas).
+Un lib/api.ts centralizado agrega el header automáticamente:
+
+ts const token = localStorage.getItem('token');
+fetch(`${API_URL}${path}`, {
+...options,
+headers: { ...options.headers, Authorization: token ? `Bearer ${token}` : '' },
+});
+
+Como no hay cookie, no se puede usar middleware.ts de Next.js para proteger
+rutas en el servidor (el middleware corre antes de que el JS del cliente
+lea localStorage). En su lugar:
+
+Usar un componente <RutaProtegida rolesPermitidos={[...]}> que en el
+cliente ('use client') verifique el AuthContext y redirija con
+useRouter().push('/login') si no hay sesión o el rol no encaja.
+Al montar la app, si hay token guardado, llamar a GET /api/auth/perfil
+para validar que sigue siendo válido antes de confiar en el localStorage.
+
+Logout = borrar token de localStorage y limpiar el AuthContext.
+
+Esta es una limitación conocida y aceptable para el tamaño de este proyecto —
+si en el futuro se quiere proteger rutas a nivel de servidor, habría que migrar
+el backend a emitir cookies httpOnly, lo cual es un cambio de arquitectura, no
+un ajuste menor.
+
 # Arquitectura del Frontend — `mav-rd-frontend`
 
 **Stack:** Next.js (App Router) + Tailwind CSS + despliegue en Vercel

@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+/*
+  Tokens de marca — Mujeres al Volante RD
+  Nota: Tailwind v4 ya no usa tailwind.config.ts con un objeto `colors`.
+  Los tokens se definen aquí con @theme y Tailwind genera las utilidades
+  automáticamente (ej. --color-brand-blue → bg-brand-blue, text-brand-blue).
+  Ver Arquitectura_Frontend.md para el origen de esta paleta.
+*/
+@theme {
+  --color-brand-blue: #1b3a6b;
+  --color-brand-blue-light: #4a7fc9;
+  --color-brand-pink: #d6336c;
+  --color-brand-pink-light: #fbe4ec;
+  --color-neutral-bg: #f7f8fa;
+  --color-neutral-text: #1f2937;
+  --color-status-success: #2f9e44;
+  --color-status-warning: #f0a500;
+
+  /* Las variables --font-poppins / --font-inter las inyecta layout.tsx
+     vía next/font. Aquí solo se mapean a los roles display/body. */
+  --font-display: var(--font-poppins);
+  --font-body: var(--font-inter);
+}
+
+body {
+  background-color: var(--color-neutral-bg);
+  color: var(--color-neutral-text);
+  font-family: var(--font-body);
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+}
+
+/* Divisor "línea de carretera" — el elemento de firma visual del sitio.
+   Se usa entre secciones grandes en vez de un hairline genérico. */
+.road-divider {
+  height: 3px;
+  background-image: repeating-linear-gradient(
+    to right,
+    var(--color-brand-blue-light) 0px,
+    var(--color-brand-blue-light) 22px,
+    transparent 22px,
+    transparent 40px
+  );
+}
