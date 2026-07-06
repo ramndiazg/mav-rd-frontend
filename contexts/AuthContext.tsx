@@ -77,7 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (json.success) {
           setToken(tokenGuardado);
-          setUsuario(json.data);
+          setUsuario(json.data.usuario);
         } else {
           window.localStorage.removeItem("token");
         }

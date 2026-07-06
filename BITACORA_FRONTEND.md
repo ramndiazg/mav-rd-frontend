@@ -507,3 +507,77 @@ Dudas / decisiones abiertas:
   por ahora, ver "Se hizo").
 - Las dudas heredadas del backend (montos de planes, contenido teórico real,
   logo oficial) siguen sin resolver, ver `BITACORA_1.md`.
+
+Sesión 6 — 05-06/07/2026 — Aula Virtual (teoría + examen) y bug crítico de sesión
+
+Contexto: el backend ya había pasado por una ronda de correcciones (ver
+Sesión 7 de `BITACORA_1.md`): nuevos endpoints `GET /api/inscripciones/me`,
+`GET /api/intentos-examen/activo/:sesionId`, `POST /api/examenes/:sesionId/desbloquear`
+(ahora recibe sesionId y asigna versión al azar), `PATCH /api/auth/cambiar-password`,
+y el módulo `contenidoPagina`. Esta sesión de frontend construyó sobre esa base
+ya corregida.
+
+Se hizo:
+
+- Construida `app/aula-virtual/[sesion]/page.tsx`: verifica el progreso con
+  `GET /api/progreso/me`, muestra teoría (HTML) + videos si la sesión está
+  desbloqueada, oculta el botón "Ir al examen" si la sesión ya está aprobada.
+  El botón busca el intento activo con `GET /api/intentos-examen/activo/:sesionId`
+  y navega a `/examen/{id}` — nunca asume o guarda el id manualmente.
+- Construida `app/examen/[intentoId]/page.tsx`: inicia el intento automáticamente
+  al montar (`POST /:id/iniciar`), timer de cuenta atrás con entrega automática
+  al llegar a 0, selección de respuestas, entrega (`POST /:id/entregar`) y
+  pantalla de resultado con calificación y aprobado/no aprobado.
+- **Limitación real documentada en el código**: si la estudiante recarga la
+  página después de iniciar el examen, no hay forma de recuperar las preguntas
+  — el backend no tiene un endpoint para volver a pedirlas de un intento ya
+  iniciado. Se muestra un mensaje pidiendo contactar a la coordinadora. Posible
+  mejora futura (no urgente): agregar `GET /api/intentos-examen/:id` que
+  devuelva las preguntas de un intento ya iniciado pero no entregado.
+- **Bug crítico encontrado y corregido en `contexts/AuthContext.tsx`**:
+  `verificarSesion()` (la función que valida el token guardado al montar la
+  app) hacía `setUsuario(json.data)`, pero `GET /api/auth/perfil` responde
+  `{ success: true, data: { usuario: {...} } }` — el usuario va anidado en
+  `data.usuario`, no es `data` directamente. Esto dejaba `usuario.rol` como
+  `undefined` en cualquier situación que dispare `verificarSesion()` en vez de
+  `login()` (recargar la página, entrar por URL directa, abrir una pestaña
+  nueva) — y `RutaProtegida` redirige a `/login` apenas el rol no coincide,
+  así que el síntoma era "me manda a login sin razón" en esos casos. La
+  función `login()` sí guardaba bien el usuario (usa `json.data.usuario`
+  correctamente), por eso el bug no se notaba justo después de loguearse
+  manualmente, solo en recargas/URLs directas. **Corregido**: ahora
+  `verificarSesion()` también usa `json.data.usuario`. Este bug pudo haber
+  estado afectando _cualquier_ página protegida desde que se construyó el
+  bloque de Auth en la Sesión 5, no solo el Aula Virtual — vale la pena tenerlo
+  en cuenta si algo más "fallaba sin razón" antes de esta corrección.
+- Probado en el navegador de punta a punta con la cuenta de prueba `ana@test.com`:
+  login → dashboard (Sesión 1 disponible, 2 y 3 bloqueadas) → aula virtual de
+  la Sesión 1 (teoría placeholder visible) → examen (preguntas placeholder
+  "P1"–"P10", timer visible) → entrega → resultado "100% ¡Aprobaste!" → vuelta
+  al dashboard. Confirmado con curl en paralelo que
+  `POST /entregar` responde `{"success":true,"data":{"calificacion":100,"aprobado":true}}`.
+- Push a GitHub pendiente de confirmar en esta misma sesión (ver más abajo).
+
+Pendiente para la próxima sesión:
+
+- Construir `app/diploma/page.tsx` (vista de la estudiante para ver su propio
+  diploma una vez `cursoCompletado`).
+- Construir el panel de coordinadora para desbloquear sesiones desde la
+  interfaz — hoy se hace exclusivamente con curl manual, lo cual no escala.
+- Construir `panel/examenes/page.tsx` (CRUD del banco de preguntas, ahora que
+  el backend soporta `PATCH`/`DELETE` — ver `Arquitectura_Backend.md`).
+- Construir `admin/contenido-pagina/page.tsx` para editar los bloques de
+  `contenidoPagina` ya sembrados (11 bloques reales, incluyendo los 21 módulos
+  de video del Kit de Preparación — ver `BITACORA_1.md` Sesión 7).
+- Reemplazar el contenido teórico y las preguntas de examen placeholder por
+  contenido real, cuando la fundadora lo tenga listo.
+- Revisar si el bug del `AuthContext` corregido esta sesión afectó algo más
+  que no se haya notado todavía (por ejemplo, comportamiento raro reportado
+  antes en otras páginas protegidas que se había atribuido a otra causa).
+
+Dudas / decisiones abiertas:
+
+- Las cuentas de prueba viejas (`ana@test.com`, etc.) tienen datos de
+  `sesionActualDesbloqueada` que no reflejan un flujo de pago real reciente —
+  no confundir avances de progreso vistos en pruebas con el comportamiento de
+  una cuenta nueva real (que ahora sí inicia en 1 automáticamente).
