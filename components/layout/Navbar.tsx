@@ -20,7 +20,8 @@ export default function Navbar() {
 
   // TODO: cuando existan las rutas de panel de coordinadora/admin, actualizar
   // este destino segun el rol (ahora mismo solo existe /dashboard).
-  const destinoPanel = usuario?.rol === "estudiante" ? "/dashboard" : "/";
+  const destinoPanel =
+    usuario?.rol === "estudiante" ? "/dashboard" : "/panel/pagos";
 
   return (
     <header className="sticky top-0 z-50 bg-brand-blue text-white">

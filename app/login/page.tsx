@@ -28,7 +28,13 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/dashboard");
+    // Cada rol tiene su propio punto de entrada — antes esto siempre
+    // mandaba a /dashboard, que solo existe para estudiante.
+    if (resultado.rol === "coordinadora" || resultado.rol === "admin") {
+      router.push("/panel/pagos");
+    } else {
+      router.push("/dashboard");
+    }
   }
 
   return (

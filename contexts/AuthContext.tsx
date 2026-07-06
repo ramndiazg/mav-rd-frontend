@@ -34,6 +34,7 @@ type ResultadoAuth = {
   ok: boolean;
   error?: string;
   autoLogueado?: boolean;
+  rol?: Rol;
 };
 
 type AuthContextType = {
@@ -111,7 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       window.localStorage.setItem("token", json.data.token);
       setToken(json.data.token);
       setUsuario(json.data.usuario);
-      return { ok: true };
+      return { ok: true, rol: json.data.usuario.rol };
     } catch {
       return { ok: false, error: "No se pudo conectar con el servidor." };
     }
