@@ -10,8 +10,9 @@ const ENLACES = [
   { href: "/panel/aula-virtual", etiqueta: "Aula Virtual" },
   { href: "/panel/examenes", etiqueta: "Exámenes" },
   { href: "/panel/diplomas", etiqueta: "Diplomas" },
-  // Agregar aquí cada página nueva del panel a medida que se construya
-  // (noticias, testimonios, faq siguen pendientes)
+  { href: "/panel/noticias", etiqueta: "Noticias" },
+  { href: "/panel/testimonios", etiqueta: "Testimonios" },
+  { href: "/panel/faq", etiqueta: "FAQ" },
 ];
 
 function PanelHeader() {
