@@ -581,3 +581,123 @@ Dudas / decisiones abiertas:
   `sesionActualDesbloqueada` que no reflejan un flujo de pago real reciente —
   no confundir avances de progreso vistos en pruebas con el comportamiento de
   una cuenta nueva real (que ahora sí inicia en 1 automáticamente).
+
+Sesión 7 — 06/07/2026 — Panel completo de coordinadora/admin + página de Diploma + fixes de navegación
+
+Contexto: bloque largo construyendo todo lo que quedó pendiente al final de
+la Sesión 6, más varios bugs de navegación que aparecieron al probar con la
+cuenta de admin (María) en vez de solo con estudiante.
+
+**Decisión de contenido (no de código):** se definió que el examen de cada
+sesión debe seguir siendo "sorpresa" (no se le da el banco de preguntas a la
+estudiante de antemano), pero la `teoria` de cada sesión debe cubrir
+explícitamente los temas que tocan las preguntas del examen correspondiente.
+Aplica cuando se reemplace el contenido placeholder por el real.
+
+**Bugs de navegación encontrados y corregidos:**
+
+- `app/login/page.tsx` hacía `router.push("/dashboard")` fijo sin mirar el
+  rol — coordinadora/admin nunca debían caer ahí (esa ruta está protegida
+  solo para `estudiante`), así que terminaban rebotadas de vuelta a
+  `/login` en un ciclo. Se agregó `rol` al tipo `ResultadoAuth` que devuelve
+  `AuthContext.login()`, y el login ahora redirige a `/panel/pagos` si el rol
+  es coordinadora/admin, o `/dashboard` si es estudiante.
+- `components/layout/Navbar.tsx` tenía un `TODO` sin resolver: `destinoPanel`
+  mandaba a coordinadora/admin a `/` porque esas rutas de panel no existían
+  todavía cuando se escribió. Ya existen — corregido a `/panel/pagos`.
+
+**Construido — Panel de coordinadora/admin (`app/(coordinadora)/panel/`):**
+
+- `layout.tsx` compartido: protegido con `rolesPermitidos={["coordinadora","admin"]}`,
+  con barra de navegación entre las 7 páginas del panel. Si el usuario es
+  `admin`, aparece además un link a `/admin/contenido-pagina` (no lo ve
+  coordinadora).
+- `pagos/page.tsx`: crear inscripciones (con monto prellenado desde
+  `GET /api/configuracion` según el plan elegido), listar con filtro
+  Todas/Pendientes/Pagadas, confirmar pago.
+- `aula-virtual/page.tsx`: buscar estudiante, ver su progreso, desbloquear
+  sesiones (botón deshabilitado si intentaría saltar el orden).
+- `examenes/page.tsx`: CRUD del banco de preguntas por sesión — crear
+  versión, editar (`PATCH`), desactivar (`DELETE`, solo visible para `admin`,
+  ya que el backend lo restringe así).
+- `diplomas/page.tsx`: lista de elegibles (`GET /elegibles`) y botón para
+  generar (`POST /:userId/generar`).
+- `noticias/page.tsx`: CRUD de noticias con subida de imagen a
+  `POST /api/uploads/imagen`, y moderación de comentarios (eliminar
+  individualmente).
+- `testimonios/page.tsx` y `faq/page.tsx`: mismo patrón (CRUD +
+  activar/desactivar + orden), usando `GET /admin` para ver también los
+  inactivos.
+
+**Construido — Panel exclusivo de admin (`app/(admin)/admin/`):**
+
+- `layout.tsx`: protegido con `rolesPermitidos={["admin"]}`, con link de
+  vuelta al panel de coordinadora.
+- `contenido-pagina/page.tsx`: edita los 11 bloques de `contenidoPagina` ya
+  sembrados. Valida JSON antes de guardar los bloques de tipo `json` (como
+  `kit_video_modulos`) para no guardar algo corrupto que rompería las
+  páginas públicas al hacer `JSON.parse()`.
+
+**Construido — Backend + Frontend del Diploma de estudiante:**
+
+- Vacío detectado (mismo patrón que `inscripciones/me`): no existía
+  `GET /api/diplomas/me`. Se agregó en el backend (ver `BITACORA_1.md`
+  Sesión 8) antes de construir la página.
+- `app/(estudiante)/diploma/page.tsx`: muestra código de verificación, fecha
+  de emisión, y link de descarga del PDF si ya existe; mensaje claro si
+  todavía no se ha generado.
+- **No probado de punta a punta todavía**: ninguna cuenta de prueba tiene las
+  3 sesiones aprobadas (`cursoCompletado: true`) — queda pendiente probar el
+  flujo real (coordinadora genera → estudiante lo ve) con una cuenta que
+  complete el curso desde el navegador, no simulando el estado directo en
+  la base de datos.
+
+**Patrón de lint importante para sesiones futuras — `react-hooks/set-state-in-effect`:**
+
+Salió repetidas veces al construir estos paneles. La regla: un efecto NUNCA
+debe llamar a `setState` de forma sincrónica en su cuerpo (antes de cualquier
+`await`), ni siquiera indirectamente llamando a una función async definida
+_fuera_ del efecto que internamente haga `setState` al inicio. El patrón que
+sí pasa el lint:
+
+```javascript
+useEffect(() => {
+  if (!condicion) return;
+  let cancelado = false;
+
+  (async () => {
+    try {
+      const res = await fetch(...);
+      const json = await res.json();
+      if (!cancelado && json.success) setEstado(json.data);
+    } finally {
+      if (!cancelado) setCargando(false);
+    }
+  })();
+
+  return () => { cancelado = true; };
+}, [dependencias]);
+```
+
+Es decir: la función async va **anidada dentro del efecto** (no definida
+afuera y solo invocada desde él), y cualquier `setState` que deba pasar
+"en true" antes de la carga (como un indicador de loading al cambiar de
+pestaña/filtro) se pone en el **manejador de evento** que dispara el cambio
+(el `onClick` del botón, por ejemplo), nunca en el efecto mismo. Aplicar este
+patrón desde el principio en las páginas que falten construir, para no tener
+que corregirlo después.
+
+Pendiente para la próxima sesión:
+
+- Probar de punta a punta el flujo de Diploma con una cuenta real completando
+  las 3 sesiones desde el navegador.
+- Reemplazar contenido teórico y preguntas de examen placeholder por
+  contenido real (Ley 63-17), ahora que el Panel de Exámenes y las sesiones
+  ya son editables.
+- Corregir `sesionActualDesbloqueada` de las cuentas de prueba viejas que
+  quedaron en 0 (ver `BITACORA_1.md`).
+- Construir `admin/contabilidad/page.tsx` (todavía no existe ninguna página
+  para ese módulo, aunque el backend ya lo soporta completo).
+- Revisar diseño visual general ahora que todas las piezas funcionales están
+  construidas — hasta ahora se priorizó funcionalidad sobre estética en los
+  paneles internos.
