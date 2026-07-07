@@ -1,4 +1,38 @@
-export default function AcercaDeNosotrosPage() {
+type BloqueContenido = { clave: string; valor: string };
+
+async function obtenerContenido() {
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/contenido`, {
+      cache: "no-store",
+    });
+    const json = await res.json();
+    if (!json.success) return {};
+
+    const mapa: Record<string, string> = {};
+    json.data.forEach((b: BloqueContenido) => {
+      mapa[b.clave] = b.valor;
+    });
+    return mapa;
+  } catch {
+    // Si el backend no responde, la página igual se muestra con los
+    // placeholders de abajo en vez de romperse por completo.
+    return {};
+  }
+}
+
+export default async function AcercaDeNosotrosPage() {
+  const contenido = await obtenerContenido();
+
+  const historia =
+    contenido.acerca_de_historia ||
+    "[Placeholder] Mujeres al Volante RD nació el 25 de noviembre de 2017 en Santo Domingo, de la mano de María Díaz, con la meta de cerrar una brecha muy concreta: muchas mujeres dominicanas llegaban a la adultez sin haber aprendido a conducir, no por falta de interés, sino por falta de un espacio pensado para ellas — a su ritmo, sin presión, y entre mujeres.";
+
+  const fundadora =
+    contenido.acerca_de_fundadora ||
+    "[Placeholder] Biografía breve de la fundadora — trayectoria, motivación personal para crear la fundación, y visión a futuro. Reemplazar con el texto real y una foto oficial en alta resolución.";
+
+  const frase = contenido.acerca_de_frase;
+
   return (
     <>
       <section className="bg-brand-blue text-white">
@@ -16,30 +50,27 @@ export default function AcercaDeNosotrosPage() {
 
       <div className="road-divider" />
 
-      {/* Nuestra historia — CONTENIDO PLACEHOLDER, reemplazar con el texto
-          real del sitio Weebly cuando esté disponible */}
+      {/* Nuestra historia — ahora viene de GET /api/contenido (clave: acerca_de_historia) */}
       <section className="mx-auto max-w-3xl px-4 py-16">
         <h2 className="font-display text-2xl font-bold text-brand-blue">
           Nuestra historia
         </h2>
         <div className="mt-4 space-y-4 text-neutral-text/80">
-          <p>
-            [Placeholder] Mujeres al Volante RD nació el 25 de noviembre de
-            2017 en Santo Domingo, de la mano de María Díaz, con la meta de
-            cerrar una brecha muy concreta: muchas mujeres dominicanas
-            llegaban a la adultez sin haber aprendido a conducir, no por
-            falta de interés, sino por falta de un espacio pensado para
-            ellas — a su ritmo, sin presión, y entre mujeres.
-          </p>
-          <p>
-            [Placeholder] Desde entonces, el programa ha combinado teoría
-            de tránsito, manejo defensivo y preparación práctica para el
-            examen del INTRANT, siempre de forma presencial y grupal.
-          </p>
+          <p>{historia}</p>
         </div>
       </section>
 
-      {/* Fundadora */}
+      {frase && (
+        <section className="bg-neutral-bg">
+          <div className="mx-auto max-w-2xl px-4 py-12 text-center">
+            <p className="font-display text-xl italic text-brand-blue">
+              &ldquo;{frase}&rdquo;
+            </p>
+          </div>
+        </section>
+      )}
+
+      {/* Fundadora — ahora viene de GET /api/contenido (clave: acerca_de_fundadora) */}
       <section className="bg-brand-pink-light">
         <div className="mx-auto grid max-w-4xl gap-8 px-4 py-16 sm:grid-cols-[200px_1fr] sm:items-start">
           <div className="aspect-square w-full max-w-[200px] rounded-2xl bg-brand-blue/10" />
@@ -50,19 +81,18 @@ export default function AcercaDeNosotrosPage() {
             <h2 className="mt-1 font-display text-2xl font-bold text-brand-blue">
               María Díaz
             </h2>
-            <p className="mt-3 text-neutral-text/80">
-              [Placeholder] Biografía breve de la fundadora — trayectoria,
-              motivación personal para crear la fundación, y visión a
-              futuro. Reemplazar con el texto real y una foto oficial en
-              alta resolución.
-            </p>
+            <p className="mt-3 text-neutral-text/80">{fundadora}</p>
           </div>
         </div>
       </section>
 
       <div className="road-divider" />
 
-      {/* Misión y visión */}
+      {/* Misión y visión — TODAVÍA NO conectadas a contenidoPagina, porque no
+          hay claves sembradas para esto. Si se quiere que la fundadora también
+          las edite, hay que crear los bloques "mision" y "vision" desde el
+          panel (botón "+ Nuevo bloque de contenido") y luego cablear esta
+          sección igual que las de arriba. */}
       <section className="mx-auto max-w-4xl px-4 py-16">
         <div className="grid gap-8 sm:grid-cols-2">
           <div>

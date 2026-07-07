@@ -6,8 +6,8 @@ import RutaProtegida from "@/components/auth/RutaProtegida";
 import { useAuth } from "@/contexts/AuthContext";
 
 const ENLACES = [
+  { href: "/admin/contabilidad", etiqueta: "Contabilidad" },
   { href: "/admin/contenido-pagina", etiqueta: "Contenido de Página" },
-  // Agregar aquí /admin/contabilidad cuando se construya
 ];
 
 function AdminHeader() {

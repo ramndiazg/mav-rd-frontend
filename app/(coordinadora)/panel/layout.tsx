@@ -15,10 +15,18 @@ const ENLACES = [
   { href: "/panel/faq", etiqueta: "FAQ" },
 ];
 
+// Estos dos solo los ve admin (la fundadora) — coordinadora no
+const ENLACES_ADMIN = [
+  { href: "/admin/contabilidad", etiqueta: "Contabilidad" },
+  { href: "/admin/contenido-pagina", etiqueta: "Contenido de Página" },
+];
+
 function PanelHeader() {
   const { usuario } = useAuth();
   const pathname = usePathname();
   const esAdmin = usuario?.rol === "admin";
+
+  const enlacesVisibles = esAdmin ? [...ENLACES, ...ENLACES_ADMIN] : ENLACES;
 
   return (
     <div className="bg-brand-blue text-white px-6 py-4 mb-8">
@@ -27,7 +35,7 @@ function PanelHeader() {
         Hola, {usuario?.nombre}
       </h1>
       <nav className="flex gap-1 flex-wrap">
-        {ENLACES.map((enlace) => (
+        {enlacesVisibles.map((enlace) => (
           <Link
             key={enlace.href}
             href={enlace.href}
@@ -39,14 +47,6 @@ function PanelHeader() {
             {enlace.etiqueta}
           </Link>
         ))}
-        {esAdmin && (
-          <Link
-            href="/admin/contenido-pagina"
-            className="text-sm px-3 py-1.5 rounded-lg text-white/80 hover:bg-white/10 border border-white/20"
-          >
-            Contenido de Página →
-          </Link>
-        )}
       </nav>
     </div>
   );

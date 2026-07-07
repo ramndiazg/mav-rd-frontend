@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -18,16 +19,25 @@ export default function Navbar() {
   const [menuAbierto, setMenuAbierto] = useState(false);
   const { usuario, cargando, logout } = useAuth();
 
-  // TODO: cuando existan las rutas de panel de coordinadora/admin, actualizar
-  // este destino segun el rol (ahora mismo solo existe /dashboard).
+  // Coordinadora y admin ya tienen su panel construido (Pagos, Aula Virtual,
+  // Exámenes) — antes esto mandaba a "/" porque esas rutas no existían todavía.
   const destinoPanel =
     usuario?.rol === "estudiante" ? "/dashboard" : "/panel/pagos";
 
   return (
     <header className="sticky top-0 z-50 bg-brand-blue text-white">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-6 px-4 py-3">
-        <Link href="/" className="font-display text-lg font-semibold whitespace-nowrap">
-          Mujeres al Volante <span className="text-brand-pink-light">RD</span>
+        <Link href="/" className="flex items-center gap-2 whitespace-nowrap">
+          <Image
+            src="/logo-mav-rd.png"
+            alt="Mujeres al Volante RD"
+            width={40}
+            height={40}
+            priority
+          />
+          <span className="font-display text-lg font-semibold">
+            Mujeres al Volante <span className="text-brand-pink-light">RD</span>
+          </span>
         </Link>
 
         {/* Navegación de escritorio */}

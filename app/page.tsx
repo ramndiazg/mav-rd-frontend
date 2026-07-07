@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 const sesiones = [
@@ -41,9 +42,19 @@ export default function Home() {
       <section className="bg-gradient-to-br from-brand-blue to-brand-blue-light text-white">
         <div className="mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:py-24 lg:grid-cols-2 lg:items-center">
           <div>
-            <h1 className="font-display text-4xl font-bold leading-tight sm:text-5xl">
-              Detrás de cada mujer que conduce, hay una que decidió aprender.
-            </h1>
+            <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+              <Image
+                src="/logo-mav-rd.png"
+                alt="Mujeres al Volante RD"
+                width={88}
+                height={88}
+                priority
+                className="shrink-0"
+              />
+              <h1 className="font-display text-4xl font-bold leading-tight sm:text-5xl">
+                Detrás de cada mujer que conduce, hay una que decidió aprender.
+              </h1>
+            </div>
             <p className="mt-5 max-w-lg text-white/85">
               Mujeres al Volante RD es una fundación dominicana que enseña a
               mujeres a conducir con confianza, desde la teoría hasta el
