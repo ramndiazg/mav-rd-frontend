@@ -98,8 +98,7 @@ export default function Home() {
             Un curso, tres sesiones, en orden.
           </h2>
           <p className="mt-3 text-neutral-text/80">
-            Cada sesión se desbloquea presencialmente, junto a tu grupo.
-            No puedes saltarte pasos — y eso es intencional.
+
           </p>
         </div>
 
@@ -163,8 +162,7 @@ export default function Home() {
           ¿Lista para empezar?
         </h2>
         <p className="mx-auto mt-3 max-w-xl text-neutral-text/80">
-          El registro es gratis. Pagas tu inscripción en efectivo cuando
-          confirmes tu lugar con una coordinadora.
+
         </p>
         <Link
           href="/registro"

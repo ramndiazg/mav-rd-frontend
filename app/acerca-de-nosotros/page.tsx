@@ -100,7 +100,7 @@ export default async function AcercaDeNosotrosPage() {
               Misión
             </h2>
             <p className="mt-3 text-neutral-text/80">
-              [Placeholder] Enseñar a mujeres dominicanas a conducir con
+              Enseñar a mujeres dominicanas a conducir con
               confianza y seguridad, a través de un curso teórico-práctico
               accesible, presencial y sin costo de inscripción hasta la
               confirmación del pago en efectivo.
@@ -111,7 +111,7 @@ export default async function AcercaDeNosotrosPage() {
               Visión
             </h2>
             <p className="mt-3 text-neutral-text/80">
-              [Placeholder] Ser la referencia dominicana de educación vial
+              Ser la referencia dominicana de educación vial
               para mujeres, expandiendo el programa a más provincias del
               país.
             </p>
