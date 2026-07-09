@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const ENLACES = [
   { href: "/panel/pagos", etiqueta: "Pagos" },
+  { href: "/panel/estudiantes", etiqueta: "Estudiantes" },
   { href: "/panel/aula-virtual", etiqueta: "Aula Virtual" },
   { href: "/panel/examenes", etiqueta: "Exámenes" },
   { href: "/panel/diplomas", etiqueta: "Diplomas" },

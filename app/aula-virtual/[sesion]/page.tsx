@@ -10,14 +10,27 @@ type Progreso = {
   sesionActualDesbloqueada: number;
   sesionesAprobadas: number[];
   cursoCompletado: boolean;
+  contenidosVistos: string[];
 };
 
 type Sesion = {
   _id: string;
   numero: number;
   titulo: string;
-  teoria: string;
-  videos: { titulo: string; url: string }[];
+};
+
+type ContenidoItem = {
+  _id: string;
+  titulo: string;
+  tipo: "video" | "pdf" | "enlace" | "texto";
+  url?: string;
+  contenidoTexto?: string;
+};
+
+type IntentoHistorial = {
+  _id: string;
+  fechaFin: string | null;
+  aprobado: boolean | null;
 };
 
 function AulaVirtualContenido() {
@@ -28,18 +41,67 @@ function AulaVirtualContenido() {
 
   const [progreso, setProgreso] = useState<Progreso | null>(null);
   const [sesion, setSesion] = useState<Sesion | null>(null);
+  const [contenidos, setContenidos] = useState<ContenidoItem[]>([]);
+  const [historial, setHistorial] = useState<IntentoHistorial[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [marcandoId, setMarcandoId] = useState<string | null>(null);
   const [buscandoExamen, setBuscandoExamen] = useState(false);
 
+  async function cargarTodo() {
+    try {
+      const resProgreso = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/progreso/me`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      const jsonProgreso = await resProgreso.json();
+      if (!jsonProgreso.success) {
+        setError("No pudimos verificar tu progreso.");
+        return;
+      }
+      setProgreso(jsonProgreso.data);
+
+      if (numeroSesion > jsonProgreso.data.sesionActualDesbloqueada) {
+        return; // sesión bloqueada, no hace falta pedir nada más
+      }
+
+      const resSesion = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/sesiones/${numeroSesion}`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      const jsonSesion = await resSesion.json();
+      if (!jsonSesion.success) {
+        setError(jsonSesion.error || "No pudimos cargar esta sesión.");
+        return;
+      }
+      setSesion(jsonSesion.data);
+
+      const resContenidos = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/contenido-sesion/sesion/${jsonSesion.data._id}`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      const jsonContenidos = await resContenidos.json();
+      if (jsonContenidos.success) setContenidos(jsonContenidos.data);
+
+      const resHistorial = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/intentos-examen/historial/${jsonSesion.data._id}`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      const jsonHistorial = await resHistorial.json();
+      if (jsonHistorial.success) setHistorial(jsonHistorial.data);
+    } catch {
+      setError("No pudimos conectar con el servidor.");
+    } finally {
+      setCargando(false);
+    }
+  }
+
   useEffect(() => {
+    if (!token || !numeroSesion) return;
     let cancelado = false;
 
-    async function cargar() {
+    (async () => {
       try {
-        // 1) Verificar progreso primero — el backend también valida esto en
-        // GET /api/sesiones/:numero, pero chequearlo aquí nos deja mostrar un
-        // mensaje claro en vez de solo un error genérico.
         const resProgreso = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/progreso/me`,
           { headers: { Authorization: `Bearer ${token}` } },
@@ -49,19 +111,14 @@ function AulaVirtualContenido() {
 
         if (!jsonProgreso.success) {
           setError("No pudimos verificar tu progreso.");
-          setCargando(false);
           return;
         }
-
         setProgreso(jsonProgreso.data);
 
         if (numeroSesion > jsonProgreso.data.sesionActualDesbloqueada) {
-          // Sesión bloqueada — no hace falta ni pedir la teoría
-          setCargando(false);
-          return;
+          return; // sesión bloqueada, no hace falta pedir nada más
         }
 
-        // 2) Traer teoría y videos de la sesión
         const resSesion = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/sesiones/${numeroSesion}`,
           { headers: { Authorization: `Bearer ${token}` } },
@@ -69,42 +126,101 @@ function AulaVirtualContenido() {
         const jsonSesion = await resSesion.json();
         if (cancelado) return;
 
-        if (jsonSesion.success) {
-          setSesion(jsonSesion.data);
-        } else {
+        if (!jsonSesion.success) {
           setError(jsonSesion.error || "No pudimos cargar esta sesión.");
+          return;
         }
+        setSesion(jsonSesion.data);
+
+        const [resContenidos, resHistorial] = await Promise.all([
+          fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/contenido-sesion/sesion/${jsonSesion.data._id}`,
+            { headers: { Authorization: `Bearer ${token}` } },
+          ),
+          fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/intentos-examen/historial/${jsonSesion.data._id}`,
+            { headers: { Authorization: `Bearer ${token}` } },
+          ),
+        ]);
+        const jsonContenidos = await resContenidos.json();
+        const jsonHistorial = await resHistorial.json();
+        if (cancelado) return;
+
+        if (jsonContenidos.success) setContenidos(jsonContenidos.data);
+        if (jsonHistorial.success) setHistorial(jsonHistorial.data);
       } catch {
         if (!cancelado) setError("No pudimos conectar con el servidor.");
       } finally {
         if (!cancelado) setCargando(false);
       }
-    }
-
-    if (token && numeroSesion) cargar();
+    })();
 
     return () => {
       cancelado = true;
     };
   }, [token, numeroSesion]);
 
-  // Botón "Ir al examen": busca el intento activo y navega a él.
-  // Si no hay ninguno, es porque la coordinadora todavía no lo desbloqueó.
-  async function irAlExamen() {
-    setBuscandoExamen(true);
+  async function marcarVisto(item: ContenidoItem) {
+    setMarcandoId(item._id);
+    setError(null);
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/intentos-examen/activo/${sesion?._id}`,
-        { headers: { Authorization: `Bearer ${token}` } },
+        `${process.env.NEXT_PUBLIC_API_URL}/contenido-sesion/${item._id}/marcar-visto`,
+        { method: "POST", headers: { Authorization: `Bearer ${token}` } },
       );
       const json = await res.json();
 
       if (json.success) {
+        // Recargamos todo: si era el último contenido, el backend ya generó
+        // el examen solo, y esto trae el progreso/intento actualizados.
+        await cargarTodo();
+      } else {
+        setError(json.error || "No pudimos marcar esto como visto.");
+      }
+    } catch {
+      setError("No pudimos conectar con el servidor.");
+    } finally {
+      setMarcandoId(null);
+    }
+  }
+
+  async function irAlExamen() {
+    if (!sesion) return;
+    setBuscandoExamen(true);
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/intentos-examen/activo/${sesion._id}`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      const json = await res.json();
+      if (json.success) {
         router.push(`/examen/${json.data._id}`);
       } else {
         setError(
-          "Todavía no tienes un examen desbloqueado para esta sesión. Pide a tu coordinadora que lo habilite.",
+          "Todavía no tienes un examen disponible para esta sesión. Termina de ver todo el contenido de arriba.",
         );
+      }
+    } catch {
+      setError("No pudimos conectar con el servidor.");
+    } finally {
+      setBuscandoExamen(false);
+    }
+  }
+
+  async function reintentar() {
+    if (!sesion) return;
+    setBuscandoExamen(true);
+    setError(null);
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/intentos-examen/reintentar/${sesion._id}`,
+        { method: "POST", headers: { Authorization: `Bearer ${token}` } },
+      );
+      const json = await res.json();
+      if (json.success) {
+        router.push(`/examen/${json.data._id}`);
+      } else {
+        setError(json.error || "No se pudo iniciar un nuevo intento.");
       }
     } catch {
       setError("No pudimos conectar con el servidor.");
@@ -116,6 +232,17 @@ function AulaVirtualContenido() {
   const bloqueada =
     progreso !== null && numeroSesion > progreso.sesionActualDesbloqueada;
   const yaAprobada = progreso?.sesionesAprobadas.includes(numeroSesion);
+
+  const idsVistos = new Set(progreso?.contenidosVistos.map(String) || []);
+  const todosVistos =
+    contenidos.length > 0 && contenidos.every((c) => idsVistos.has(c._id));
+
+  const ultimoIntento = historial[historial.length - 1];
+  const puedeReintentar =
+    !yaAprobada &&
+    ultimoIntento?.fechaFin &&
+    ultimoIntento?.aprobado === false &&
+    historial.length < 3;
 
   return (
     <main className="bg-neutral-bg min-h-screen px-6 py-16">
@@ -159,41 +286,111 @@ function AulaVirtualContenido() {
               )}
             </div>
 
-            <div
-              className="rounded-xl bg-white border border-neutral-bg p-6 mb-6 prose prose-sm max-w-none text-neutral-text"
-              dangerouslySetInnerHTML={{ __html: sesion.teoria }}
-            />
-
-            {sesion.videos.length > 0 && (
-              <div className="grid gap-4 mb-8">
-                {sesion.videos.map((video, i) => (
-                  <div
-                    key={i}
-                    className="rounded-xl bg-white border border-neutral-bg p-4"
-                  >
-                    <p className="font-display font-semibold text-brand-blue mb-2">
-                      {video.titulo}
-                    </p>
-                    <div className="aspect-video">
-                      <iframe
-                        className="w-full h-full rounded-lg"
-                        src={video.url}
-                        title={video.titulo}
-                        allowFullScreen
-                      />
-                    </div>
-                  </div>
-                ))}
+            {contenidos.length === 0 && (
+              <div className="rounded-xl bg-white border border-neutral-bg p-6 mb-6 text-sm text-neutral-text">
+                Todavía no hay material de estudio cargado para esta sesión.
+                Contacta a tu coordinadora.
               </div>
             )}
 
-            {!yaAprobada && (
+            {contenidos.length > 0 && !yaAprobada && (
+              <p className="text-sm text-neutral-text mb-4">
+                Revisa todo el material — cuando termines el último, tu examen
+                se habilita automáticamente.
+              </p>
+            )}
+
+            <div className="grid gap-4 mb-8">
+              {contenidos.map((item) => {
+                const visto = idsVistos.has(item._id);
+                return (
+                  <div
+                    key={item._id}
+                    className={`rounded-xl bg-white border p-5 ${visto ? "border-status-success/40" : "border-neutral-bg"
+                      }`}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="font-display font-semibold text-brand-blue">
+                        {item.titulo}
+                      </p>
+                      {visto && (
+                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-status-success text-white">
+                          ✓ Visto
+                        </span>
+                      )}
+                    </div>
+
+                    {item.tipo === "video" && item.url && (
+                      <div className="aspect-video mb-3">
+                        <iframe
+                          className="w-full h-full rounded-lg"
+                          src={item.url}
+                          title={item.titulo}
+                          allowFullScreen
+                        />
+                      </div>
+                    )}
+
+                    {item.tipo === "pdf" && item.url && (
+                      <a
+                        href={item.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-brand-blueLight hover:underline mb-3 inline-block"
+                      >
+                        Abrir PDF ↗
+                      </a>
+                    )}
+
+                    {item.tipo === "enlace" && item.url && (
+                      <a
+                        href={item.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-brand-blueLight hover:underline mb-3 inline-block"
+                      >
+                        Abrir enlace ↗
+                      </a>
+                    )}
+
+                    {item.tipo === "texto" && item.contenidoTexto && (
+                      <div
+                        className="text-sm text-neutral-text mb-3 prose prose-sm max-w-none"
+                        dangerouslySetInnerHTML={{ __html: item.contenidoTexto }}
+                      />
+                    )}
+
+                    {!visto && (
+                      <button
+                        onClick={() => marcarVisto(item)}
+                        disabled={marcandoId === item._id}
+                        className="text-sm rounded-lg bg-brand-blue text-white px-4 py-2 font-medium hover:opacity-90 disabled:opacity-60"
+                      >
+                        {marcandoId === item._id ? "Marcando..." : "Marcar como visto"}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {!yaAprobada && todosVistos && (
               <button
                 onClick={irAlExamen}
                 disabled={buscandoExamen}
                 className="w-full rounded-xl bg-brand-pink text-white p-4 font-display font-semibold hover:opacity-90 transition-opacity disabled:opacity-60"
               >
                 {buscandoExamen ? "Buscando tu examen..." : "Ir al examen"}
+              </button>
+            )}
+
+            {puedeReintentar && (
+              <button
+                onClick={reintentar}
+                disabled={buscandoExamen}
+                className="w-full rounded-xl bg-brand-blue text-white p-4 font-display font-semibold hover:opacity-90 transition-opacity disabled:opacity-60 mt-3"
+              >
+                {buscandoExamen ? "Preparando..." : "Reintentar examen"}
               </button>
             )}
           </div>
