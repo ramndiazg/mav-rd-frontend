@@ -306,11 +306,11 @@ function AulaVirtualContenido() {
                 return (
                   <div
                     key={item._id}
-                    className={`rounded-xl bg-white border p-5 ${visto ? "border-status-success/40" : "border-neutral-bg"
+                    className={`rounded-xl bg-white border p-5 min-w-0 ${visto ? "border-status-success/40" : "border-neutral-bg"
                       }`}
                   >
                     <div className="flex items-center justify-between mb-3">
-                      <p className="font-display font-semibold text-brand-blue">
+                      <p className="font-display font-semibold text-brand-blue break-words">
                         {item.titulo}
                       </p>
                       {visto && (
@@ -355,7 +355,7 @@ function AulaVirtualContenido() {
 
                     {item.tipo === "texto" && item.contenidoTexto && (
                       <div
-                        className="text-sm text-neutral-text mb-3 prose prose-sm max-w-none"
+                        className="text-sm text-neutral-text mb-3 prose prose-sm max-w-none break-words [overflow-wrap:anywhere]"
                         dangerouslySetInnerHTML={{ __html: item.contenidoTexto }}
                       />
                     )}

@@ -17,6 +17,7 @@ const enlaces = [
 
 export default function Navbar() {
   const [menuAbierto, setMenuAbierto] = useState(false);
+  const [menuUsuarioAbierto, setMenuUsuarioAbierto] = useState(false);
   const { usuario, cargando, logout } = useAuth();
 
   // Coordinadora y admin ya tienen su panel construido (Pagos, Aula Virtual,
@@ -26,8 +27,8 @@ export default function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 bg-brand-blue text-white">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-6 px-4 py-3">
-        <Link href="/" className="flex items-center gap-2 whitespace-nowrap">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
+        <Link href="/" className="flex items-center gap-2 whitespace-nowrap shrink-0">
           <Image
             src="/logo-mav-rd.png"
             alt="Mujeres al Volante RD"
@@ -35,13 +36,13 @@ export default function Navbar() {
             height={40}
             priority
           />
-          <span className="font-display text-lg font-semibold">
+          <span className="font-display text-lg font-semibold hidden sm:inline">
             Mujeres al Volante <span className="text-brand-pink-light">RD</span>
           </span>
         </Link>
 
         {/* Navegación de escritorio */}
-        <nav className="hidden items-center gap-5 xl:flex">
+        <nav className="hidden items-center gap-4 xl:flex overflow-hidden">
           {enlaces.map((enlace) => (
             <Link
               key={enlace.href}
@@ -53,26 +54,49 @@ export default function Navbar() {
           ))}
         </nav>
 
-        <div className="hidden items-center gap-3 xl:flex">
+        <div className="hidden items-center gap-3 xl:flex shrink-0">
           {!cargando && usuario && (
-            <>
-              <span className="whitespace-nowrap text-sm text-white/85">
-                Hola, {usuario.nombre}
-              </span>
-              <Link
-                href={destinoPanel}
-                className="whitespace-nowrap text-sm font-medium text-white/85 transition hover:text-white"
-              >
-                Mi panel
-              </Link>
+            <div className="relative">
               <button
                 type="button"
-                onClick={logout}
-                className="whitespace-nowrap rounded-full bg-brand-pink px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-pink/90"
+                onClick={() => setMenuUsuarioAbierto((abierto) => !abierto)}
+                className="flex items-center gap-1.5 whitespace-nowrap text-sm font-medium text-white/85 transition hover:text-white"
               >
-                Cerrar sesión
+                Hola, {usuario.nombre}
+                <span className={`text-xs transition-transform ${menuUsuarioAbierto ? "rotate-180" : ""}`}>
+                  ▾
+                </span>
               </button>
-            </>
+
+              {menuUsuarioAbierto && (
+                <div className="absolute right-0 mt-2 w-48 rounded-lg bg-white shadow-lg overflow-hidden text-sm">
+                  <Link
+                    href={destinoPanel}
+                    onClick={() => setMenuUsuarioAbierto(false)}
+                    className="block px-4 py-2.5 text-brand-blue hover:bg-neutral-bg"
+                  >
+                    Mi panel
+                  </Link>
+                  <Link
+                    href="/perfil/cambiar-password"
+                    onClick={() => setMenuUsuarioAbierto(false)}
+                    className="block px-4 py-2.5 text-brand-blue hover:bg-neutral-bg"
+                  >
+                    Cambiar contraseña
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      logout();
+                      setMenuUsuarioAbierto(false);
+                    }}
+                    className="block w-full text-left px-4 py-2.5 text-brand-pink hover:bg-neutral-bg"
+                  >
+                    Cerrar sesión
+                  </button>
+                </div>
+              )}
+            </div>
           )}
 
           {!cargando && !usuario && (
@@ -97,7 +121,7 @@ export default function Navbar() {
         <button
           type="button"
           onClick={() => setMenuAbierto((abierto) => !abierto)}
-          className="flex flex-col gap-1.5 p-2 xl:hidden"
+          className="flex flex-col gap-1.5 p-2 xl:hidden shrink-0"
           aria-label={menuAbierto ? "Cerrar menú" : "Abrir menú"}
           aria-expanded={menuAbierto}
         >
@@ -138,6 +162,13 @@ export default function Navbar() {
                 className="rounded-md px-2 py-2.5 text-center text-sm font-medium text-white/85 hover:bg-white/10"
               >
                 Mi panel
+              </Link>
+              <Link
+                href="/perfil/cambiar-password"
+                onClick={() => setMenuAbierto(false)}
+                className="rounded-md px-2 py-2.5 text-center text-sm font-medium text-white/85 hover:bg-white/10"
+              >
+                Cambiar contraseña
               </Link>
               <button
                 type="button"

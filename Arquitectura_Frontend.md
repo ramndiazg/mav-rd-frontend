@@ -85,31 +85,34 @@ mav-rd-frontend/
 │   ├── (auth)/
 │   │   ├── login/page.tsx
 │   │   └── registro/page.tsx
+│   ├── aula-virtual/[sesion]/page.tsx   # ✅ construida (Sesión 6), rediseñada (Sesión 8)
+│   │   # ⚠️ Ruta real SIN el grupo (estudiante) — así quedó en el repo real,
+│   │   # a diferencia de lo que este documento planeaba originalmente.
+│   ├── examen/[intentoId]/page.tsx       # ✅ construida (Sesión 6)
 │   ├── (estudiante)/
 │   │   ├── dashboard/page.tsx
-│   │   ├── aula-virtual/[sesion]/page.tsx   # ✅ construida (Sesión 6)
-│   │   ├── examen/[intentoId]/page.tsx       # ✅ construida (Sesión 6)
 │   │   └── diploma/page.tsx                  # ✅ construida (Sesión 7)
 │   ├── (compartido)/
 │   │   └── perfil/cambiar-password/page.tsx   # pendiente de construir
 │   ├── (coordinadora)/                         # ✅ existe tal cual, con paréntesis
-│   │   ├── panel/layout.tsx        # header + nav entre las 7 páginas de abajo
-│   │   ├── panel/pagos/page.tsx           # ✅ construida (Sesión 7)
-│   │   ├── panel/aula-virtual/page.tsx    # ✅ construida (Sesión 7) — desbloquear sesiones (ya no elige versión de examen, es al azar)
+│   │   ├── panel/layout.tsx        # header + nav entre las 8 páginas de abajo
+│   │   ├── panel/pagos/page.tsx           # ✅ construida (Sesión 7), pestaña "Sin inscripción" agregada (Sesión 8)
+│   │   ├── panel/estudiantes/page.tsx     # ✅ construida (Sesión 8) — estado de pago + calificaciones por sesión
+│   │   ├── panel/aula-virtual/page.tsx    # ✅ construida (Sesión 7); Sesión 8 le agregó 2 pestañas internas: "Desbloquear exámenes" (ahora override manual, ver más abajo) y "Contenido de estudio" (gestión de materiales)
 │   │   ├── panel/examenes/page.tsx        # ✅ construida (Sesión 7) — CRUD del banco de preguntas por sesión
 │   │   ├── panel/diplomas/page.tsx        # ✅ construida (Sesión 7)
 │   │   ├── panel/noticias/page.tsx        # ✅ construida (Sesión 7)
 │   │   ├── panel/testimonios/page.tsx     # ✅ construida (Sesión 7)
 │   │   └── panel/faq/page.tsx             # ✅ construida (Sesión 7)
 │   ├── (admin)/                                # ✅ existe tal cual, con paréntesis
-│   │   ├── admin/layout.tsx        # header + link de vuelta a /panel/pagos
-│   │   ├── admin/contabilidad/page.tsx         # pendiente de construir
-│   │   └── admin/contenido-pagina/page.tsx     # ✅ construida (Sesión 7)
+│   │   ├── admin/layout.tsx        # header + nav (Contabilidad, Contenido de Página) + link de vuelta a /panel/pagos
+│   │   ├── admin/contabilidad/page.tsx         # ✅ construida (Sesión 7½, ver bitácora)
+│   │   └── admin/contenido-pagina/page.tsx     # ✅ construida (Sesión 7), rediseñada (Sesión 8) — ver nota abajo
 │   ├── layout.tsx
 │   └── globals.css
 ├── components/
 │   ├── ui/                 # botones, cards, inputs (design system propio)
-│   ├── layout/              # Navbar, Footer, Sidebar de panel
+│   ├── layout/              # Navbar (con logo, Sesión 8), Footer, Sidebar de panel
 │   ├── noticias/
 │   ├── aula-virtual/
 │   └── contabilidad/
@@ -118,7 +121,9 @@ mav-rd-frontend/
 │   ├── auth.ts               # helpers de sesión/JWT
 │   └── constants.ts
 ├── public/
-│   └── logo.svg
+│   ├── logo-mav-rd.png      # ✅ agregado (Sesión 8) — logo real recortado con fondo transparente
+│   └── logo.svg              # planeado originalmente, sin usar — el logo real es el .png de arriba
+├── app/favicon.ico            # ✅ reemplazado (Sesión 8) con el logo real (antes era el default de Vercel)
 ├── tailwind.config.ts        # tokens de color de marca
 ├── .env.local.example
 ├── package.json
@@ -177,24 +182,57 @@ NEXT_PUBLIC_API_URL=http://localhost:4000/api
   (fallback en desktop: copiar link).
 - Mobile-first: la mayoría de las estudiantes probablemente acceden desde el celular.
 
-## Flujo corregido del Aula Virtual (para evitar reconstruirlo mal)
+## Flujo del Aula Virtual (rediseñado en Sesión 8 — contenido antes que examen)
+
+**Este flujo reemplaza por completo la versión anterior ("la coordinadora
+desbloquea, luego se ve teoría").** Ahora es:
 
 1. `dashboard/page.tsx` llama a `GET /api/inscripciones/me` para saber si hay
    pago confirmado — ya no se infiere por si existe `ProgresoEstudiante`.
-2. `aula-virtual/[sesion]/page.tsx` muestra teoría/videos si
-   `sesion <= sesionActualDesbloqueada` (viene de `GET /api/progreso/me`).
-3. Al llegar el momento del examen (presencial, la coordinadora ya desbloqueó
-   con `POST /api/examenes/:sesionId/desbloquear`), la página del examen llama
-   primero a `GET /api/intentos-examen/activo/:sesionId` para obtener el `id`
-   del intento — **nunca asumir o guardar el id manualmente**, siempre pedirlo.
-4. Con ese `id`: `POST /:id/iniciar` → responder → `POST /:id/entregar`.
+2. `aula-virtual/[sesion]/page.tsx` (ruta real, sin el grupo `(estudiante)`)
+   solo es visible si `sesion <= sesionActualDesbloqueada`. Ahí se listan los
+   materiales de `GET /api/contenido-sesion/sesion/:sesionId` (video, PDF,
+   enlace o texto). La estudiante marca cada uno con
+   `POST /api/contenido-sesion/:id/marcar-visto`.
+3. **El backend desbloquea el examen solo** cuando detecta que ya se vieron
+   todos los materiales activos de esa sesión — no hace falta ninguna acción
+   de la coordinadora en el flujo normal. El botón "Ir al examen" en el
+   frontend solo se activa cuando el frontend detecta `contenidos.every(vistos)`.
+4. Al hacer clic en "Ir al examen", se llama a
+   `GET /api/intentos-examen/activo/:sesionId` para obtener el `id` real del
+   intento — **nunca asumir o guardar el id manualmente**, siempre pedirlo.
+5. Con ese `id`: `POST /:id/iniciar` → responder → `POST /:id/entregar`.
+6. Si reprueba y le quedan intentos, la propia estudiante puede pedir otro
+   con `POST /api/intentos-examen/reintentar/:sesionId` (autoservicio, no
+   necesita pasar por la coordinadora — ya vio el contenido la primera vez).
+   El frontend decide si mostrar este botón consultando
+   `GET /api/intentos-examen/historial/:sesionId`.
+
+**El desbloqueo manual (`POST /api/examenes/:sesionId/desbloquear`) sigue
+existiendo pero es un override/excepción** para la coordinadora — vive en
+`panel/aula-virtual/page.tsx`, pestaña "Desbloquear exámenes". La gestión del
+contenido (crear/editar/desactivar materiales) vive en la misma página,
+pestaña "Contenido de estudio".
 
 ## Contenido editable por la fundadora
 
 Las páginas públicas de Inicio, Acerca de Nosotros, Kit de Preparación y
 Contacto ya no deben tener texto hardcodeado para los bloques cubiertos por
-`GET /api/contenido` — se renderizan a partir de esas claves para que la
-fundadora los edite desde `admin/contenido-pagina/page.tsx` sin pedir despliegue.
+`GET /api/contenido` — se renderizan a partir de esas claves (Inicio y
+Acerca de Nosotros ya están conectadas así; Kit y Contacto quedan pendientes
+de conectar de la misma forma, aunque los datos ya existen en la base).
+
+**Rediseño del editor (Sesión 8):** `admin/contenido-pagina/page.tsx` ya no
+muestra los ~11 bloques todos juntos (se volvía inmanejable). Ahora es un
+menú de áreas (Inicio, Acerca de Nosotros, Kit de Preparación, Contacto y
+Redes Sociales) definidas en un arreglo `AREAS` dentro del propio archivo —
+cada área lista solo sus campos, con etiquetas en español en vez del nombre
+técnico de la clave. Si un campo definido en `AREAS` todavía no existe en la
+base, se muestra un mini-formulario para crearlo ahí mismo, en vez de exigir
+el flujo genérico de "+ Nuevo bloque" al fondo de la página (ese sigue
+existiendo, pero solo para claves nuevas que ni siquiera están en `AREAS`
+todavía — requeriría además agregarlas al arreglo para que aparezcan
+agrupadas correctamente la próxima vez).
 
 ## Testing antes de cada commit importante
 

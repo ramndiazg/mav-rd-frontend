@@ -701,3 +701,87 @@ Pendiente para la próxima sesión:
 - Revisar diseño visual general ahora que todas las piezas funcionales están
   construidas — hasta ahora se priorizó funcionalidad sobre estética en los
   paneles internos.
+
+Sesión 8 — 06-07/07/2026 — Logo, Contabilidad, y 8 correcciones grandes (incluye rediseño del Aula Virtual)
+
+**Logo:** se recortó el logo real (circular, fondo de auto en la foto
+original) con máscara de transparencia con anti-aliasing. Colocado en
+`public/logo-mav-rd.png`. Agregado al Navbar (40×40, junto al nombre) y a la
+página de Inicio (88×88, junto al `<h1>` del hero, apilado en móvil). También
+reemplazó el favicon por defecto de Vercel (`app/favicon.ico`, generado en
+4 tamaños: 16/32/48/64px).
+
+**`admin/contabilidad/page.tsx` construida** — registrar movimientos
+(entrada/salida, categoría, monto, fecha), filtros (mes/año/tipo/categoría,
+con botón "Filtrar" explícito en vez de refetch por tecla), generar balance
+mensual (upsert por mes/año), historial de balances con link directo al PDF.
+
+**8 correcciones grandes tras usar la app en el navegador:**
+
+1. **Rediseño del editor de Contenido de Página**: de "todo junto" (11
+   bloques ilegibles para alguien no técnico) a un menú por área (Inicio,
+   Acerca de Nosotros, Kit, Contacto), con etiquetas en español. Ver detalle
+   técnico en `Arquitectura_Frontend.md`.
+2. **Aula Virtual de coordinadora**: se agregó una lista "Listas para examen"
+   (estudiantes pagadas + curso no completado, con nombre completo) antes del
+   buscador manual — cruza `GET /inscripciones?estadoPago=pagado` con
+   `GET /progreso/:userId` por cada una (sin endpoint agregado, todo del lado
+   del frontend; **N+1 requests, vigilar si la fundación crece mucho**).
+3. **Bug del diploma como archivo genérico** — corregido en el backend, ver
+   `BITACORA_1.md` Sesión 9.
+4. **Rediseño completo del Aula Virtual de la estudiante**: de "solo examen,
+   nada de contenido real" a "contenido primero, examen se activa solo al
+   terminar". Decisión de arquitectura tomada explícitamente con la persona:
+   el desbloqueo pasó de ser 100% manual (coordinadora) a automático
+   (disparado por el backend cuando la estudiante ve todo el contenido). Ver
+   `Arquitectura_Backend.md` y `Arquitectura_Frontend.md` para el detalle
+   completo — es el cambio más grande de esta sesión.
+5. **Página de Inicio conectada a contenido editable**: título y texto del
+   hero, y el texto de la tarjeta "Desde 2017", ahora vienen de
+   `contenidoPagina` (con el texto viejo como respaldo si aún no se crean
+   los bloques).
+6. **Pestaña "Sin inscripción"** en `panel/pagos/page.tsx`: estudiantes
+   registradas sin ninguna inscripción creada todavía, con botón directo
+   "Crear inscripción" — evita que la coordinadora tenga que buscarlas una
+   por una. Con la advertencia ya documentada de que `GET /api/usuarios`
+   tiene límite de 50 (pendiente real del backend, no de esta función).
+7. **Gestión de contenido de estudio** agregada a `panel/aula-virtual/page.tsx`
+   como pestaña propia, junto a "Desbloquear exámenes" (que pasó a ser
+   override/excepción, ver punto 4).
+8. **Pestaña "Estudiantes"** nueva (`panel/estudiantes/page.tsx`): busca
+   estudiante, muestra estado de pago y el historial completo de sus
+   calificaciones por sesión (`GET /intentos-examen/estudiante/:userId`,
+   endpoint nuevo).
+
+**Bugs de ubicación de archivos encontrados en el camino (dejar como
+recordatorio para no repetirlos):**
+
+- La ruta real del Aula Virtual de estudiante es `app/aula-virtual/[sesion]/page.tsx`
+  — **sin** el grupo `(estudiante)`, a diferencia de lo que este documento
+  planeaba. Corregido en `Arquitectura_Frontend.md`.
+- Se intentó colocar por error la página de "Estudiantes" (para
+  coordinadora/admin) en `app/(estudiante)/panel/page.tsx` — esto habría
+  producido un conflicto real de rutas duplicadas en Next.js, porque los
+  grupos con paréntesis no agregan segmento a la URL: dos `panel/page.tsx` en
+  grupos distintos resuelven al mismo `/panel` y Next.js falla el build.
+  Corregido a `app/(coordinadora)/panel/estudiantes/page.tsx` antes de que
+  se llegara a desplegar.
+
+**Patrón de lint reafirmado** (`react-hooks/set-state-in-effect`): salió de
+nuevo varias veces en esta sesión (`contenido-pagina`, `aula-virtual`
+estudiante, `panel/estudiantes`). Se resolvió igual que en la Sesión 7:
+mover la lógica async completa dentro del efecto como función anidada, y
+dejar la función reutilizable de afuera solo para refrescar desde manejadores
+de evento. Ver el patrón completo documentado en la Sesión 7, arriba.
+
+Pendiente para la próxima sesión:
+
+- [ ] Regenerar el diploma de prueba dañado por el bug viejo (ver `BITACORA_1.md`)
+- [ ] Conectar Kit de Preparación y Contacto a `contenidoPagina` (Inicio y
+      Acerca de Nosotros ya quedaron conectados)
+- [ ] Construir `perfil/cambiar-password/page.tsx` (el backend ya lo soporta
+      desde hace varias sesiones, nunca se construyó el frontend)
+- [ ] Revisar si vale la pena mover el cruce N+1 de "Listas para examen" a un
+      endpoint de backend dedicado, si la cantidad de estudiantes crece
+- [ ] Diseño visual general de los paneles internos (sigue pendiente de
+      sesiones anteriores)
