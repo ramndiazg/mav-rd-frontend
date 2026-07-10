@@ -25,13 +25,13 @@ export default async function AcercaDeNosotrosPage() {
 
   const historia =
     contenido.acerca_de_historia ||
-    "[Placeholder] Mujeres al Volante RD nació el 25 de noviembre de 2017 en Santo Domingo, de la mano de María Díaz, con la meta de cerrar una brecha muy concreta: muchas mujeres dominicanas llegaban a la adultez sin haber aprendido a conducir, no por falta de interés, sino por falta de un espacio pensado para ellas — a su ritmo, sin presión, y entre mujeres.";
+    "Mujeres al Volante RD nació el 25 de noviembre de 2017 en Santo Domingo, de la mano de María Díaz, con la meta de cerrar una brecha muy concreta: muchas mujeres dominicanas llegaban a la adultez sin haber aprendido a conducir, no por falta de interés, sino por falta de un espacio pensado para ellas — a su ritmo, sin presión, y entre mujeres.";
 
   const historiaImagen = contenido.acerca_de_historia_imagen;
 
   const fundadora =
     contenido.acerca_de_fundadora ||
-    "[Placeholder] Biografía breve de la fundadora — trayectoria, motivación personal para crear la fundación, y visión a futuro. Reemplazar con el texto real y una foto oficial en alta resolución.";
+    "Biografía breve de la fundadora — trayectoria, motivación personal para crear la fundación, y visión a futuro. Reemplazar con el texto real y una foto oficial en alta resolución.";
 
   const fundadoraImagen = contenido.acerca_de_fundadora_imagen;
 
@@ -39,15 +39,15 @@ export default async function AcercaDeNosotrosPage() {
 
   const mision =
     contenido.acerca_de_mision ||
-    "[Placeholder] Enseñar a mujeres dominicanas a conducir con confianza y seguridad, a través de un curso teórico-práctico accesible, presencial y sin costo de inscripción hasta la confirmación del pago en efectivo.";
+    "Enseñar a mujeres dominicanas a conducir con confianza y seguridad, a través de un curso teórico-práctico accesible, presencial y sin costo de inscripción hasta la confirmación del pago en efectivo.";
 
   const vision =
     contenido.acerca_de_vision ||
-    "[Placeholder] Ser la referencia dominicana de educación vial para mujeres, expandiendo el programa a más provincias del país.";
+    "Ser la referencia dominicana de educación vial para mujeres, expandiendo el programa a más provincias del país.";
 
   const valores =
     contenido.acerca_de_valores ||
-    "[Placeholder] Paciencia, respeto, sororidad y compromiso con la seguridad vial.";
+    "Paciencia, respeto, sororidad y compromiso con la seguridad vial.";
 
   return (
     <>
