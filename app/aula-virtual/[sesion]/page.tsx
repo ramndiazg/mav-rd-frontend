@@ -25,6 +25,7 @@ type ContenidoItem = {
   tipo: "video" | "pdf" | "enlace" | "texto";
   url?: string;
   contenidoTexto?: string;
+  imagenUrl?: string;
 };
 
 type IntentoHistorial = {
@@ -319,6 +320,15 @@ function AulaVirtualContenido() {
                         </span>
                       )}
                     </div>
+
+                    {item.imagenUrl && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={item.imagenUrl}
+                        alt=""
+                        className="w-full rounded-lg mb-3 max-h-56 object-cover"
+                      />
+                    )}
 
                     {item.tipo === "video" && item.url && (
                       <div className="aspect-video mb-3">

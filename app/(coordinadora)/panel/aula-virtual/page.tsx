@@ -27,12 +27,20 @@ type ContenidoItem = {
   tipo: TipoContenido;
   url?: string;
   contenidoTexto?: string;
+  imagenUrl?: string;
   orden: number;
   activo: boolean;
 };
 
 function contenidoVacio() {
-  return { titulo: "", tipo: "video" as TipoContenido, url: "", contenidoTexto: "", orden: 0 };
+  return {
+    titulo: "",
+    tipo: "video" as TipoContenido,
+    url: "",
+    contenidoTexto: "",
+    imagenUrl: "",
+    orden: 0,
+  };
 }
 
 export default function PanelAulaVirtualPage() {
@@ -228,6 +236,32 @@ export default function PanelAulaVirtualPage() {
   const [editandoContenidoId, setEditandoContenidoId] = useState<string | "nuevo" | null>(null);
   const [formContenido, setFormContenido] = useState(contenidoVacio());
   const [guardandoContenido, setGuardandoContenido] = useState(false);
+  const [subiendoImagenContenido, setSubiendoImagenContenido] = useState(false);
+
+  async function subirImagenContenido(e: React.ChangeEvent<HTMLInputElement>) {
+    const archivo = e.target.files?.[0];
+    if (!archivo) return;
+    setSubiendoImagenContenido(true);
+    try {
+      const datosForm = new FormData();
+      datosForm.append("imagen", archivo);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/uploads/imagen`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: datosForm,
+      });
+      const json = await res.json();
+      if (json.success) {
+        setFormContenido((prev) => ({ ...prev, imagenUrl: json.data.url }));
+      } else {
+        setMensaje({ tipo: "error", texto: json.error || "No se pudo subir la imagen." });
+      }
+    } catch {
+      setMensaje({ tipo: "error", texto: "No pudimos conectar con el servidor." });
+    } finally {
+      setSubiendoImagenContenido(false);
+    }
+  }
 
   async function cargarContenidos(sesionId: string) {
     setCargandoContenidos(true);
@@ -262,6 +296,7 @@ export default function PanelAulaVirtualPage() {
       tipo: item.tipo,
       url: item.url || "",
       contenidoTexto: item.contenidoTexto || "",
+      imagenUrl: item.imagenUrl || "",
       orden: item.orden,
     });
     setEditandoContenidoId(item._id);
@@ -492,6 +527,27 @@ export default function PanelAulaVirtualPage() {
                 </label>
               )}
 
+              <div className="text-sm text-neutral-text">
+                Imagen de portada (opcional)
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={subirImagenContenido}
+                  className="mt-1 w-full text-sm"
+                />
+                {subiendoImagenContenido && (
+                  <p className="text-xs text-brand-blueLight mt-1">Subiendo...</p>
+                )}
+                {formContenido.imagenUrl && !subiendoImagenContenido && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={formContenido.imagenUrl}
+                    alt="Vista previa"
+                    className="mt-2 rounded-lg max-h-32 object-cover"
+                  />
+                )}
+              </div>
+
               <label className="text-sm text-neutral-text">
                 Orden
                 <input
@@ -506,7 +562,7 @@ export default function PanelAulaVirtualPage() {
 
               <button
                 type="submit"
-                disabled={guardandoContenido}
+                disabled={guardandoContenido || subiendoImagenContenido}
                 className="rounded-lg bg-brand-pink text-white text-sm px-4 py-2 font-medium hover:opacity-90 disabled:opacity-60 w-fit"
               >
                 {guardandoContenido ? "Guardando..." : "Guardar"}
