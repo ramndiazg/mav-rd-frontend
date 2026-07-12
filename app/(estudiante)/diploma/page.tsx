@@ -112,7 +112,7 @@ function DiplomaContenido() {
             </div>
 
             <a
-              href={diploma.urlPDF}
+              href={`${process.env.NEXT_PUBLIC_API_URL}/diplomas/me/descargar?token=${token}`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-block w-full rounded-xl bg-brand-blue text-white p-4 font-display font-semibold hover:opacity-90 transition-opacity mb-3"

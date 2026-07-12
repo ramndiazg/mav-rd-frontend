@@ -136,7 +136,7 @@ export default function PanelDiplomasPage() {
             {Object.entries(generados).map(([userId, diploma]) => (
               <a
                 key={userId}
-                href={diploma.urlPDF}
+                href={`${process.env.NEXT_PUBLIC_API_URL}/diplomas/${diploma._id}/descargar?token=${token}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="rounded-lg bg-status-success/10 border border-status-success p-3 text-sm text-status-success hover:opacity-80"
