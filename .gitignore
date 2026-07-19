@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+correcciones_pendientes.md
+Arquitectura_Frontend.md
+Bitacora_Frontend.md

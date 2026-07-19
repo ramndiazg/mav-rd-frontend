@@ -785,3 +785,22 @@ Pendiente para la próxima sesión:
       endpoint de backend dedicado, si la cantidad de estudiantes crece
 - [ ] Diseño visual general de los paneles internos (sigue pendiente de
       sesiones anteriores)
+
+Cierre del punto "me gusta" (de la ronda de 8 correcciones): al revisar
+NoticiaAcciones.tsx y noticias/[id]/page.tsx, se confirmó que el botón de
+"Me gusta" de la noticia ya existía y funcionaba correctamente — el reporte
+original era una confusión de qué tan abajo había que hacer scroll para
+verlo, no un vacío real. Se confirmó explícitamente con la persona que no
+se quiere "me gusta" por comentario individual, solo el de la noticia
+completa. Cerrado, sin cambios de backend ni de esquema.
+
+Compartir en Instagram y TikTok: tampoco era un vacío real — el botón
+"Otra app" ya disparaba navigator.share() (la Web Share API nativa), que en
+celular abre el selector de apps del sistema operativo, donde Instagram,
+TikTok y cualquier otra app instalada aparecen automáticamente (no existe un
+link público de "compartir" al que cualquier sitio pueda apuntar para esas
+dos plataformas, a diferencia de Facebook/WhatsApp/X). Se renombró el botón
+a "Instagram, TikTok y más" para que sea obvio que ahí es donde viven, sin
+cambiar la lógica.
+
+Pendiente para la próxima sesión:
