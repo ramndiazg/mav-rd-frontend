@@ -58,6 +58,17 @@ function normalizarUrlYouTube(url: string): string {
   }
 }
 
+// Formatea el tiempo restante en hh:mm:ss para la cuenta regresiva.
+function formatearTiempoRestante(ms: number): string {
+  const totalSegundos = Math.max(0, Math.floor(ms / 1000));
+  const horas = Math.floor(totalSegundos / 3600);
+  const minutos = Math.floor((totalSegundos % 3600) / 60);
+  const segundos = totalSegundos % 60;
+  return `${horas}h ${minutos.toString().padStart(2, "0")}m ${segundos
+    .toString()
+    .padStart(2, "0")}s`;
+}
+
 function AulaVirtualContenido() {
   const { token } = useAuth();
   const router = useRouter();
@@ -72,6 +83,17 @@ function AulaVirtualContenido() {
   const [error, setError] = useState<string | null>(null);
   const [marcandoId, setMarcandoId] = useState<string | null>(null);
   const [buscandoExamen, setBuscandoExamen] = useState(false);
+
+  // Si intentarDesbloquear devolvió esperaActiva:true (ya vio todo el
+  // contenido pero faltan horas para las 24h), guardamos hasta cuándo.
+  const [disponibleEn, setDisponibleEn] = useState<Date | null>(null);
+
+  // "Ahora" también vive en estado — NUNCA se llama Date.now() durante el
+  // render (React lo trata como función impura y lo prohíbe ahí). Este
+  // estado solo se actualiza desde dentro de los callbacks de
+  // setTimeout/setInterval de abajo, que es el lugar correcto para leer
+  // el reloj real.
+  const [ahora, setAhora] = useState<number | null>(null);
 
   async function cargarTodo() {
     try {
@@ -185,6 +207,33 @@ function AulaVirtualContenido() {
     };
   }, [token, numeroSesion]);
 
+  // Mientras disponibleEn esté fijado, mantiene "ahora" al día una vez por
+  // segundo. El truco del setTimeout(…, 0) es para tener un valor inicial
+  // casi inmediato sin llamar a Date.now() directamente en el cuerpo del
+  // efecto — la lectura del reloj solo pasa dentro de estos callbacks.
+  useEffect(() => {
+    if (!disponibleEn) {
+      return;
+    }
+
+    const actualizar = () => setAhora(Date.now());
+    const timeoutInicial = setTimeout(actualizar, 0);
+    const intervalo = setInterval(actualizar, 1000);
+
+    return () => {
+      clearTimeout(timeoutInicial);
+      clearInterval(intervalo);
+    };
+  }, [disponibleEn]);
+
+  // Valor derivado y puro: combina dos estados (disponibleEn, ahora), sin
+  // llamar a ninguna función impura aquí.
+  const tiempoRestanteMs =
+    disponibleEn && ahora !== null
+      ? Math.max(0, disponibleEn.getTime() - ahora)
+      : null;
+  const esperaActiva = tiempoRestanteMs !== null && tiempoRestanteMs > 0;
+
   async function marcarVisto(item: ContenidoItem) {
     setMarcandoId(item._id);
     setError(null);
@@ -196,8 +245,12 @@ function AulaVirtualContenido() {
       const json = await res.json();
 
       if (json.success) {
-        // Recargamos todo: si era el último contenido, el backend ya generó
-        // el examen solo, y esto trae el progreso/intento actualizados.
+        if (json.data.esperaActiva && json.data.disponibleEn) {
+          setDisponibleEn(new Date(json.data.disponibleEn));
+        }
+        // Recargamos todo: si era el último contenido y ya no hay espera
+        // activa, el backend ya generó el examen solo, y esto trae el
+        // progreso/intento actualizados.
         await cargarTodo();
       } else {
         setError(json.error || "No pudimos marcar esto como visto.");
@@ -232,6 +285,9 @@ function AulaVirtualContenido() {
     }
   }
 
+  // Se usa tanto para "reintentar tras reprobar" como para tomar el examen
+  // de esta sesión por primera vez una vez cumplida la espera de 24h — es
+  // el mismo endpoint de autoservicio en ambos casos.
   async function reintentar() {
     if (!sesion) return;
     setBuscandoExamen(true);
@@ -244,6 +300,8 @@ function AulaVirtualContenido() {
       const json = await res.json();
       if (json.success) {
         router.push(`/examen/${json.data._id}`);
+      } else if (json.esperaActiva && json.disponibleEn) {
+        setDisponibleEn(new Date(json.disponibleEn));
       } else {
         setError(json.error || "No se pudo iniciar un nuevo intento.");
       }
@@ -268,6 +326,13 @@ function AulaVirtualContenido() {
     ultimoIntento?.fechaFin &&
     ultimoIntento?.aprobado === false &&
     historial.length < 3;
+
+  // Si ya vio todo el contenido pero no hay ningún intento creado todavía
+  // (ni activo ni entregado), es la primera vez que toca el examen de esta
+  // sesión — se ofrece "Ir al examen" vía reintentar() en cuanto se cumpla
+  // el plazo de 24h.
+  const primerIntentoTrasEspera =
+    !yaAprobada && todosVistos && historial.length === 0;
 
   return (
     <main className="bg-neutral-bg min-h-screen px-6 py-16">
@@ -408,9 +473,22 @@ function AulaVirtualContenido() {
               })}
             </div>
 
-            {!yaAprobada && todosVistos && (
+            {/* Cuenta regresiva: reemplaza el botón mientras esperan las 24h */}
+            {!yaAprobada && todosVistos && esperaActiva && (
+              <div className="w-full rounded-xl bg-white border border-brand-blue/20 p-5 text-center">
+                <p className="text-sm text-neutral-text mb-1">
+                  Ya viste todo el material. Tu examen se habilitará en:
+                </p>
+                <p className="font-display text-xl font-bold text-brand-blue">
+                  {formatearTiempoRestante(tiempoRestanteMs ?? 0)}
+                </p>
+              </div>
+            )}
+
+            {/* Botón normal: solo cuando no hay espera activa */}
+            {!yaAprobada && todosVistos && !esperaActiva && (
               <button
-                onClick={irAlExamen}
+                onClick={primerIntentoTrasEspera ? reintentar : irAlExamen}
                 disabled={buscandoExamen}
                 className="w-full rounded-xl bg-brand-pink text-white p-4 font-display font-semibold hover:opacity-90 transition-opacity disabled:opacity-60"
               >
@@ -418,7 +496,7 @@ function AulaVirtualContenido() {
               </button>
             )}
 
-            {puedeReintentar && (
+            {puedeReintentar && !esperaActiva && (
               <button
                 onClick={reintentar}
                 disabled={buscandoExamen}

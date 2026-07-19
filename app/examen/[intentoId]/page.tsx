@@ -7,7 +7,11 @@ import RutaProtegida from "@/components/auth/RutaProtegida";
 import { useAuth } from "@/contexts/AuthContext";
 
 type Pregunta = { texto: string; opciones: string[] };
-type Resultado = { calificacion: number; aprobado: boolean };
+type Resultado = {
+  calificacion: number;
+  aprobado: boolean;
+  proximaSesionDisponibleEn: string | null;
+};
 type PreguntaDetalle = {
   texto: string;
   opciones: string[];
@@ -15,6 +19,18 @@ type PreguntaDetalle = {
   respuestaCorrectaIndex: number;
   acerto: boolean;
 };
+
+// Formatea una fecha futura como algo legible: "mañana a las 3:00 p.m."
+// o, si es más de un día, la fecha completa.
+function formatearDisponibleEn(fecha: Date): string {
+  return fecha.toLocaleString("es-DO", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
 
 function ExamenContenido() {
   const { token } = useAuth();
@@ -189,11 +205,24 @@ function ExamenContenido() {
             >
               {resultado.calificacion}%
             </p>
-            <p className="text-neutral-text mb-6">
+            <p className="text-neutral-text mb-4">
               {resultado.aprobado
                 ? "¡Aprobaste! Ya puedes ver tu progreso actualizado en tu panel."
                 : "No alcanzaste el 70% necesario. Habla con tu coordinadora sobre tu próximo intento."}
             </p>
+
+            {resultado.aprobado && resultado.proximaSesionDisponibleEn && (
+              <div className="rounded-lg bg-brand-pinkLight border border-brand-pink/30 p-4 text-sm text-brand-blue mb-6">
+                Ya puedes empezar a estudiar la siguiente sesión ahora mismo.
+                Su examen se habilitará el{" "}
+                <strong>
+                  {formatearDisponibleEn(
+                    new Date(resultado.proximaSesionDisponibleEn),
+                  )}
+                </strong>{" "}
+                — 24 horas después de este resultado.
+              </div>
+            )}
 
             {detalle && (
               <div className="grid gap-4 mb-6 text-left">
