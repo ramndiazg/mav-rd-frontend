@@ -34,6 +34,30 @@ type IntentoHistorial = {
   aprobado: boolean | null;
 };
 
+// Acepta cualquier formato normal de YouTube (watch?v=, youtu.be/, ya-embed)
+// y devuelve siempre la URL de embed que un <iframe> puede usar.
+function normalizarUrlYouTube(url: string): string {
+  try {
+    const u = new URL(url);
+    if (u.hostname.includes("youtu.be")) {
+      const id = u.pathname.slice(1);
+      return `https://www.youtube.com/embed/${id}`;
+    }
+    if (u.hostname.includes("youtube.com")) {
+      if (u.pathname === "/watch") {
+        const id = u.searchParams.get("v");
+        return id ? `https://www.youtube.com/embed/${id}` : url;
+      }
+      if (u.pathname.startsWith("/embed/")) {
+        return url; // ya viene en formato correcto
+      }
+    }
+    return url;
+  } catch {
+    return url;
+  }
+}
+
 function AulaVirtualContenido() {
   const { token } = useAuth();
   const router = useRouter();
@@ -334,7 +358,7 @@ function AulaVirtualContenido() {
                       <div className="aspect-video mb-3">
                         <iframe
                           className="w-full h-full rounded-lg"
-                          src={item.url}
+                          src={normalizarUrlYouTube(item.url)}
                           title={item.titulo}
                           allowFullScreen
                         />

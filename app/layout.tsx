@@ -18,9 +18,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Mujeres al Volante RD",
+  title: "Muvo RD Vial",
   description:
-    "Aprende a conducir con confianza. Cursos teóricos, exámenes y diplomas de Mujeres al Volante RD.",
+    "Aprende a conducir con confianza. Cursos teóricos, exámenes y diplomas de Muvo RD Vial, un proyecto de la asociación sin fines de lucro Mujeres al Volante RD.",
 };
 
 export default function RootLayout({

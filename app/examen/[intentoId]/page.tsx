@@ -8,6 +8,13 @@ import { useAuth } from "@/contexts/AuthContext";
 
 type Pregunta = { texto: string; opciones: string[] };
 type Resultado = { calificacion: number; aprobado: boolean };
+type PreguntaDetalle = {
+  texto: string;
+  opciones: string[];
+  respuestaEstudiante: number | null;
+  respuestaCorrectaIndex: number;
+  acerto: boolean;
+};
 
 function ExamenContenido() {
   const { token } = useAuth();
@@ -25,6 +32,7 @@ function ExamenContenido() {
   const [error, setError] = useState<string | null>(null);
   const [yaIniciado, setYaIniciado] = useState(false);
   const [resultado, setResultado] = useState<Resultado | null>(null);
+  const [detalle, setDetalle] = useState<PreguntaDetalle[] | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Iniciar el examen al montar la página
@@ -114,6 +122,19 @@ function ExamenContenido() {
 
       if (json.success) {
         setResultado(json.data);
+
+        // El detalle correcta/incorrecta es un endpoint aparte — si falla,
+        // igual mostramos la calificación, solo sin el desglose verde/rojo.
+        try {
+          const resDetalle = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/intentos-examen/${intentoId}/detalle`,
+            { headers: { Authorization: `Bearer ${token}` } },
+          );
+          const jsonDetalle = await resDetalle.json();
+          if (jsonDetalle.success) setDetalle(jsonDetalle.data.preguntas);
+        } catch {
+          // silencioso: no es crítico para que la estudiante vea su nota
+        }
       } else {
         setError(json.error || "No pudimos entregar el examen.");
       }
@@ -173,6 +194,47 @@ function ExamenContenido() {
                 ? "¡Aprobaste! Ya puedes ver tu progreso actualizado en tu panel."
                 : "No alcanzaste el 70% necesario. Habla con tu coordinadora sobre tu próximo intento."}
             </p>
+
+            {detalle && (
+              <div className="grid gap-4 mb-6 text-left">
+                {detalle.map((p, i) => (
+                  <div
+                    key={i}
+                    className={`rounded-xl border p-4 ${p.acerto
+                      ? "border-status-success bg-status-success/5"
+                      : "border-brand-pink bg-brand-pinkLight"
+                      }`}
+                  >
+                    <p className="font-medium text-neutral-text mb-2">
+                      {i + 1}. {p.texto}
+                    </p>
+                    <div className="grid gap-1.5">
+                      {p.opciones.map((opcion, j) => {
+                        const esCorrecta = j === p.respuestaCorrectaIndex;
+                        const esLaQueMarcoLaEstudiante =
+                          j === p.respuestaEstudiante;
+                        return (
+                          <div
+                            key={j}
+                            className={`text-sm rounded-lg px-3 py-2 ${esCorrecta
+                              ? "bg-status-success text-white font-medium"
+                              : esLaQueMarcoLaEstudiante
+                                ? "bg-brand-pink text-white"
+                                : "bg-white text-neutral-text"
+                              }`}
+                          >
+                            {opcion}
+                            {esCorrecta && " ✓"}
+                            {!esCorrecta && esLaQueMarcoLaEstudiante && " ✗"}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <Link
               href="/dashboard"
               className="inline-block rounded-xl bg-brand-blue text-white px-6 py-3 font-display font-semibold hover:opacity-90 transition-opacity"

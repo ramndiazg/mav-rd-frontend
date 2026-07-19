@@ -36,8 +36,13 @@ export default function Navbar() {
             height={40}
             priority
           />
-          <span className="font-display text-lg font-semibold hidden sm:inline">
-            Mujeres al Volante <span className="text-brand-pink-light">RD</span>
+          <span className="hidden sm:flex sm:flex-col sm:leading-tight">
+            <span className="font-display text-lg font-semibold">
+              Muvo <span className="text-brand-pink-light">RD Vial</span>
+            </span>
+            <span className="text-[11px] font-normal text-white/70">
+              Asociación sin fines de lucro Mujeres al Volante RD
+            </span>
           </span>
         </Link>
 

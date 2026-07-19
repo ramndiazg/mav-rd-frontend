@@ -786,16 +786,68 @@ Pendiente para la próxima sesión:
 - [ ] Diseño visual general de los paneles internos (sigue pendiente de
       sesiones anteriores)
 
-Cierre del punto "me gusta" (de la ronda de 8 correcciones): al revisar
-NoticiaAcciones.tsx y noticias/[id]/page.tsx, se confirmó que el botón de
+Sesión 9 — 12/07/2026 — Vercel, Navbar, contraseña, imágenes, y descarga del diploma
+
+**Primer despliegue a Vercel:** el frontend nunca había subido a producción
+antes de esta sesión (solo se probaba local contra el backend de Render).
+Pasos cubiertos: conectar el repo de GitHub en Vercel, configurar
+`NEXT_PUBLIC_API_URL` como variable de entorno de Vercel, y agregar
+`FRONTEND_URL` en Render con la URL real de Vercel para que CORS no
+rechazara las peticiones (el backend ya tenía el código de CORS listo desde
+antes, `origenesPermitidos` leído de `process.env.FRONTEND_URL` — solo
+faltaba configurar la variable en el dashboard de Render). Encontramos y
+corregimos un desajuste real: la variable no coincidía exactamente con la
+URL del navegador.
+
+**Navbar rediseñado:** con "Mi panel" + "Cambiar contraseña" +
+"Cerrar sesión" como enlaces sueltos, se desbordaba en laptop — distinto
+para estudiante y para admin/coordinadora, cada uno rompiéndose diferente
+según cuánto contenido tuviera esa vista. Solución: menú desplegable
+disparado por clic en "Hola, [nombre]", agrupando los tres. Ver detalle en
+`Arquitectura_Frontend.md`.
+
+**Nueva página: cambiar contraseña.** Bug real en el camino: se dio una
+instrucción ambigua con dos rutas posibles ("con o sin grupo de carpeta"),
+lo que produjo un 404 real porque Ramon pegó ambas por error. Lección para
+sesiones futuras: nunca ofrecer dos alternativas de ruta de archivo, dar una
+sola instrucción exacta. También confirmado (otra vez): una ruta **nueva**
+necesita reiniciar `npm run dev`, no solo guardar el archivo.
+
+**Imágenes en tres lugares nuevos** (Contenido de Página: imagen de
+"Nuestra historia" y foto de la fundadora; Aula Virtual de coordinadora:
+imagen de portada por material de estudio, visible después para la
+estudiante). Se evaluó restringir la imagen del Aula Virtual solo a admin,
+pero se decidió dejarla compartida con coordinadora, como el resto de esa
+pantalla.
+
+**Misión, Visión y Valores** conectados a `contenidoPagina` en
+`acerca-de-nosotros/page.tsx` — antes eran texto fijo con `[Placeholder]`,
+nunca se habían conectado.
+
+**Descarga del diploma:** los links de descarga (estudiante y coordinadora)
+cambiaron de apuntar directo a `diploma.urlPDF` a apuntar a los nuevos
+endpoints del backend (`/api/diplomas/me/descargar?token=...` y
+`/api/diplomas/:id/descargar?token=...`) — el token va por query string
+porque un `<a href>` no puede mandar headers. Ver la saga completa del
+porqué en `BITACORA_1.md` Sesión 10 — resumen: Cloudinary bloqueaba la
+entrega pública de PDFs, y la solución fue una descarga firmada servida por
+el backend.
+
+**Contenido real cargado:** el Aula Virtual ya tiene 13 materiales de
+estudio reales (antes placeholders) y 9 versiones de examen reales (antes
+"P1...P10" de prueba) — sembrados por scripts de backend, sin tocar código
+de frontend para esto.
+
+**Cierre del punto "me gusta" (de la ronda de 8 correcciones):** al revisar
+`NoticiaAcciones.tsx` y `noticias/[id]/page.tsx`, se confirmó que el botón de
 "Me gusta" de la noticia ya existía y funcionaba correctamente — el reporte
 original era una confusión de qué tan abajo había que hacer scroll para
-verlo, no un vacío real. Se confirmó explícitamente con la persona que no
+verlo, no un vacío real. Se confirmó explícitamente con la persona que **no**
 se quiere "me gusta" por comentario individual, solo el de la noticia
 completa. Cerrado, sin cambios de backend ni de esquema.
 
-Compartir en Instagram y TikTok: tampoco era un vacío real — el botón
-"Otra app" ya disparaba navigator.share() (la Web Share API nativa), que en
+**Compartir en Instagram y TikTok:** tampoco era un vacío real — el botón
+"Otra app" ya disparaba `navigator.share()` (la Web Share API nativa), que en
 celular abre el selector de apps del sistema operativo, donde Instagram,
 TikTok y cualquier otra app instalada aparecen automáticamente (no existe un
 link público de "compartir" al que cualquier sitio pueda apuntar para esas
@@ -804,3 +856,9 @@ a "Instagram, TikTok y más" para que sea obvio que ahí es donde viven, sin
 cambiar la lógica.
 
 Pendiente para la próxima sesión:
+
+- [ ] Confirmar visualmente en producción que el logo aparece en el
+      diploma generado (depende de que el archivo esté en el backend, no
+      del frontend).
+- [ ] Revisión de diseño visual general de los paneles internos (sigue
+      pendiente de sesiones anteriores).

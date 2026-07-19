@@ -240,3 +240,76 @@ agrupadas correctamente la próxima vez).
 - Probar flujo completo en local contra el backend local: registro → login →
   (simular pago confirmado) → aula virtual → examen → diploma.
 - Verificar responsive en móvil (Chrome DevTools) antes de desplegar a Vercel.
+
+## Actualización — Navbar, contraseña, imágenes, y despliegue en Vercel
+
+**Despliegue:** el frontend ya está desplegado en Vercel (primer despliegue,
+no solo local). Variable de entorno obligatoria en Vercel:
+`NEXT_PUBLIC_API_URL=https://mav-rd-backend.onrender.com/api`. El backend
+necesita `FRONTEND_URL` en Render apuntando exactamente a la URL de Vercel
+(sin `/` al final) para que CORS no rechace las peticiones — si Vercel
+asigna una URL de preview distinta a la de producción, hay que usar la real
+que se ve en la barra de direcciones, no asumir el patrón.
+
+**`components/layout/Navbar.tsx` — rediseño con menú desplegable:**
+Con "Mi panel" + "Cambiar contraseña" + "Cerrar sesión" como enlaces sueltos,
+el Navbar se desbordaba en pantallas de laptop (se veía distinto para
+estudiante y para admin/coordinadora, cada uno desbordando de forma distinta
+según cuánto contenido tuviera). Se agruparon los tres bajo un menú
+desplegable que se abre con clic en "Hola, [nombre]" — ahora ocupa el
+espacio de un solo elemento en vez de cuatro. El texto "Mujeres al Volante
+RD" junto al logo se oculta en pantallas pequeñas (`hidden sm:inline`).
+
+**Nueva página: `app/perfil/cambiar-password/page.tsx`** (sin grupo de ruta,
+siguiendo la misma convención real que Aula Virtual — este proyecto no usa
+los grupos `(estudiante)`/`(compartido)` que el plan original tenía).
+Formulario simple (actual/nueva/confirmar), llama a
+`PATCH /api/auth/cambiar-password`, accesible para los 3 roles. Enlazada
+desde el menú desplegable del Navbar.
+
+> **Lección de esta sesión, para no repetir el error:** al dar instrucciones
+> de dónde crear un archivo nuevo, hay que confirmar la ruta EXACTA una sola
+> vez, no ofrecer dos alternativas ("con grupo o sin grupo") — eso generó un
+> 404 real porque se pegó una ruta ambigua. Además, toda ruta **nueva**
+> (a diferencia de editar un archivo existente) requiere reiniciar
+> `npm run dev` para que Next.js la detecte — Fast Refresh no alcanza para
+> rutas nuevas.
+
+**Imágenes — tres lugares nuevos donde se puede subir una:**
+
+1. `admin/contenido-pagina/page.tsx`: los campos `acerca_de_historia_imagen`
+   y `acerca_de_fundadora_imagen` ahora muestran un subidor de imagen en vez
+   de un input de texto (se agregó `esImagen?: boolean` a la definición de
+   cada campo del arreglo `AREAS`, y `renderCampo` se ramifica según ese
+   flag). También se agregaron los campos de Misión/Visión/Valores al área
+   "Acerca de Nosotros".
+2. `panel/aula-virtual/page.tsx` (pestaña "Contenido de estudio"): cada
+   material ahora tiene una "imagen de portada" opcional, compartida entre
+   coordinadora y admin (se evaluó restringirla solo a admin, pero se
+   decidió dejarla compartida, igual que el resto de esta pantalla).
+3. La estudiante ve esa imagen de portada arriba del contenido, en
+   `app/aula-virtual/[sesion]/page.tsx`.
+
+**`app/acerca-de-nosotros/page.tsx`:** ahora también muestra las dos
+imágenes (con su placeholder de siempre si no se ha subido ninguna) y la
+sección de Misión/Visión/Valores conectada a `contenidoPagina` — antes estas
+tres eran texto fijo con `[Placeholder]`.
+
+**Descarga de diploma — cambio de patrón:** los links de descarga
+(`app/(estudiante)/diploma/page.tsx` y `panel/diplomas/page.tsx`) ya no
+apuntan a `diploma.urlPDF` directo — apuntan a
+`/api/diplomas/me/descargar?token=...` o `/api/diplomas/:id/descargar?token=...`
+del backend. El token va por query string (no por header) porque un `<a
+href>` normal no puede mandar headers personalizados — es un patrón aceptado
+para este caso (descarga de un archivo propio o generado por la
+coordinadora), no para endpoints sensibles en general.
+
+**Contenido real cargado:** el Aula Virtual ya no tiene contenido de
+prueba — tiene 13 materiales de estudio reales y 9 versiones de examen (3
+por sesión), sembrados vía scripts en el backend (ver
+`Arquitectura_Backend.md` y `BITACORA_1.md`).
+
+**Pendiente real:** "me gusta" en comentarios de noticias — todavía no se
+ha tocado `components/noticias/NoticiaAcciones.tsx` ni
+`app/noticias/[id]/page.tsx` para esto; el modelo de datos de comentarios ni
+siquiera tiene un campo de likes todavía (ver `Arquitectura_Backend.md`).
