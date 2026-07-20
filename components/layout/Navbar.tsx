@@ -12,7 +12,7 @@ const enlaces = [
   { href: "/noticias", label: "Noticias" },
   { href: "/testimonios", label: "Testimonios" },
   { href: "/faq", label: "Preguntas Frecuentes" },
-  { href: "/verificar-diploma", label: "Verificar Diploma" },
+  // { href: "/verificar-diploma", label: "Verificar Diploma" },
 ];
 
 export default function Navbar() {
