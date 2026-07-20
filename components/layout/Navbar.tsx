@@ -41,7 +41,7 @@ export default function Navbar() {
               Muvo <span className="text-brand-pink-light">RD Vial</span>
             </span>
             <span className="text-[11px] font-normal text-white/70">
-              Asociación sin fines de lucro Mujeres al Volante RD
+              ASFL Mujeres al Volante RD
             </span>
           </span>
         </Link>
