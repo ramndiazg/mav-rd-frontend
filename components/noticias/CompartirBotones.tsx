@@ -18,7 +18,7 @@ export default function CompartirBotones({ titulo }: { titulo: string }) {
       try {
         await navigator.share({ title: titulo, url });
       } catch {
-        // La usuaria cancelo el dialogo de compartir, no hacemos nada.
+        // La usuaria cancelo el dialogo de compartir, no hacemos nada aqui.
       }
     } else {
       await navigator.clipboard.writeText(url);
