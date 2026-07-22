@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import Paginacion from "@/components/ui/Paginacion";
 
 type Tipo = "entrada" | "salida";
 type Categoria =
@@ -45,6 +46,8 @@ const MESES = [
   "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
 ];
 
+const POR_PAGINA = 20;
+
 function formularioMovimientoVacio() {
   const hoy = new Date().toISOString().slice(0, 10);
   return {
@@ -61,6 +64,8 @@ export default function PanelContabilidadPage() {
 
   const [movimientos, setMovimientos] = useState<Movimiento[]>([]);
   const [cargandoMovimientos, setCargandoMovimientos] = useState(true);
+  const [paginaMovimientos, setPaginaMovimientos] = useState(1);
+  const [totalPaginasMovimientos, setTotalPaginasMovimientos] = useState(1);
 
   const [filtroMes, setFiltroMes] = useState("");
   const [filtroAnio, setFiltroAnio] = useState("");
@@ -78,7 +83,7 @@ export default function PanelContabilidadPage() {
 
   const [mensaje, setMensaje] = useState<{ tipo: "ok" | "error"; texto: string } | null>(null);
 
-  // Carga inicial: movimientos sin filtro + balances. Efecto solo al montar.
+  // Carga inicial: movimientos (página 1) sin filtro + balances. Efecto solo al montar.
   useEffect(() => {
     if (!token) return;
     let cancelado = false;
@@ -86,9 +91,10 @@ export default function PanelContabilidadPage() {
     (async () => {
       try {
         const [resMov, resBal] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/contabilidad/movimientos`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
+          fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/contabilidad/movimientos?page=1&limit=${POR_PAGINA}`,
+            { headers: { Authorization: `Bearer ${token}` } },
+          ),
           fetch(`${process.env.NEXT_PUBLIC_API_URL}/contabilidad/balances`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
@@ -97,7 +103,10 @@ export default function PanelContabilidadPage() {
         const jsonBal = await resBal.json();
 
         if (!cancelado) {
-          if (jsonMov.success) setMovimientos(jsonMov.data);
+          if (jsonMov.success) {
+            setMovimientos(jsonMov.data);
+            setTotalPaginasMovimientos(jsonMov.paginacion?.totalPaginas || 1);
+          }
           if (jsonBal.success) setBalances(jsonBal.data);
         }
       } catch {
@@ -118,7 +127,10 @@ export default function PanelContabilidadPage() {
   }, [token]);
 
   // Filtrar es un evento (botón), no un efecto — seguro llamar aquí directo.
-  async function aplicarFiltros() {
+  // Recibe la página a pedir; cambiar un filtro siempre vuelve a la página 1
+  // (los resultados cambian por completo, no tendría sentido quedarse en la
+  // página 3 de un filtro nuevo que quizás ni tiene 3 páginas).
+  async function aplicarFiltros(paginaBuscada: number = 1) {
     setCargandoMovimientos(true);
     setMensaje(null);
     try {
@@ -127,18 +139,28 @@ export default function PanelContabilidadPage() {
       if (filtroAnio) params.set("anio", filtroAnio);
       if (filtroTipo) params.set("tipo", filtroTipo);
       if (filtroCategoria) params.set("categoria", filtroCategoria);
+      params.set("page", String(paginaBuscada));
+      params.set("limit", String(POR_PAGINA));
 
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/contabilidad/movimientos?${params.toString()}`,
         { headers: { Authorization: `Bearer ${token}` } },
       );
       const json = await res.json();
-      if (json.success) setMovimientos(json.data);
+      if (json.success) {
+        setMovimientos(json.data);
+        setTotalPaginasMovimientos(json.paginacion?.totalPaginas || 1);
+        setPaginaMovimientos(paginaBuscada);
+      }
     } catch {
       setMensaje({ tipo: "error", texto: "No pudimos filtrar los movimientos." });
     } finally {
       setCargandoMovimientos(false);
     }
+  }
+
+  function irAPaginaMovimientos(nuevaPagina: number) {
+    aplicarFiltros(nuevaPagina);
   }
 
   async function registrarMovimiento(e: React.FormEvent) {
@@ -169,7 +191,9 @@ export default function PanelContabilidadPage() {
       if (json.success) {
         setMensaje({ tipo: "ok", texto: "Movimiento registrado." });
         setFormMovimiento(formularioMovimientoVacio());
-        aplicarFiltros();
+        // Un movimiento nuevo aparece primero (sort fecha: -1) — volvemos a
+        // la página 1 para que se vea de inmediato.
+        aplicarFiltros(1);
       } else {
         setMensaje({ tipo: "error", texto: json.error || "No se pudo registrar." });
       }
@@ -381,7 +405,7 @@ export default function PanelContabilidadPage() {
         </label>
 
         <button
-          onClick={aplicarFiltros}
+          onClick={() => aplicarFiltros(1)}
           className="rounded-lg bg-brand-blue text-white text-sm px-4 py-2 font-medium hover:opacity-90"
         >
           Filtrar
@@ -394,7 +418,7 @@ export default function PanelContabilidadPage() {
         <p className="text-sm text-neutral-text mb-8">No hay movimientos para mostrar.</p>
       )}
 
-      <div className="grid gap-2 mb-10">
+      <div className="grid gap-2 mb-4">
         {movimientos.map((m) => (
           <div
             key={m._id}
@@ -418,6 +442,16 @@ export default function PanelContabilidadPage() {
           </div>
         ))}
       </div>
+
+      {!cargandoMovimientos && (
+        <div className="mb-10">
+          <Paginacion
+            paginaActual={paginaMovimientos}
+            totalPaginas={totalPaginasMovimientos}
+            onCambiarPagina={irAPaginaMovimientos}
+          />
+        </div>
+      )}
 
       {/* --- Balances mensuales --- */}
       <div className="rounded-xl bg-white border border-neutral-bg p-6 mb-8">

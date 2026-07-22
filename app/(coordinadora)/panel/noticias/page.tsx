@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import Paginacion from "@/components/ui/Paginacion";
 
 type Comentario = {
   _id: string;
@@ -21,6 +22,8 @@ type Noticia = {
   likes: string[];
 };
 
+const POR_PAGINA = 9;
+
 function formularioVacio() {
   return { titulo: "", contenido: "", imagenUrl: "", videoEmbedUrl: "" };
 }
@@ -30,6 +33,8 @@ export default function PanelNoticiasPage() {
 
   const [noticias, setNoticias] = useState<Noticia[]>([]);
   const [cargando, setCargando] = useState(true);
+  const [pagina, setPagina] = useState(1);
+  const [totalPaginas, setTotalPaginas] = useState(1);
 
   const [editandoId, setEditandoId] = useState<string | "nueva" | null>(null);
   const [form, setForm] = useState(formularioVacio());
@@ -43,14 +48,37 @@ export default function PanelNoticiasPage() {
     texto: string;
   } | null>(null);
 
+  async function cargar(paginaBuscada: number) {
+    setCargando(true);
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/noticias?page=${paginaBuscada}&limit=${POR_PAGINA}`,
+      );
+      const json = await res.json();
+      if (json.success) {
+        setNoticias(json.data);
+        setTotalPaginas(json.paginacion?.totalPaginas || 1);
+      }
+    } catch {
+      setMensaje({ tipo: "error", texto: "No pudimos cargar las noticias." });
+    } finally {
+      setCargando(false);
+    }
+  }
+
   useEffect(() => {
     let cancelado = false;
 
     (async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/noticias`);
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/noticias?page=1&limit=${POR_PAGINA}`,
+        );
         const json = await res.json();
-        if (!cancelado && json.success) setNoticias(json.data);
+        if (!cancelado && json.success) {
+          setNoticias(json.data);
+          setTotalPaginas(json.paginacion?.totalPaginas || 1);
+        }
       } catch {
         if (!cancelado) {
           setMensaje({ tipo: "error", texto: "No pudimos cargar las noticias." });
@@ -65,14 +93,13 @@ export default function PanelNoticiasPage() {
     };
   }, []);
 
-  async function recargar() {
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/noticias`);
-      const json = await res.json();
-      if (json.success) setNoticias(json.data);
-    } catch {
-      // silencioso
-    }
+  // Después de crear/editar/eliminar o borrar un comentario, siempre
+  // recargamos la página ACTUAL (no forzamos volver a la 1) — salvo cuando
+  // se acaba de publicar una noticia nueva, donde sí tiene sentido volver a
+  // la página 1 para verla de inmediato (queda arriba por el sort createdAt: -1).
+  function irAPagina(nuevaPagina: number) {
+    setPagina(nuevaPagina);
+    cargar(nuevaPagina);
   }
 
   function abrirNueva() {
@@ -146,7 +173,15 @@ export default function PanelNoticiasPage() {
       if (json.success) {
         setMensaje({ tipo: "ok", texto: esNueva ? "Noticia publicada." : "Noticia actualizada." });
         setEditandoId(null);
-        recargar();
+        if (esNueva) {
+          // Una noticia nueva aparece primero (createdAt: -1) — volvemos a
+          // la página 1 para que la vea de inmediato, en vez de quedar
+          // "perdida" si estaba viendo la página 3 del listado.
+          setPagina(1);
+          cargar(1);
+        } else {
+          cargar(pagina);
+        }
       } else {
         setMensaje({ tipo: "error", texto: json.error || "No se pudo guardar." });
       }
@@ -171,7 +206,12 @@ export default function PanelNoticiasPage() {
 
       if (json.success) {
         setMensaje({ tipo: "ok", texto: "Noticia eliminada." });
-        recargar();
+        // Si esta era la única noticia de la última página, retrocede una
+        // página en vez de quedar mirando una página vacía.
+        const paginaDestino =
+          noticias.length === 1 && pagina > 1 ? pagina - 1 : pagina;
+        setPagina(paginaDestino);
+        cargar(paginaDestino);
       } else {
         setMensaje({ tipo: "error", texto: json.error || "No se pudo eliminar." });
       }
@@ -191,7 +231,7 @@ export default function PanelNoticiasPage() {
       const json = await res.json();
 
       if (json.success) {
-        recargar();
+        cargar(pagina);
       } else {
         setMensaje({ tipo: "error", texto: json.error || "No se pudo eliminar el comentario." });
       }
@@ -297,6 +337,14 @@ export default function PanelNoticiasPage() {
               </div>
             ))}
           </div>
+
+          {!cargando && (
+            <Paginacion
+              paginaActual={pagina}
+              totalPaginas={totalPaginas}
+              onCambiarPagina={irAPagina}
+            />
+          )}
         </>
       )}
 

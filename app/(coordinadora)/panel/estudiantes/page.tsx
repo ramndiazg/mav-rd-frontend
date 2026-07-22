@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import Paginacion from "@/components/ui/Paginacion";
 
 type Estudiante = {
   _id: string;
@@ -28,6 +29,8 @@ type Intento = {
   fechaFin: string | null;
 };
 
+const POR_PAGINA = 20;
+
 export default function PanelEstudiantesPage() {
   const { token } = useAuth();
 
@@ -35,6 +38,8 @@ export default function PanelEstudiantesPage() {
   const [estudiantes, setEstudiantes] = useState<Estudiante[]>([]);
   const [estadosPago, setEstadosPago] = useState<Record<string, "pendiente" | "pagado" | "sin_inscripcion">>({});
   const [cargando, setCargando] = useState(true);
+  const [pagina, setPagina] = useState(1);
+  const [totalPaginas, setTotalPaginas] = useState(1);
 
   const [seleccionada, setSeleccionada] = useState<Estudiante | null>(null);
   const [progreso, setProgreso] = useState<Progreso | null>(null);
@@ -43,12 +48,12 @@ export default function PanelEstudiantesPage() {
 
   const [mensaje, setMensaje] = useState<{ tipo: "ok" | "error"; texto: string } | null>(null);
 
-  async function cargarLista(termino: string) {
+  async function cargarLista(termino: string, paginaBuscada: number) {
     setCargando(true);
     try {
       const [resUsuarios, resInscripciones] = await Promise.all([
         fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/usuarios?rol=estudiante&search=${encodeURIComponent(termino)}`,
+          `${process.env.NEXT_PUBLIC_API_URL}/usuarios?rol=estudiante&search=${encodeURIComponent(termino)}&page=${paginaBuscada}&limit=${POR_PAGINA}`,
           { headers: { Authorization: `Bearer ${token}` } },
         ),
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/inscripciones`, {
@@ -58,7 +63,10 @@ export default function PanelEstudiantesPage() {
       const jsonUsuarios = await resUsuarios.json();
       const jsonInscripciones = await resInscripciones.json();
 
-      if (jsonUsuarios.success) setEstudiantes(jsonUsuarios.data);
+      if (jsonUsuarios.success) {
+        setEstudiantes(jsonUsuarios.data);
+        setTotalPaginas(jsonUsuarios.paginacion?.totalPaginas || 1);
+      }
 
       if (jsonInscripciones.success) {
         const mapa: Record<string, "pendiente" | "pagado"> = {};
@@ -85,9 +93,10 @@ export default function PanelEstudiantesPage() {
     (async () => {
       try {
         const [resUsuarios, resInscripciones] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/usuarios?rol=estudiante&search=`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
+          fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/usuarios?rol=estudiante&search=&page=1&limit=${POR_PAGINA}`,
+            { headers: { Authorization: `Bearer ${token}` } },
+          ),
           fetch(`${process.env.NEXT_PUBLIC_API_URL}/inscripciones`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
@@ -96,7 +105,10 @@ export default function PanelEstudiantesPage() {
         const jsonInscripciones = await resInscripciones.json();
         if (cancelado) return;
 
-        if (jsonUsuarios.success) setEstudiantes(jsonUsuarios.data);
+        if (jsonUsuarios.success) {
+          setEstudiantes(jsonUsuarios.data);
+          setTotalPaginas(jsonUsuarios.paginacion?.totalPaginas || 1);
+        }
 
         if (jsonInscripciones.success) {
           const mapa: Record<string, "pendiente" | "pagado"> = {};
@@ -125,7 +137,13 @@ export default function PanelEstudiantesPage() {
 
   function buscar(e: React.FormEvent) {
     e.preventDefault();
-    cargarLista(busqueda);
+    setPagina(1);
+    cargarLista(busqueda, 1);
+  }
+
+  function irAPagina(nuevaPagina: number) {
+    setPagina(nuevaPagina);
+    cargarLista(busqueda, nuevaPagina);
   }
 
   async function seleccionar(est: Estudiante) {
@@ -215,6 +233,14 @@ export default function PanelEstudiantesPage() {
               );
             })}
           </div>
+
+          {!cargando && (
+            <Paginacion
+              paginaActual={pagina}
+              totalPaginas={totalPaginas}
+              onCambiarPagina={irAPagina}
+            />
+          )}
         </>
       )}
 
