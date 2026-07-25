@@ -12,7 +12,11 @@ type Estudiante = {
   email: string;
 };
 
-type Inscripcion = { userId: { _id: string }; estadoPago: "pendiente" | "pagado" };
+type EstadoPago = "pendiente" | "pendiente_verificacion" | "pagado" | "rechazado";
+
+type Inscripcion = { userId: { _id: string }; estadoPago: EstadoPago };
+
+type EstadoMostrado = EstadoPago | "sin_inscripcion";
 
 type Progreso = {
   sesionActualDesbloqueada: number;
@@ -36,7 +40,7 @@ export default function PanelEstudiantesPage() {
 
   const [busqueda, setBusqueda] = useState("");
   const [estudiantes, setEstudiantes] = useState<Estudiante[]>([]);
-  const [estadosPago, setEstadosPago] = useState<Record<string, "pendiente" | "pagado" | "sin_inscripcion">>({});
+  const [estadosPago, setEstadosPago] = useState<Record<string, EstadoMostrado>>({});
   const [cargando, setCargando] = useState(true);
   const [pagina, setPagina] = useState(1);
   const [totalPaginas, setTotalPaginas] = useState(1);
@@ -69,11 +73,11 @@ export default function PanelEstudiantesPage() {
       }
 
       if (jsonInscripciones.success) {
-        const mapa: Record<string, "pendiente" | "pagado"> = {};
+        const mapa: Record<string, EstadoPago> = {};
         jsonInscripciones.data.forEach((ins: Inscripcion) => {
           mapa[ins.userId._id] = ins.estadoPago;
         });
-        const conEstado: Record<string, "pendiente" | "pagado" | "sin_inscripcion"> = {};
+        const conEstado: Record<string, EstadoMostrado> = {};
         (jsonUsuarios.success ? jsonUsuarios.data : []).forEach((est: Estudiante) => {
           conEstado[est._id] = mapa[est._id] || "sin_inscripcion";
         });
@@ -111,11 +115,11 @@ export default function PanelEstudiantesPage() {
         }
 
         if (jsonInscripciones.success) {
-          const mapa: Record<string, "pendiente" | "pagado"> = {};
+          const mapa: Record<string, EstadoPago> = {};
           jsonInscripciones.data.forEach((ins: Inscripcion) => {
             mapa[ins.userId._id] = ins.estadoPago;
           });
-          const conEstado: Record<string, "pendiente" | "pagado" | "sin_inscripcion"> = {};
+          const conEstado: Record<string, EstadoMostrado> = {};
           (jsonUsuarios.success ? jsonUsuarios.data : []).forEach((est: Estudiante) => {
             conEstado[est._id] = mapa[est._id] || "sin_inscripcion";
           });
@@ -174,9 +178,14 @@ export default function PanelEstudiantesPage() {
     }
   }
 
-  const etiquetaPago = {
+  // Las 4 llaves reales de estadoPago + "sin_inscripcion". Si en el futuro se
+  // agrega un valor nuevo a estadoPago en el backend, hay que agregarlo aquí
+  // también o vuelve a pasar el mismo error (undefined.clase).
+  const etiquetaPago: Record<EstadoMostrado, { texto: string; clase: string }> = {
     pagado: { texto: "Pagó", clase: "bg-status-success text-white" },
     pendiente: { texto: "Pago pendiente", clase: "bg-brand-pink text-white" },
+    pendiente_verificacion: { texto: "Voucher por verificar", clase: "bg-brand-blueLight text-white" },
+    rechazado: { texto: "Voucher rechazado", clase: "bg-neutral-text text-white" },
     sin_inscripcion: { texto: "Sin inscripción", clase: "bg-neutral-bg text-neutral-text" },
   };
 

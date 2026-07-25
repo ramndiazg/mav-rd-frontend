@@ -304,11 +304,11 @@ function InscripcionContenido() {
               </p>
 
               <div className="text-sm text-neutral-text bg-neutral-bg border border-neutral-bg rounded-lg p-3 inline-block">
-                Banco Popular Dominicano — Cuenta: <strong>000-000-000</strong>{" "}
+                Banco Popular Dominicano — Cuenta: <strong>765431978</strong>{" "}
                 (Muvo RD Vial)
               </div>
               <div className="text-sm text-neutral-text bg-neutral-bg border border-neutral-bg rounded-lg p-3 inline-block">
-                Banco De Reservas — Cuenta: <strong>000-000-000</strong>{" "}
+                Banco De Reservas — Cuenta: <strong>3370011963</strong>{" "}
                 (Muvo RD Vial)
               </div>
             </div>
