@@ -1,9 +1,13 @@
-import Link from "next/link";
+import { notFound } from "next/navigation";
+import type { Metadata } from "next";
+import NoticiaAcciones from "@/components/noticias/NoticiaAcciones";
+import CompartirBotones from "@/components/noticias/CompartirBotones";
 
-type Autor = {
+type Comentario = {
   _id: string;
-  nombre: string;
-  apellido: string;
+  userId?: { _id: string; nombre: string; apellido: string };
+  texto: string;
+  fecha: string;
 };
 
 type Noticia = {
@@ -11,31 +15,23 @@ type Noticia = {
   titulo: string;
   contenido: string;
   imagenUrl?: string;
-  autorId?: Autor;
+  videoEmbedUrl?: string;
+  autorId?: { _id: string; nombre: string; apellido: string };
   likes: string[];
-  comentarios: { _id: string }[];
+  comentarios: Comentario[];
   createdAt: string;
 };
 
-const POR_PAGINA = 9;
-
-async function obtenerNoticias(
-  pagina: number,
-): Promise<{ datos: Noticia[]; totalPaginas: number; error: boolean }> {
+async function obtenerNoticia(id: string): Promise<Noticia | null> {
   try {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/noticias?page=${pagina}&limit=${POR_PAGINA}`,
-      { next: { revalidate: 60 } },
-    );
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/noticias/${id}`, {
+      next: { revalidate: 60 },
+    });
     const json = await res.json();
-    if (!json.success) return { datos: [], totalPaginas: 1, error: true };
-    return {
-      datos: json.data,
-      totalPaginas: json.paginacion?.totalPaginas || 1,
-      error: false,
-    };
+    if (!json.success) return null;
+    return json.data;
   } catch {
-    return { datos: [], totalPaginas: 1, error: true };
+    return null;
   }
 }
 
@@ -52,117 +48,101 @@ function formatearFecha(fecha: string) {
   });
 }
 
-export const metadata = {
-  title: "Noticias | Mujeres al Volante RD",
-};
-
-export default async function NoticiasPage({
-  searchParams,
+export async function generateMetadata({
+  params,
 }: {
-  searchParams: { page?: string };
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const noticia = await obtenerNoticia(id);
+
+  if (!noticia) {
+    return { title: "Noticia no encontrada" };
+  }
+
+  const descripcion = resumen(noticia.contenido);
+
+  return {
+    title: noticia.titulo,
+    description: descripcion,
+    openGraph: {
+      type: "article",
+      title: noticia.titulo,
+      description: descripcion,
+      publishedTime: noticia.createdAt,
+      images: noticia.imagenUrl
+        ? [{ url: noticia.imagenUrl, width: 1200, height: 630, alt: noticia.titulo }]
+        : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: noticia.titulo,
+      description: descripcion,
+      images: noticia.imagenUrl ? [noticia.imagenUrl] : undefined,
+    },
+  };
+}
+
+export default async function NoticiaDetallePage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
 }) {
-  const paginaActual = Math.max(1, Number(searchParams?.page) || 1);
-  const { datos: noticias, totalPaginas, error } = await obtenerNoticias(paginaActual);
+  const { id } = await params;
+  const noticia = await obtenerNoticia(id);
+
+  if (!noticia) {
+    notFound();
+  }
 
   return (
     <main className="bg-neutral-bg min-h-screen px-6 py-16">
-      <div className="max-w-5xl mx-auto">
-        <h1 className="font-display text-3xl md:text-4xl font-bold text-brand-blue mb-2">
-          Noticias
-        </h1>
-        <p className="text-neutral-text mb-10">
-          Novedades, historias y actividades de Mujeres al Volante RD.
-        </p>
-
-        {error && (
-          <div className="rounded-lg bg-brand-pinkLight border border-brand-pink p-4 text-brand-blue">
-            No pudimos cargar las noticias en este momento. Intenta de nuevo en unos minutos.
-          </div>
+      <article className="max-w-2xl mx-auto bg-white rounded-xl overflow-hidden">
+        {noticia.imagenUrl && (
+          <img
+            src={noticia.imagenUrl}
+            alt={noticia.titulo}
+            className="w-full h-64 object-cover"
+          />
         )}
 
-        {!error && noticias.length === 0 && (
-          <div className="rounded-lg bg-white border border-neutral-bg p-8 text-center text-neutral-text">
-            Todavia no hay noticias publicadas.
-          </div>
-        )}
+        <div className="p-6 md:p-10">
+          <p className="text-xs text-brand-pink font-medium mb-2">
+            {formatearFecha(noticia.createdAt)}
+            {noticia.autorId && ` - ${noticia.autorId.nombre} ${noticia.autorId.apellido}`}
+          </p>
 
-        {!error && noticias.length > 0 && (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {noticias.map((n) => (
-              <Link
-                key={n._id}
-                href={`/noticias/${n._id}`}
-                className="rounded-xl bg-white overflow-hidden border border-neutral-bg hover:shadow-lg transition-shadow flex flex-col"
-              >
-                {n.imagenUrl && (
-                  <img
-                    src={n.imagenUrl}
-                    alt={n.titulo}
-                    className="w-full h-40 object-cover"
-                  />
-                )}
-                <div className="p-5 flex flex-col flex-1">
-                  <p className="text-xs text-brand-pink font-medium mb-1">
-                    {formatearFecha(n.createdAt)}
-                  </p>
-                  <h2 className="font-display font-semibold text-lg text-brand-blue mb-2">
-                    {n.titulo}
-                  </h2>
-                  <p className="text-sm text-neutral-text flex-1">
-                    {resumen(n.contenido)}
-                  </p>
-                  <div className="mt-4 flex items-center gap-4 text-xs text-neutral-text">
-                    <span>{n.likes?.length ?? 0} me gusta</span>
-                    <span>{n.comentarios?.length ?? 0} comentarios</span>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
+          <h1 className="font-display text-2xl md:text-3xl font-bold text-brand-blue mb-6">
+            {noticia.titulo}
+          </h1>
 
-        {!error && totalPaginas > 1 && (
-          <nav
-            aria-label="Paginación de noticias"
-            className="flex items-center justify-center gap-1.5 mt-10 flex-wrap"
-          >
-            <Link
-              href={`/noticias?page=${Math.max(1, paginaActual - 1)}`}
-              aria-disabled={paginaActual === 1}
-              className={`text-sm px-3 py-1.5 rounded-lg border border-neutral-bg ${paginaActual === 1
-                ? "pointer-events-none opacity-40"
-                : "hover:border-brand-blueLight"
-                }`}
-            >
-              ← Anterior
-            </Link>
+          <div
+            className="prose prose-neutral max-w-none mb-6"
+            dangerouslySetInnerHTML={{ __html: noticia.contenido }}
+          />
 
-            {Array.from({ length: totalPaginas }, (_, i) => i + 1).map((p) => (
-              <Link
-                key={p}
-                href={`/noticias?page=${p}`}
-                className={`text-sm px-3 py-1.5 rounded-lg border ${p === paginaActual
-                  ? "border-brand-blue bg-brand-blue text-white"
-                  : "border-neutral-bg text-neutral-text hover:border-brand-blueLight"
-                  }`}
-              >
-                {p}
-              </Link>
-            ))}
+          {noticia.videoEmbedUrl && (
+            <div className="aspect-video mb-6">
+              <iframe
+                src={noticia.videoEmbedUrl}
+                title={noticia.titulo}
+                className="w-full h-full rounded-lg"
+                allowFullScreen
+              />
+            </div>
+          )}
 
-            <Link
-              href={`/noticias?page=${Math.min(totalPaginas, paginaActual + 1)}`}
-              aria-disabled={paginaActual === totalPaginas}
-              className={`text-sm px-3 py-1.5 rounded-lg border border-neutral-bg ${paginaActual === totalPaginas
-                ? "pointer-events-none opacity-40"
-                : "hover:border-brand-blueLight"
-                }`}
-            >
-              Siguiente →
-            </Link>
-          </nav>
-        )}
-      </div>
+          <CompartirBotones titulo={noticia.titulo} />
+
+          <div className="road-divider my-8"></div>
+
+          <NoticiaAcciones
+            noticiaId={noticia._id}
+            totalLikesInicial={noticia.likes?.length ?? 0}
+            comentariosIniciales={noticia.comentarios ?? []}
+          />
+        </div>
+      </article>
     </main>
   );
 }

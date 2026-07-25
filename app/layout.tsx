@@ -1,4 +1,3 @@
-
 import type { Metadata } from "next";
 import { Poppins, Inter } from "next/font/google";
 import "./globals.css";
@@ -17,10 +16,39 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
+const SITE_URL = "https://mav-rd-vial.vercel.app";
+const DESCRIPCION_SITIO =
+  "Aprende a conducir con confianza. Cursos teóricos, exámenes y diplomas de Muvo RD Vial, un proyecto de la asociación sin fines de lucro Mujeres al Volante RD.";
+
 export const metadata: Metadata = {
-  title: "Muvo RD Vial",
-  description:
-    "Aprende a conducir con confianza. Cursos teóricos, exámenes y diplomas de Muvo RD Vial, un proyecto de la asociación sin fines de lucro Mujeres al Volante RD.",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "Muvo RD Vial",
+    template: "%s | Muvo RD Vial",
+  },
+  description: DESCRIPCION_SITIO,
+  openGraph: {
+    type: "website",
+    locale: "es_DO",
+    siteName: "Muvo RD Vial",
+    title: "Muvo RD Vial",
+    description: DESCRIPCION_SITIO,
+    url: SITE_URL,
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Muvo RD Vial - Embajadores de la educación vial",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Muvo RD Vial",
+    description: DESCRIPCION_SITIO,
+    images: ["/og-image.png"],
+  },
 };
 
 export default function RootLayout({
