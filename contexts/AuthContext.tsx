@@ -17,6 +17,7 @@ type Usuario = {
   email: string;
   rol: Rol;
   activo: boolean;
+  emailVerificado: boolean;
 };
 
 type DatosRegistro = {

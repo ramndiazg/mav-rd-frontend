@@ -27,6 +27,51 @@ function estadoSesion(numero: number, progreso: Progreso) {
   return "bloqueada";
 }
 
+function AvisoEmailSinVerificar() {
+  const { usuario, token } = useAuth();
+  const [enviando, setEnviando] = useState(false);
+  const [mensaje, setMensaje] = useState<string | null>(null);
+
+  if (!usuario || usuario.emailVerificado) return null;
+
+  async function reenviar() {
+    setEnviando(true);
+    setMensaje(null);
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/auth/reenviar-verificacion`,
+        { method: "POST", headers: { Authorization: `Bearer ${token}` } },
+      );
+      const json = await res.json();
+      setMensaje(
+        json.success
+          ? "Correo reenviado — revisa tu bandeja de entrada."
+          : json.error || "No se pudo reenviar.",
+      );
+    } catch {
+      setMensaje("No pudimos conectar con el servidor.");
+    } finally {
+      setEnviando(false);
+    }
+  }
+
+  return (
+    <div className="rounded-lg bg-brand-pinkLight border border-brand-pink p-3 text-sm text-brand-blue mb-6 flex items-center justify-between gap-3 flex-wrap">
+      <span>Verifica tu correo para poder inscribirte en el curso.</span>
+      <div className="flex items-center gap-2">
+        {mensaje && <span className="text-xs">{mensaje}</span>}
+        <button
+          onClick={reenviar}
+          disabled={enviando}
+          className="text-xs font-medium px-3 py-1.5 rounded-full bg-brand-pink text-white hover:opacity-90 disabled:opacity-60 shrink-0"
+        >
+          {enviando ? "Enviando..." : "Reenviar correo"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function DashboardContenido() {
   const { usuario, token } = useAuth();
   const [inscripcion, setInscripcion] = useState<Inscripcion | null>(null);
@@ -88,6 +133,8 @@ function DashboardContenido() {
           </h1>
           <p className="text-neutral-text text-sm">Tu panel de estudiante</p>
         </div>
+
+        <AvisoEmailSinVerificar />
 
         {cargando && (
           <p className="text-neutral-text text-sm text-center">Cargando...</p>

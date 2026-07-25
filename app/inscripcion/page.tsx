@@ -32,7 +32,7 @@ function formatearMonto(valor: number) {
 }
 
 function InscripcionContenido() {
-  const { token } = useAuth();
+  const { usuario, token } = useAuth();
 
   const [precios, setPrecios] = useState<Precios | null>(null);
   const [inscripcion, setInscripcion] = useState<Inscripcion | null>(null);
@@ -136,6 +136,30 @@ function InscripcionContenido() {
       setMensaje({ tipo: "error", texto: "No pudimos conectar con el servidor." });
     } finally {
       setEnviando(false);
+    }
+  }
+
+  const [reenviandoVerificacion, setReenviandoVerificacion] = useState(false);
+  const [mensajeVerificacion, setMensajeVerificacion] = useState<string | null>(null);
+
+  async function reenviarVerificacion() {
+    setReenviandoVerificacion(true);
+    setMensajeVerificacion(null);
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/auth/reenviar-verificacion`,
+        { method: "POST", headers: { Authorization: `Bearer ${token}` } },
+      );
+      const json = await res.json();
+      setMensajeVerificacion(
+        json.success
+          ? "Correo reenviado — revisa tu bandeja de entrada."
+          : json.error || "No se pudo reenviar.",
+      );
+    } catch {
+      setMensajeVerificacion("No pudimos conectar con el servidor.");
+    } finally {
+      setReenviandoVerificacion(false);
     }
   }
 
@@ -300,9 +324,9 @@ function InscripcionContenido() {
             </div>
             <div>
               <p className="font-medium text-brand-blue mb-1">
-                Deposita el monto en una de nuestras cuentas
+                Deposita el monto en nuestra cuenta
               </p>
-
+              {/* TODO: reemplazar con el número de cuenta REAL antes de publicar */}
               <div className="text-sm text-neutral-text bg-neutral-bg border border-neutral-bg rounded-lg p-3 inline-block">
                 Banco Popular Dominicano — Cuenta: <strong>765431978</strong>{" "}
                 (Muvo RD Vial)
@@ -383,7 +407,29 @@ function InscripcionContenido() {
             </div>
           )}
 
-          {!cargando && !enviado && yaTieneInscripcionActiva && (
+          {!cargando && !enviado && usuario && !usuario.emailVerificado && (
+            <div className="text-center">
+              <p className="font-display font-semibold text-brand-blue text-lg mb-2">
+                Verifica tu correo primero
+              </p>
+              <p className="text-sm text-neutral-text mb-4">
+                Antes de inscribirte, confirma tu correo con el link que te
+                enviamos al registrarte.
+              </p>
+              {mensajeVerificacion && (
+                <p className="text-xs text-neutral-text mb-4">{mensajeVerificacion}</p>
+              )}
+              <button
+                onClick={reenviarVerificacion}
+                disabled={reenviandoVerificacion}
+                className="inline-block rounded-full bg-brand-pink text-white px-6 py-3 font-medium hover:opacity-90 disabled:opacity-60"
+              >
+                {reenviandoVerificacion ? "Enviando..." : "Reenviar correo de verificación"}
+              </button>
+            </div>
+          )}
+
+          {!cargando && !enviado && usuario?.emailVerificado && yaTieneInscripcionActiva && (
             <div className="text-center">
               <p className="font-display font-semibold text-brand-blue text-lg mb-2">
                 Ya tienes una inscripción activa
@@ -400,7 +446,7 @@ function InscripcionContenido() {
             </div>
           )}
 
-          {!cargando && !enviado && !yaTieneInscripcionActiva && (
+          {!cargando && !enviado && usuario?.emailVerificado && !yaTieneInscripcionActiva && (
             <>
               <h3 className="font-display font-semibold text-brand-blue text-lg mb-1">
                 Formulario de inscripción
