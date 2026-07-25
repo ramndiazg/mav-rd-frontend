@@ -11,6 +11,14 @@ type Progreso = {
   cursoCompletado: boolean;
 };
 
+type Inscripcion = {
+  _id: string;
+  tipoPlan: "normal" | "vip";
+  monto: number;
+  estadoPago: "pendiente" | "pendiente_verificacion" | "pagado" | "rechazado";
+  notaRechazo?: string | null;
+};
+
 const SESIONES = [1, 2, 3];
 
 function estadoSesion(numero: number, progreso: Progreso) {
@@ -21,40 +29,50 @@ function estadoSesion(numero: number, progreso: Progreso) {
 
 function DashboardContenido() {
   const { usuario, token } = useAuth();
+  const [inscripcion, setInscripcion] = useState<Inscripcion | null>(null);
   const [progreso, setProgreso] = useState<Progreso | null>(null);
   const [cargando, setCargando] = useState(true);
-  const [sinPago, setSinPago] = useState(false);
   const [error, setError] = useState(false);
 
   useEffect(() => {
     let cancelado = false;
 
-    async function cargarProgreso() {
+    (async () => {
       try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/progreso/me`,
-          { headers: { Authorization: `Bearer ${token}` } }
+        const resInscripcion = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/inscripciones/me`,
+          { headers: { Authorization: `Bearer ${token}` } },
         );
-        const json = await res.json();
+        const jsonInscripcion = await resInscripcion.json();
 
         if (cancelado) return;
 
-        if (json.success) {
-          setProgreso(json.data);
-        } else {
-          // Todavia no existe ProgresoEstudiante para esta cuenta: segun
-          // DATABASE.md, ese documento se crea al confirmar el pago. Si no
-          // existe, asumimos que el pago sigue pendiente.
-          setSinPago(true);
+        if (!jsonInscripcion.success) {
+          setError(true);
+          return;
+        }
+
+        const inscripcionActual: Inscripcion | null = jsonInscripcion.data;
+        setInscripcion(inscripcionActual);
+
+        // Solo si el pago ya está confirmado tiene sentido cargar el progreso
+        // del Aula Virtual — para los otros 3 estados no existe todavía.
+        if (inscripcionActual?.estadoPago === "pagado") {
+          const resProgreso = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/progreso/me`,
+            { headers: { Authorization: `Bearer ${token}` } },
+          );
+          const jsonProgreso = await resProgreso.json();
+          if (!cancelado && jsonProgreso.success) {
+            setProgreso(jsonProgreso.data);
+          }
         }
       } catch {
         if (!cancelado) setError(true);
       } finally {
         if (!cancelado) setCargando(false);
       }
-    }
-
-    if (token) cargarProgreso();
+    })();
 
     return () => {
       cancelado = true;
@@ -72,28 +90,77 @@ function DashboardContenido() {
         </div>
 
         {cargando && (
-          <p className="text-neutral-text text-sm">Cargando tu progreso...</p>
+          <p className="text-neutral-text text-sm text-center">Cargando...</p>
         )}
 
         {error && !cargando && (
           <div className="rounded-lg bg-brand-pinkLight border border-brand-pink p-4 text-brand-blue text-sm">
-            No pudimos cargar tu progreso. Intenta de nuevo en unos minutos.
+            No pudimos cargar tu información. Intenta de nuevo en unos minutos.
           </div>
         )}
 
-        {!cargando && !error && sinPago && (
+        {!cargando && !error && !inscripcion && (
+          <div className="rounded-xl bg-white border border-neutral-bg p-8 text-center">
+            <p className="font-display font-semibold text-brand-blue text-lg mb-2">
+              Todavía no te has inscrito
+            </p>
+            <p className="text-sm text-neutral-text mb-6">
+              Conoce el curso, elige tu plan y sube tu comprobante de pago para
+              empezar.
+            </p>
+            <Link
+              href="/inscripcion"
+              className="inline-block rounded-full bg-brand-pink text-white px-6 py-3 font-medium hover:opacity-90"
+            >
+              Inscribirme
+            </Link>
+          </div>
+        )}
+
+        {!cargando && !error && inscripcion?.estadoPago === "pendiente" && (
           <div className="rounded-xl bg-white border border-neutral-bg p-8 text-center">
             <p className="text-neutral-text mb-2">
-              Tu inscripcion esta pendiente de confirmacion de pago.
+              Tu inscripción está pendiente de confirmación de pago.
             </p>
             <p className="text-sm text-neutral-text">
-              Una vez tu coordinadora confirme el pago, aqui vas a ver el
+              Una vez tu coordinadora confirme el pago, aquí vas a ver el
               acceso a las 3 sesiones del curso.
             </p>
           </div>
         )}
 
-        {!cargando && !error && progreso && (
+        {!cargando && !error && inscripcion?.estadoPago === "pendiente_verificacion" && (
+          <div className="rounded-xl bg-white border border-neutral-bg p-8 text-center">
+            <p className="font-display font-semibold text-brand-blue text-lg mb-2">
+              Tu comprobante está en revisión
+            </p>
+            <p className="text-sm text-neutral-text">
+              Estamos verificando tu depósito. Te avisaremos en cuanto quede
+              confirmado — normalmente toma poco tiempo.
+            </p>
+          </div>
+        )}
+
+        {!cargando && !error && inscripcion?.estadoPago === "rechazado" && (
+          <div className="rounded-xl bg-white border border-brand-pink p-8 text-center">
+            <p className="font-display font-semibold text-brand-blue text-lg mb-2">
+              Tu comprobante no pudo ser validado
+            </p>
+            {inscripcion.notaRechazo && (
+              <p className="text-sm text-neutral-text mb-6">
+                Motivo: {inscripcion.notaRechazo}
+              </p>
+            )}
+            <Link
+              href="/inscripcion"
+              className="inline-block rounded-full bg-brand-pink text-white px-6 py-3 font-medium hover:opacity-90"
+            >
+              Reenviar comprobante
+            </Link>
+          </div>
+        )}
+
+        {!cargando && !error && inscripcion?.estadoPago === "pagado" && progreso && (
           <div className="grid gap-4">
             {SESIONES.map((numero) => {
               const estado = estadoSesion(numero, progreso);

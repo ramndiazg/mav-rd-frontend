@@ -11,22 +11,46 @@ type Estudiante = {
   email: string;
 };
 
+type EstadoPago = "pendiente" | "pendiente_verificacion" | "pagado" | "rechazado";
+
 type Inscripcion = {
   _id: string;
   userId: Estudiante;
   tipoPlan: "normal" | "vip";
   monto: number;
-  estadoPago: "pendiente" | "pagado";
+  estadoPago: EstadoPago;
   fechaPago: string | null;
   createdAt: string;
+  // --- campos del flujo de auto-inscripción con voucher ---
+  comprobanteUrl?: string | null;
+  bancoEmisor?: string | null;
+  numeroReferencia?: string | null;
+  fechaDeposito?: string | null;
+  notaRechazo?: string | null;
 };
 
 type Precios = { precio_plan_normal: number; precio_plan_vip: number };
 
+function formatearFecha(fecha: string) {
+  return new Date(fecha).toLocaleDateString("es-DO", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+const FILTROS: { valor: "" | EstadoPago; etiqueta: string }[] = [
+  { valor: "", etiqueta: "Todas" },
+  { valor: "pendiente_verificacion", etiqueta: "Por verificar" },
+  { valor: "pendiente", etiqueta: "Pendientes (efectivo)" },
+  { valor: "pagado", etiqueta: "Pagadas" },
+  { valor: "rechazado", etiqueta: "Rechazadas" },
+];
+
 export default function PanelPagosPage() {
   const { token } = useAuth();
 
-  // --- Nueva inscripción ---
+  // --- Nueva inscripción (flujo manual/efectivo, sin cambios) ---
   const [busqueda, setBusqueda] = useState("");
   const [resultados, setResultados] = useState<Estudiante[]>([]);
   const [buscando, setBuscando] = useState(false);
@@ -40,16 +64,15 @@ export default function PanelPagosPage() {
 
   // --- Listado ---
   const [inscripciones, setInscripciones] = useState<Inscripcion[]>([]);
-  const [filtro, setFiltro] = useState<"" | "pendiente" | "pagado">("");
+  const [filtro, setFiltro] = useState<"" | EstadoPago>("pendiente_verificacion");
   const [cargandoLista, setCargandoLista] = useState(true);
-  const [confirmandoId, setConfirmandoId] = useState<string | null>(null);
+  const [procesandoId, setProcesandoId] = useState<string | null>(null);
 
   const [mensaje, setMensaje] = useState<{
     tipo: "ok" | "error";
     texto: string;
   } | null>(null);
 
-  // Precios configurados (público, para prellenar el monto por plan)
   useEffect(() => {
     async function cargarPrecios() {
       try {
@@ -59,7 +82,6 @@ export default function PanelPagosPage() {
         const json = await res.json();
         if (json.success) {
           setPrecios(json.data);
-          // Plan por defecto al montar es "normal" — prellenamos con ese precio
           setMonto(String(json.data.precio_plan_normal));
         }
       } catch {
@@ -69,8 +91,6 @@ export default function PanelPagosPage() {
     cargarPrecios();
   }, []);
 
-  // Cuando la coordinadora cambia el plan, recalculamos el monto sugerido
-  // directamente en el evento (no en un efecto) — sigue siendo editable después.
   function cambiarPlan(valor: "normal" | "vip") {
     setTipoPlan(valor);
     if (precios) {
@@ -80,7 +100,7 @@ export default function PanelPagosPage() {
     }
   }
 
-  async function cargarInscripciones(estado: "" | "pendiente" | "pagado") {
+  async function cargarInscripciones(estado: "" | EstadoPago) {
     try {
       const query = estado ? `?estadoPago=${estado}` : "";
       const res = await fetch(
@@ -123,9 +143,7 @@ export default function PanelPagosPage() {
     };
   }, [token, filtro]);
 
-  // El cambio de filtro sí es un evento (no un efecto), así que aquí es
-  // seguro poner el loading en true sincrónicamente antes de recargar.
-  function cambiarFiltro(valor: "" | "pendiente" | "pagado") {
+  function cambiarFiltro(valor: "" | EstadoPago) {
     setCargandoLista(true);
     setFiltro(valor);
   }
@@ -191,7 +209,7 @@ export default function PanelPagosPage() {
   }
 
   async function confirmarPago(inscripcion: Inscripcion) {
-    setConfirmandoId(inscripcion._id);
+    setProcesandoId(inscripcion._id);
     setMensaje(null);
 
     try {
@@ -213,7 +231,46 @@ export default function PanelPagosPage() {
     } catch {
       setMensaje({ tipo: "error", texto: "No pudimos conectar con el servidor." });
     } finally {
-      setConfirmandoId(null);
+      setProcesandoId(null);
+    }
+  }
+
+  async function rechazarPago(inscripcion: Inscripcion) {
+    const motivo = window.prompt(
+      `¿Por qué se rechaza el comprobante de ${inscripcion.userId?.nombre}? (esto lo verá la estudiante)`,
+    );
+    if (!motivo || !motivo.trim()) return;
+
+    setProcesandoId(inscripcion._id);
+    setMensaje(null);
+
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/inscripciones/${inscripcion._id}/rechazar-pago`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ motivo: motivo.trim() }),
+        },
+      );
+      const json = await res.json();
+
+      if (json.success) {
+        setMensaje({
+          tipo: "ok",
+          texto: `Comprobante rechazado. ${inscripcion.userId?.nombre} podrá reenviarlo.`,
+        });
+        cargarInscripciones(filtro);
+      } else {
+        setMensaje({ tipo: "error", texto: json.error || "No se pudo rechazar." });
+      }
+    } catch {
+      setMensaje({ tipo: "error", texto: "No pudimos conectar con el servidor." });
+    } finally {
+      setProcesandoId(null);
     }
   }
 
@@ -223,14 +280,14 @@ export default function PanelPagosPage() {
         Pagos e inscripciones
       </h2>
       <p className="text-sm text-neutral-text mb-8">
-        Registra una inscripción nueva y confirma los pagos recibidos en
-        efectivo.
+        Verifica los comprobantes de transferencia, registra inscripciones en
+        efectivo y confirma los pagos recibidos.
       </p>
 
-      {/* --- Nueva inscripción --- */}
+      {/* --- Nueva inscripción (efectivo/presencial) --- */}
       <div className="rounded-xl bg-white border border-neutral-bg p-6 mb-10">
         <h3 className="font-display font-semibold text-brand-blue mb-4">
-          Nueva inscripción
+          Nueva inscripción (efectivo/presencial)
         </h3>
 
         {!estudianteElegida && (
@@ -326,8 +383,8 @@ export default function PanelPagosPage() {
       </div>
 
       {/* --- Listado --- */}
-      <div className="flex items-center gap-2 mb-4">
-        {(["", "pendiente", "pagado"] as const).map((valor) => (
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
+        {FILTROS.map(({ valor, etiqueta }) => (
           <button
             key={valor}
             onClick={() => cambiarFiltro(valor)}
@@ -336,7 +393,7 @@ export default function PanelPagosPage() {
               : "bg-white border border-neutral-bg text-neutral-text"
               }`}
           >
-            {valor === "" ? "Todas" : valor === "pendiente" ? "Pendientes" : "Pagadas"}
+            {etiqueta}
           </button>
         ))}
       </div>
@@ -353,30 +410,84 @@ export default function PanelPagosPage() {
         {inscripciones.map((ins) => (
           <div
             key={ins._id}
-            className="flex items-center justify-between rounded-lg bg-white border border-neutral-bg p-4"
+            className="rounded-lg bg-white border border-neutral-bg p-4"
           >
-            <div>
-              <p className="font-medium text-brand-blue text-sm">
-                {ins.userId?.nombre} {ins.userId?.apellido}
-              </p>
-              <p className="text-xs text-neutral-text">
-                Plan {ins.tipoPlan} · RD${ins.monto}
-              </p>
-            </div>
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div className="flex items-start gap-3">
+                {ins.comprobanteUrl && (
+                  <a
+                    href={ins.comprobanteUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="Ver comprobante completo"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={ins.comprobanteUrl}
+                      alt="Comprobante de depósito"
+                      className="w-16 h-16 object-cover rounded-lg border border-neutral-bg hover:opacity-80 transition-opacity"
+                    />
+                  </a>
+                )}
 
-            {ins.estadoPago === "pagado" ? (
-              <span className="text-xs font-medium px-3 py-1 rounded-full bg-status-success text-white">
-                Pagado
-              </span>
-            ) : (
-              <button
-                onClick={() => confirmarPago(ins)}
-                disabled={confirmandoId === ins._id}
-                className="text-xs font-medium px-3 py-1.5 rounded-full bg-brand-pink text-white hover:opacity-90 disabled:opacity-60"
-              >
-                {confirmandoId === ins._id ? "Confirmando..." : "Confirmar pago"}
-              </button>
-            )}
+                <div>
+                  <p className="font-medium text-brand-blue text-sm">
+                    {ins.userId?.nombre} {ins.userId?.apellido}
+                  </p>
+                  <p className="text-xs text-neutral-text">
+                    Plan {ins.tipoPlan} · RD${ins.monto}
+                  </p>
+                  {ins.bancoEmisor && (
+                    <p className="text-xs text-neutral-text mt-1">
+                      {ins.bancoEmisor}
+                      {ins.numeroReferencia && ` · Ref: ${ins.numeroReferencia}`}
+                      {ins.fechaDeposito && ` · ${formatearFecha(ins.fechaDeposito)}`}
+                    </p>
+                  )}
+                  {ins.estadoPago === "rechazado" && ins.notaRechazo && (
+                    <p className="text-xs text-brand-pink mt-1">
+                      Rechazado: {ins.notaRechazo}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                {ins.estadoPago === "pagado" && (
+                  <span className="text-xs font-medium px-3 py-1 rounded-full bg-status-success text-white">
+                    Pagado
+                  </span>
+                )}
+
+                {ins.estadoPago === "rechazado" && (
+                  <span className="text-xs font-medium px-3 py-1 rounded-full bg-neutral-bg text-neutral-text">
+                    Rechazado
+                  </span>
+                )}
+
+                {(ins.estadoPago === "pendiente" ||
+                  ins.estadoPago === "pendiente_verificacion") && (
+                    <>
+                      {ins.estadoPago === "pendiente_verificacion" && (
+                        <button
+                          onClick={() => rechazarPago(ins)}
+                          disabled={procesandoId === ins._id}
+                          className="text-xs font-medium px-3 py-1.5 rounded-full bg-white border border-brand-pink text-brand-pink hover:bg-brand-pinkLight disabled:opacity-60"
+                        >
+                          Rechazar
+                        </button>
+                      )}
+                      <button
+                        onClick={() => confirmarPago(ins)}
+                        disabled={procesandoId === ins._id}
+                        className="text-xs font-medium px-3 py-1.5 rounded-full bg-brand-pink text-white hover:opacity-90 disabled:opacity-60"
+                      >
+                        {procesandoId === ins._id ? "Procesando..." : "Confirmar pago"}
+                      </button>
+                    </>
+                  )}
+              </div>
+            </div>
           </div>
         ))}
       </div>
