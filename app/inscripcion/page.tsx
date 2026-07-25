@@ -300,11 +300,15 @@ function InscripcionContenido() {
             </div>
             <div>
               <p className="font-medium text-brand-blue mb-1">
-                Deposita el monto en nuestra cuenta
+                Deposita el monto en una de nuestras cuentas
               </p>
-              {/* TODO: reemplazar con el número de cuenta REAL antes de publicar */}
+
               <div className="text-sm text-neutral-text bg-neutral-bg border border-neutral-bg rounded-lg p-3 inline-block">
                 Banco Popular Dominicano — Cuenta: <strong>000-000-000</strong>{" "}
+                (Muvo RD Vial)
+              </div>
+              <div className="text-sm text-neutral-text bg-neutral-bg border border-neutral-bg rounded-lg p-3 inline-block">
+                Banco De Reservas — Cuenta: <strong>000-000-000</strong>{" "}
                 (Muvo RD Vial)
               </div>
             </div>

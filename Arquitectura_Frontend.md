@@ -1,136 +1,86 @@
-Correcciones a aplicar en FRONTEND.md (el que ya está en el repo)
+# Arquitectura del Frontend — mav-rd-frontend
 
-El documento original asumía JWT en cookie httpOnly + middleware de Next.js
-verificándola. Eso no existe en el backend real. Reemplazar la sección
-"Rutas protegidas por rol" por esto:
+> Refleja el estado REAL del código al 25/07/2026. Reemplaza `Arquitectura_Frontend.md`
+> + `BITACORA_FRONTEND.md`. Para el historial de cómo se llegó aquí, ver `HISTORIAL_MODIFICACIONES.md`.
 
-Autenticación real (reemplaza la sección anterior)
+**Stack:** Next.js 16 (App Router) + React 19 + Tailwind CSS v4 + lucide-react
+(íconos) + despliegue en Vercel (`mav-rd-vial.vercel.app`).
 
-El backend devuelve el JWT en el body de la respuesta de login/registro, no en
-una cookie. Estrategia recomendada para el frontend:
+## Infraestructura y despliegue
 
-Al hacer login/registro, guardar token y usuario en un Context de React
-(AuthContext) + localStorage (para persistir entre recargas).
-Un lib/api.ts centralizado agrega el header automáticamente:
+- **Backend:** `https://mav-rd-backend.onrender.com/api` (variable de entorno
+  obligatoria en Vercel: `NEXT_PUBLIC_API_URL`).
+- **CORS:** el backend necesita `FRONTEND_URL` en Render apuntando exactamente
+  a la URL de Vercel (sin `/` al final) — si Vercel asigna una URL de preview
+  distinta a la de producción, usar la real, no asumir el patrón.
+- **Dominio:** el proyecto de Vercel se renombró de `mav-rd-frontend` a
+  `mav-rd-vial.vercel.app` (decisión final, ya aplicada).
 
-ts const token = localStorage.getItem('token');
-fetch(`${API_URL}${path}`, {
-...options,
-headers: { ...options.headers, Authorization: token ? `Bearer ${token}` : '' },
-});
+## Estructura de carpetas (real, no la planeada originalmente)
 
-Como no hay cookie, no se puede usar middleware.ts de Next.js para proteger
-rutas en el servidor (el middleware corre antes de que el JS del cliente
-lea localStorage). En su lugar:
-
-Usar un componente <RutaProtegida rolesPermitidos={[...]}> que en el
-cliente ('use client') verifique el AuthContext y redirija con
-useRouter().push('/login') si no hay sesión o el rol no encaja.
-Al montar la app, si hay token guardado, llamar a GET /api/auth/perfil
-para validar que sigue siendo válido antes de confiar en el localStorage.
-
-Logout = borrar token de localStorage y limpiar el AuthContext.
-
-Esta es una limitación conocida y aceptable para el tamaño de este proyecto —
-si en el futuro se quiere proteger rutas a nivel de servidor, habría que migrar
-el backend a emitir cookies httpOnly, lo cual es un cambio de arquitectura, no
-un ajuste menor.
-
-**Dos bugs reales de auth encontrados y corregidos (Sesión 6-8):**
-
-1. `AuthContext.tsx` → `verificarSesion()` hacía `setUsuario(json.data)`, pero
-   `GET /api/auth/perfil` responde `{ success, data: { usuario: {...} } }` —
-   el usuario va anidado en `data.usuario`. Esto dejaba `usuario.rol` en
-   `undefined` en cualquier recarga de página o entrada por URL directa
-   (no en el login manual, que sí usaba `json.data.usuario` correctamente) —
-   y `RutaProtegida` expulsaba a la persona a `/login` sin razón aparente.
-   **Corregido**, ahora usa `json.data.usuario` también en `verificarSesion()`.
-2. `login/page.tsx` hacía siempre `router.push("/dashboard")` después de un
-   login exitoso, sin mirar el rol — coordinadora/admin caían en una ruta
-   protegida solo para estudiante y quedaban rebotadas a `/login`. **Corregido**:
-   `login()` en `AuthContext.tsx` ahora devuelve `rol` en su resultado, y
-   `login/page.tsx` redirige a `/panel/pagos` si el rol es coordinadora/admin,
-   o a `/dashboard` si es estudiante. El mismo problema existía en
-   `Navbar.tsx` (`destinoPanel` mandaba a `/` para esos roles porque las
-   rutas de panel no existían cuando se escribió) — también corregido para
-   apuntar a `/panel/pagos`.
-
-# Arquitectura del Frontend — `mav-rd-frontend`
-
-**Stack:** Next.js (App Router) + Tailwind CSS + despliegue en Vercel
-
-## Estructura de carpetas
-
-> **Nota de la Sesión 6-8 (construcción real):** las páginas públicas, de auth
-> y de estudiante que ya existen en el repo real están en carpetas planas
-> (`app/dashboard/page.tsx`, `app/login/page.tsx`, `app/noticias/page.tsx`,
-> etc.), **sin** los grupos de rutas con paréntesis `(publico)`/`(auth)`/`(estudiante)`
-> que muestra el árbol de abajo — esos paréntesis solo se usaron de verdad para
-> `(coordinadora)` y `(admin)`, que sí existen tal cual en el repo. El árbol
-> completo de abajo sigue siendo la referencia de qué páginas existen y qué
-> falta, solo ignora los paréntesis en las secciones que no sean coordinadora/admin.
+> El proyecto NO usa grupos de rutas `(publico)/(auth)/(estudiante)/(compartido)`
+> — esos quedaron solo como plan. Las páginas públicas, de auth y de estudiante
+> viven en carpetas planas. Los únicos grupos de ruta reales son `(coordinadora)`
+> y `(admin)`, que sí existen tal cual.
 
 ```
 mav-rd-frontend/
 ├── app/
-│   ├── (publico)/
-│   │   ├── page.tsx                    # Inicio
-│   │   ├── acerca-de-nosotros/page.tsx
-│   │   ├── kit-preparacion/page.tsx    # videos + libro + link INTRANT
-│   │   ├── noticias/page.tsx
-│   │   ├── noticias/[id]/page.tsx
-│   │   ├── testimonios/page.tsx
-│   │   ├── faq/page.tsx
-│   │   └── verificar-diploma/page.tsx
-│   ├── (auth)/
-│   │   ├── login/page.tsx
-│   │   └── registro/page.tsx
-│   ├── aula-virtual/[sesion]/page.tsx   # ✅ construida (Sesión 6), rediseñada (Sesión 8)
-│   │   # ⚠️ Ruta real SIN el grupo (estudiante) — así quedó en el repo real,
-│   │   # a diferencia de lo que este documento planeaba originalmente.
-│   ├── examen/[intentoId]/page.tsx       # ✅ construida (Sesión 6)
-│   ├── (estudiante)/
-│   │   ├── dashboard/page.tsx
-│   │   └── diploma/page.tsx                  # ✅ construida (Sesión 7)
-│   ├── (compartido)/
-│   │   └── perfil/cambiar-password/page.tsx   # pendiente de construir
-│   ├── (coordinadora)/                         # ✅ existe tal cual, con paréntesis
-│   │   ├── panel/layout.tsx        # header + nav entre las 8 páginas de abajo
-│   │   ├── panel/pagos/page.tsx           # ✅ construida (Sesión 7), pestaña "Sin inscripción" agregada (Sesión 8)
-│   │   ├── panel/estudiantes/page.tsx     # ✅ construida (Sesión 8) — estado de pago + calificaciones por sesión
-│   │   ├── panel/aula-virtual/page.tsx    # ✅ construida (Sesión 7); Sesión 8 le agregó 2 pestañas internas: "Desbloquear exámenes" (ahora override manual, ver más abajo) y "Contenido de estudio" (gestión de materiales)
-│   │   ├── panel/examenes/page.tsx        # ✅ construida (Sesión 7) — CRUD del banco de preguntas por sesión
-│   │   ├── panel/diplomas/page.tsx        # ✅ construida (Sesión 7)
-│   │   ├── panel/noticias/page.tsx        # ✅ construida (Sesión 7)
-│   │   ├── panel/testimonios/page.tsx     # ✅ construida (Sesión 7)
-│   │   └── panel/faq/page.tsx             # ✅ construida (Sesión 7)
-│   ├── (admin)/                                # ✅ existe tal cual, con paréntesis
-│   │   ├── admin/layout.tsx        # header + nav (Contabilidad, Contenido de Página) + link de vuelta a /panel/pagos
-│   │   ├── admin/contabilidad/page.tsx         # ✅ construida (Sesión 7½, ver bitácora)
-│   │   └── admin/contenido-pagina/page.tsx     # ✅ construida (Sesión 7), rediseñada (Sesión 8) — ver nota abajo
-│   ├── layout.tsx
+│   ├── page.tsx                          # Inicio
+│   ├── acerca-de-nosotros/page.tsx
+│   ├── kit-preparacion/page.tsx
+│   ├── noticias/page.tsx                 # listado público, paginado
+│   ├── noticias/[id]/page.tsx            # detalle — like, comentarios, compartir, OG dinámico
+│   ├── testimonios/page.tsx
+│   ├── faq/page.tsx
+│   ├── verificar-diploma/page.tsx
+│   ├── login/page.tsx
+│   ├── registro/page.tsx
+│   ├── dashboard/page.tsx                # protegida, rol estudiante
+│   ├── inscripcion/page.tsx              # NUEVO — auto-inscripción con voucher
+│   ├── aula-virtual/[sesion]/page.tsx
+│   ├── examen/[intentoId]/page.tsx
+│   ├── diploma/page.tsx
+│   ├── perfil/cambiar-password/page.tsx
+│   ├── (coordinadora)/
+│   │   ├── panel/layout.tsx              # header simple + link "volver" (sin barra de pills)
+│   │   ├── panel/page.tsx                # NUEVO — pantalla de tarjetas (home del panel)
+│   │   ├── panel/pagos/page.tsx          # nueva inscripción manual + cola de verificación de vouchers
+│   │   ├── panel/estudiantes/page.tsx
+│   │   ├── panel/aula-virtual/page.tsx   # pestañas: Desbloquear exámenes (override) / Contenido de estudio
+│   │   ├── panel/examenes/page.tsx
+│   │   ├── panel/diplomas/page.tsx
+│   │   ├── panel/noticias/page.tsx
+│   │   ├── panel/testimonios/page.tsx
+│   │   └── panel/faq/page.tsx
+│   ├── (admin)/
+│   │   ├── admin/layout.tsx              # header simple + link "volver a /panel" (sin barra de pills)
+│   │   ├── admin/page.tsx                # NUEVO — redirige a /panel (la sección admin ya vive ahí)
+│   │   ├── admin/contabilidad/page.tsx
+│   │   └── admin/contenido-pagina/page.tsx
+│   ├── layout.tsx                        # metadata general + Open Graph + Twitter Card
 │   └── globals.css
 ├── components/
-│   ├── ui/                 # botones, cards, inputs (design system propio)
-│   ├── layout/              # Navbar (con logo, Sesión 8), Footer, Sidebar de panel
-│   ├── noticias/
-│   ├── aula-virtual/
+│   ├── ui/Paginacion.tsx
+│   ├── layout/Navbar.tsx, Footer.tsx
+│   ├── noticias/NoticiaAcciones.tsx, CompartirBotones.tsx
+│   ├── auth/RutaProtegida.tsx
 │   └── contabilidad/
-├── lib/
-│   ├── api.ts               # cliente fetch hacia el backend
-│   ├── auth.ts               # helpers de sesión/JWT
-│   └── constants.ts
+├── contexts/AuthContext.tsx
 ├── public/
-│   ├── logo-mav-rd.png      # ✅ agregado (Sesión 8) — logo real recortado con fondo transparente
-│   └── logo.svg              # planeado originalmente, sin usar — el logo real es el .png de arriba
-├── app/favicon.ico            # ✅ reemplazado (Sesión 8) con el logo real (antes era el default de Vercel)
-├── tailwind.config.ts        # tokens de color de marca
+│   ├── logo-mav-rd.png
+│   ├── og-image.png                      # NUEVO — imagen Open Graph 1200×630
+│   └── inscripcion/                      # NUEVO — imágenes de la página de auto-inscripción
+│       ├── teoria-1.jpg, teoria-2.jpg, teoria-3.jpg
+│       ├── practica-vip.jpg
+│       └── practica-normal-ilustracion.jpg
+├── app/favicon.ico
+├── tailwind.config.ts
 ├── .env.local.example
-├── package.json
-└── README.md
+└── package.json
 ```
 
-## Tokens de color (Tailwind config)
+## Tokens de color (Tailwind)
 
 ```js
 colors: {
@@ -140,176 +90,156 @@ colors: {
     pink: '#D6336C',
     pinkLight: '#FBE4EC',
   },
-  neutral: {
-    bg: '#F7F8FA',
-    text: '#1F2937',
-  },
-  status: {
-    success: '#2F9E44',
-    warning: '#F0A500',
-  }
+  neutral: { bg: '#F7F8FA', text: '#1F2937' },
+  status: { success: '#2F9E44', warning: '#F0A500' },
 }
 ```
 
-Tipografía: `Poppins` (títulos) importada de Google Fonts, `Inter` (cuerpo).
+Tipografía: `Poppins` (títulos), `Inter` (cuerpo) — Google Fonts.
 
-## Rutas protegidas por rol
+## Autenticación
 
-> Esta sección reemplaza una versión anterior que asumía JWT en cookie httpOnly
-> con `middleware.ts` — eso nunca existió en el backend real (ver la corrección
-> de autenticación al inicio de este documento). Queda una sola versión, sin
-> ambigüedad: protección en cliente vía `<RutaProtegida>`, no middleware de servidor.
+El backend devuelve el JWT en el body (no cookie). Estrategia:
 
-- `<RutaProtegida rolesPermitidos={[...]}>` (componente cliente) verifica el
-  `AuthContext` y redirige con `useRouter().push('/login')`:
-  - Sin sesión → `/login`
-  - `estudiante` sin pago confirmado (según `GET /api/inscripciones/me`) →
-    dashboard con aviso, sin acceso a aula-virtual
-  - `coordinadora` → acceso a `(coordinadora)`
-  - `admin` → acceso a `(coordinadora)` + `(admin)`
+- Login/registro guardan `token` + `usuario` en `AuthContext` (React Context)
+  + `localStorage` (persistencia entre recargas).
+- Cada request protegido agrega `Authorization: Bearer <token>` a mano.
+- Como no hay cookie, **no se puede usar `middleware.ts`** de Next.js para
+  proteger rutas en servidor. En su lugar: `<RutaProtegida rolesPermitidos={[...]}>`,
+  componente cliente que verifica `AuthContext` y redirige con
+  `useRouter().push('/login')` si no hay sesión o el rol no encaja.
+- Al montar la app, si hay token guardado, se valida con `GET /api/auth/perfil`.
+- Logout = borrar token de `localStorage` + limpiar `AuthContext`.
 
-## Variables de entorno (`.env.local.example`)
+Redirección post-login por rol: `estudiante` → `/dashboard`, `coordinadora`/`admin`
+→ `/panel` (la pantalla de tarjetas).
 
+## Variables de entorno
 ```
-NEXT_PUBLIC_API_URL=http://localhost:4000/api
+NEXT_PUBLIC_API_URL=https://mav-rd-backend.onrender.com/api
 ```
 
-## Notas de diseño (ver frontend-design para dirección visual completa)
+## Flujo del Aula Virtual (contenido antes que examen)
 
-- Estilo institucional pero cálido: no plano/genérico, usar la paleta rosa+azul de
-  forma intencional (azul para estructura/confianza, rosa para acentos y CTAs).
-- Botones de compartir en noticias: Facebook, WhatsApp, X + Web Share API nativo
-  (fallback en desktop: copiar link).
-- Mobile-first: la mayoría de las estudiantes probablemente acceden desde el celular.
-
-## Flujo del Aula Virtual (rediseñado en Sesión 8 — contenido antes que examen)
-
-**Este flujo reemplaza por completo la versión anterior ("la coordinadora
-desbloquea, luego se ve teoría").** Ahora es:
-
-1. `dashboard/page.tsx` llama a `GET /api/inscripciones/me` para saber si hay
-   pago confirmado — ya no se infiere por si existe `ProgresoEstudiante`.
-2. `aula-virtual/[sesion]/page.tsx` (ruta real, sin el grupo `(estudiante)`)
-   solo es visible si `sesion <= sesionActualDesbloqueada`. Ahí se listan los
-   materiales de `GET /api/contenido-sesion/sesion/:sesionId` (video, PDF,
-   enlace o texto). La estudiante marca cada uno con
-   `POST /api/contenido-sesion/:id/marcar-visto`.
-3. **El backend desbloquea el examen solo** cuando detecta que ya se vieron
-   todos los materiales activos de esa sesión — no hace falta ninguna acción
-   de la coordinadora en el flujo normal. El botón "Ir al examen" en el
-   frontend solo se activa cuando el frontend detecta `contenidos.every(vistos)`.
-4. Al hacer clic en "Ir al examen", se llama a
-   `GET /api/intentos-examen/activo/:sesionId` para obtener el `id` real del
-   intento — **nunca asumir o guardar el id manualmente**, siempre pedirlo.
+1. `dashboard/page.tsx` llama a `GET /api/inscripciones/me` para saber el
+   estado de pago (4 posibles: sin inscripción, `pendiente`, `pendiente_verificacion`,
+   `rechazado`, `pagado` — ver sección de Inscripción más abajo).
+2. `aula-virtual/[sesion]/page.tsx` solo es visible si
+   `sesion <= sesionActualDesbloqueada`. Lista materiales de
+   `GET /api/contenido-sesion/sesion/:sesionId`; la estudiante marca cada uno
+   con `POST /api/contenido-sesion/:id/marcar-visto`.
+3. El backend desbloquea el examen solo cuando detecta que ya se vieron todos
+   los materiales activos — no requiere acción de la coordinadora. El botón
+   "Ir al examen" se activa cuando el frontend detecta `contenidos.every(vistos)`.
+4. Al hacer clic en "Ir al examen": `GET /api/intentos-examen/activo/:sesionId`
+   para obtener el `id` real del intento — nunca se asume o guarda a mano.
 5. Con ese `id`: `POST /:id/iniciar` → responder → `POST /:id/entregar`.
-6. Si reprueba y le quedan intentos, la propia estudiante puede pedir otro
-   con `POST /api/intentos-examen/reintentar/:sesionId` (autoservicio, no
-   necesita pasar por la coordinadora — ya vio el contenido la primera vez).
-   El frontend decide si mostrar este botón consultando
-   `GET /api/intentos-examen/historial/:sesionId`.
+   Tras entregar, `GET /:id/detalle` pinta correctas/incorrectas en verde/rojo.
+6. Si reprueba y le quedan intentos: `POST /api/intentos-examen/reintentar/:sesionId`
+   (autoservicio, sin pasar por la coordinadora).
 
-**El desbloqueo manual (`POST /api/examenes/:sesionId/desbloquear`) sigue
-existiendo pero es un override/excepción** para la coordinadora — vive en
-`panel/aula-virtual/page.tsx`, pestaña "Desbloquear exámenes". La gestión del
-contenido (crear/editar/desactivar materiales) vive en la misma página,
-pestaña "Contenido de estudio".
+El desbloqueo manual (`POST /api/examenes/:sesionId/desbloquear`) sigue
+existiendo como override, en `panel/aula-virtual/page.tsx` → pestaña
+"Desbloquear exámenes". La gestión de contenido vive en la pestaña "Contenido
+de estudio" de la misma página.
+
+## Inscripción y pagos (autoservicio con voucher)
+
+Antes, la inscripción y el pago los creaba y confirmaba la coordinadora
+manualmente. Ahora existen **dos flujos en paralelo**:
+
+**Flujo manual (efectivo/presencial)** — sin cambios: la coordinadora crea la
+inscripción desde `panel/pagos/page.tsx` y confirma el pago ahí mismo.
+
+**Flujo de auto-inscripción (transferencia/depósito)** — nuevo:
+1. La estudiante entra a `/inscripcion` (enlazada desde el dashboard cuando no
+   tiene inscripción, o cuando le rechazaron una). La página muestra contenido
+   de marketing (fotos reales del curso, comparación Normal vs VIP con precios
+   traídos en vivo de `GET /api/configuracion`, pasos del proceso) y termina en
+   un formulario.
+2. Elige plan, banco emisor, número de referencia, fecha de depósito, y sube
+   una foto del voucher (`POST /api/uploads/imagen`, rol estudiante habilitado).
+3. Envía todo a `POST /api/inscripciones/mia` — el backend calcula el monto
+   real, nunca confía en el del cliente.
+4. `dashboard/page.tsx` refleja el estado real vía `GET /api/inscripciones/me`:
+   sin inscripción (CTA a `/inscripcion`), `pendiente_verificacion` (aviso de
+   espera), `rechazado` (muestra motivo + botón para reenviar), `pagado`
+   (acceso normal al Aula Virtual).
+5. La coordinadora ve la cola de verificación en `panel/pagos/page.tsx`
+   (pestaña/filtro "Por verificar"), con el comprobante como miniatura
+   clickeable, banco/referencia/fecha, y dos botones: **Confirmar** (mismo
+   endpoint de siempre) o **Rechazar** (`PATCH /:id/rechazar-pago`, pide motivo
+   con `window.prompt`).
+6. Si se rechaza, la estudiante puede reenviar desde `/inscripcion` —
+   el backend actualiza la MISMA inscripción en vez de duplicarla.
+
+**Pendiente real (Plan B, si se implementa igual sin importar la pasarela de pago):**
+contador visible de "pendientes por verificar" en la tarjeta "Pagos" del panel,
+e índice único en `numeroReferencia` para evitar reuso de comprobantes (esto
+último ya está aplicado en el modelo `Inscripcion`, ver `ARQUITECTURA_BACKEND.md`).
+
+**Pasarela de pago automática:** en evaluación por la fundadora — ver
+`ANALISIS_FACTIBILIDAD_PASARELA_PAGO.md` para el análisis completo (Azul como
+opción principal, Stripe descartado por no operar para comercios domiciliados
+en RD).
+
+## Panel de coordinadora/admin — pantalla de tarjetas
+
+Reemplaza la barra de navegación horizontal (pills) que existía antes.
+`app/(coordinadora)/panel/page.tsx` es ahora la pantalla de inicio del panel:
+tarjetas agrupadas en "Gestión del curso" (Pagos, Estudiantes, Aula virtual,
+Exámenes, Diplomas), "Contenido público" (Noticias, Testimonios, FAQ) y "Solo
+fundadora" (Contabilidad, Contenido de página — solo si `usuario.rol === "admin"`),
+cada una con ícono de `lucide-react`. `panel/layout.tsx` y `admin/layout.tsx`
+quedaron simplificados a solo header + link "volver". `admin/page.tsx` es
+nuevo y solo redirige a `/panel`, ya que la sección admin vive ahí mismo.
+
+## Open Graph / metadata para compartir en redes
+
+`app/layout.tsx` tiene `metadataBase`, `openGraph` y `twitter` (Twitter Card)
+generales, con `public/og-image.png` (1200×630, logo + fondo de marca) como
+imagen por defecto. `app/noticias/[id]/page.tsx` tiene `generateMetadata`
+dinámico — título/descripción reales de cada noticia + su propia imagen como
+preview, o el OG genérico si no tiene imagen. Verificado funcionando en
+Facebook y WhatsApp.
+
+> Nota: esta misma página (`noticias/[id]/page.tsx`) había perdido por
+> completo su lógica de detalle (like, comentarios, compartir) durante una
+> sesión anterior de paginación — un cruce de copy-paste dejó ahí el código
+> del listado en vez del detalle. Se restauró desde git y se le agregó el
+> metadata dinámico de una vez. Ver `HISTORIAL_MODIFICACIONES.md`.
 
 ## Contenido editable por la fundadora
 
-Las páginas públicas de Inicio, Acerca de Nosotros, Kit de Preparación y
-Contacto ya no deben tener texto hardcodeado para los bloques cubiertos por
-`GET /api/contenido` — se renderizan a partir de esas claves (Inicio y
-Acerca de Nosotros ya están conectadas así; Kit y Contacto quedan pendientes
-de conectar de la misma forma, aunque los datos ya existen en la base).
+Inicio, Acerca de Nosotros, Kit de Preparación y Contacto se renderizan desde
+`GET /api/contenido` (clave/valor) en vez de texto hardcodeado. El editor
+(`admin/contenido-pagina/page.tsx`) es un menú de áreas (`AREAS`, definido en
+el propio archivo) con etiquetas en español; si un campo definido ahí no
+existe todavía en la base, muestra un mini-formulario para crearlo en el
+momento. Imágenes (`acerca_de_historia_imagen`, `acerca_de_fundadora_imagen`)
+se suben con el mismo `POST /api/uploads/imagen`.
 
-**Rediseño del editor (Sesión 8):** `admin/contenido-pagina/page.tsx` ya no
-muestra los ~11 bloques todos juntos (se volvía inmanejable). Ahora es un
-menú de áreas (Inicio, Acerca de Nosotros, Kit de Preparación, Contacto y
-Redes Sociales) definidas en un arreglo `AREAS` dentro del propio archivo —
-cada área lista solo sus campos, con etiquetas en español en vez del nombre
-técnico de la clave. Si un campo definido en `AREAS` todavía no existe en la
-base, se muestra un mini-formulario para crearlo ahí mismo, en vez de exigir
-el flujo genérico de "+ Nuevo bloque" al fondo de la página (ese sigue
-existiendo, pero solo para claves nuevas que ni siquiera están en `AREAS`
-todavía — requeriría además agregarlas al arreglo para que aparezcan
-agrupadas correctamente la próxima vez).
+## Notas de diseño
+- Estilo institucional pero cálido: paleta rosa+azul de forma intencional
+  (azul = estructura/confianza, rosa = acentos y CTAs).
+- Mobile-first: la mayoría de las estudiantes acceden desde el celular.
+- Botones de compartir en noticias: Facebook, WhatsApp, X + Web Share API
+  nativo (fallback: copiar link).
 
 ## Testing antes de cada commit importante
+- `npm run build` local sin errores antes de push.
+- Probar flujo completo contra el backend real (el local casi no se usa,
+  el flujo se prueba directo en producción): registro → login → inscripción
+  (voucher o efectivo) → pago confirmado → aula virtual → examen → diploma.
+- Verificar responsive en móvil antes de desplegar a Vercel.
+- Toda ruta **nueva** (a diferencia de editar un archivo existente) requiere
+  reiniciar `npm run dev` para que Next.js la detecte — Fast Refresh no
+  alcanza para rutas nuevas.
 
-- `npm run build` local sin errores antes de hacer push.
-- Probar flujo completo en local contra el backend local: registro → login →
-  (simular pago confirmado) → aula virtual → examen → diploma.
-- Verificar responsive en móvil (Chrome DevTools) antes de desplegar a Vercel.
-
-## Actualización — Navbar, contraseña, imágenes, y despliegue en Vercel
-
-**Despliegue:** el frontend ya está desplegado en Vercel (primer despliegue,
-no solo local). Variable de entorno obligatoria en Vercel:
-`NEXT_PUBLIC_API_URL=https://mav-rd-backend.onrender.com/api`. El backend
-necesita `FRONTEND_URL` en Render apuntando exactamente a la URL de Vercel
-(sin `/` al final) para que CORS no rechace las peticiones — si Vercel
-asigna una URL de preview distinta a la de producción, hay que usar la real
-que se ve en la barra de direcciones, no asumir el patrón.
-
-**`components/layout/Navbar.tsx` — rediseño con menú desplegable:**
-Con "Mi panel" + "Cambiar contraseña" + "Cerrar sesión" como enlaces sueltos,
-el Navbar se desbordaba en pantallas de laptop (se veía distinto para
-estudiante y para admin/coordinadora, cada uno desbordando de forma distinta
-según cuánto contenido tuviera). Se agruparon los tres bajo un menú
-desplegable que se abre con clic en "Hola, [nombre]" — ahora ocupa el
-espacio de un solo elemento en vez de cuatro. El texto "Mujeres al Volante
-RD" junto al logo se oculta en pantallas pequeñas (`hidden sm:inline`).
-
-**Nueva página: `app/perfil/cambiar-password/page.tsx`** (sin grupo de ruta,
-siguiendo la misma convención real que Aula Virtual — este proyecto no usa
-los grupos `(estudiante)`/`(compartido)` que el plan original tenía).
-Formulario simple (actual/nueva/confirmar), llama a
-`PATCH /api/auth/cambiar-password`, accesible para los 3 roles. Enlazada
-desde el menú desplegable del Navbar.
-
-> **Lección de esta sesión, para no repetir el error:** al dar instrucciones
-> de dónde crear un archivo nuevo, hay que confirmar la ruta EXACTA una sola
-> vez, no ofrecer dos alternativas ("con grupo o sin grupo") — eso generó un
-> 404 real porque se pegó una ruta ambigua. Además, toda ruta **nueva**
-> (a diferencia de editar un archivo existente) requiere reiniciar
-> `npm run dev` para que Next.js la detecte — Fast Refresh no alcanza para
-> rutas nuevas.
-
-**Imágenes — tres lugares nuevos donde se puede subir una:**
-
-1. `admin/contenido-pagina/page.tsx`: los campos `acerca_de_historia_imagen`
-   y `acerca_de_fundadora_imagen` ahora muestran un subidor de imagen en vez
-   de un input de texto (se agregó `esImagen?: boolean` a la definición de
-   cada campo del arreglo `AREAS`, y `renderCampo` se ramifica según ese
-   flag). También se agregaron los campos de Misión/Visión/Valores al área
-   "Acerca de Nosotros".
-2. `panel/aula-virtual/page.tsx` (pestaña "Contenido de estudio"): cada
-   material ahora tiene una "imagen de portada" opcional, compartida entre
-   coordinadora y admin (se evaluó restringirla solo a admin, pero se
-   decidió dejarla compartida, igual que el resto de esta pantalla).
-3. La estudiante ve esa imagen de portada arriba del contenido, en
-   `app/aula-virtual/[sesion]/page.tsx`.
-
-**`app/acerca-de-nosotros/page.tsx`:** ahora también muestra las dos
-imágenes (con su placeholder de siempre si no se ha subido ninguna) y la
-sección de Misión/Visión/Valores conectada a `contenidoPagina` — antes estas
-tres eran texto fijo con `[Placeholder]`.
-
-**Descarga de diploma — cambio de patrón:** los links de descarga
-(`app/(estudiante)/diploma/page.tsx` y `panel/diplomas/page.tsx`) ya no
-apuntan a `diploma.urlPDF` directo — apuntan a
-`/api/diplomas/me/descargar?token=...` o `/api/diplomas/:id/descargar?token=...`
-del backend. El token va por query string (no por header) porque un `<a
-href>` normal no puede mandar headers personalizados — es un patrón aceptado
-para este caso (descarga de un archivo propio o generado por la
-coordinadora), no para endpoints sensibles en general.
-
-**Contenido real cargado:** el Aula Virtual ya no tiene contenido de
-prueba — tiene 13 materiales de estudio reales y 9 versiones de examen (3
-por sesión), sembrados vía scripts en el backend (ver
-`Arquitectura_Backend.md` y `BITACORA_1.md`).
-
-**Pendiente real:** "me gusta" en comentarios de noticias — todavía no se
-ha tocado `components/noticias/NoticiaAcciones.tsx` ni
-`app/noticias/[id]/page.tsx` para esto; el modelo de datos de comentarios ni
-siquiera tiene un campo de likes todavía (ver `Arquitectura_Backend.md`).
+## Pendiente real (frontend)
+- "Me gusta" en comentarios individuales de noticias (no en la noticia).
+- Conectar Kit de Preparación y Contacto a `contenidoPagina` (Inicio y Acerca
+  de Nosotros ya están conectados).
+- Badge con conteo de pendientes de verificar en la tarjeta "Pagos" del panel.
+- Decidir si `/verificar-diploma` sigue siendo pública o se mueve dentro del
+  panel de la estudiante logueada (pregunta abierta, sin resolver).
