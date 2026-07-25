@@ -12,6 +12,7 @@ import {
   HelpCircle,
   Landmark,
   FileEdit,
+  BellRing,
   type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -40,6 +41,7 @@ const MODULOS_CONTENIDO: Tarjeta[] = [
 const MODULOS_ADMIN: Tarjeta[] = [
   { href: "/admin/contabilidad", titulo: "Contabilidad", descripcion: "Movimientos y balances", Icono: Landmark },
   { href: "/admin/contenido-pagina", titulo: "Contenido de página", descripcion: "Textos e imágenes del sitio", Icono: FileEdit },
+  { href: "/admin/notificaciones", titulo: "Notificaciones", descripcion: "Quién recibe avisos de pagos nuevos", Icono: BellRing },
 ];
 
 function GrupoTarjetas({
