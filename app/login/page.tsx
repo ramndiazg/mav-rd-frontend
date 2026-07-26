@@ -28,8 +28,6 @@ export default function LoginPage() {
       return;
     }
 
-    // Cada rol tiene su propio punto de entrada — antes esto siempre
-    // mandaba a /dashboard, que solo existe para estudiante.
     if (resultado.rol === "coordinadora" || resultado.rol === "admin") {
       router.push("/panel/pagos");
     } else {
@@ -62,9 +60,17 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label className="block text-sm text-neutral-text mb-1">
-              Contrasena
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-sm text-neutral-text">
+                Contrasena
+              </label>
+              <Link
+                href="/olvide-password"
+                className="text-xs text-brand-blueLight hover:underline"
+              >
+                ¿Olvidaste tu contraseña?
+              </Link>
+            </div>
             <input
               type="password"
               required
