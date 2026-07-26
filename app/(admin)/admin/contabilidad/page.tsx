@@ -83,7 +83,6 @@ export default function PanelContabilidadPage() {
 
   const [mensaje, setMensaje] = useState<{ tipo: "ok" | "error"; texto: string } | null>(null);
 
-  // Carga inicial: movimientos (página 1) sin filtro + balances. Efecto solo al montar.
   useEffect(() => {
     if (!token) return;
     let cancelado = false;
@@ -126,10 +125,6 @@ export default function PanelContabilidadPage() {
     };
   }, [token]);
 
-  // Filtrar es un evento (botón), no un efecto — seguro llamar aquí directo.
-  // Recibe la página a pedir; cambiar un filtro siempre vuelve a la página 1
-  // (los resultados cambian por completo, no tendría sentido quedarse en la
-  // página 3 de un filtro nuevo que quizás ni tiene 3 páginas).
   async function aplicarFiltros(paginaBuscada: number = 1) {
     setCargandoMovimientos(true);
     setMensaje(null);
@@ -191,8 +186,6 @@ export default function PanelContabilidadPage() {
       if (json.success) {
         setMensaje({ tipo: "ok", texto: "Movimiento registrado." });
         setFormMovimiento(formularioMovimientoVacio());
-        // Un movimiento nuevo aparece primero (sort fecha: -1) — volvemos a
-        // la página 1 para que se vea de inmediato.
         aplicarFiltros(1);
       } else {
         setMensaje({ tipo: "error", texto: json.error || "No se pudo registrar." });
@@ -254,7 +247,6 @@ export default function PanelContabilidadPage() {
         dupliques aquí.
       </p>
 
-      {/* --- Registrar movimiento --- */}
       <div className="rounded-xl bg-white border border-neutral-bg p-6 mb-10">
         <h3 className="font-display font-semibold text-brand-blue mb-4">
           Registrar movimiento
@@ -346,7 +338,6 @@ export default function PanelContabilidadPage() {
         </form>
       </div>
 
-      {/* --- Filtros + listado de movimientos --- */}
       <div className="flex flex-wrap items-end gap-3 mb-4">
         <label className="text-xs text-neutral-text">
           Mes
@@ -453,7 +444,6 @@ export default function PanelContabilidadPage() {
         </div>
       )}
 
-      {/* --- Balances mensuales --- */}
       <div className="rounded-xl bg-white border border-neutral-bg p-6 mb-8">
         <h3 className="font-display font-semibold text-brand-blue mb-4">
           Generar balance mensual
@@ -512,7 +502,7 @@ export default function PanelContabilidadPage() {
         {balances.map((b) => (
           <a
             key={b._id}
-            href={b.urlPDF}
+            href={`${process.env.NEXT_PUBLIC_API_URL}/contabilidad/balances/${b._id}/descargar?token=${token}`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-between rounded-lg bg-white border border-neutral-bg p-4 hover:border-brand-blueLight transition-colors"
