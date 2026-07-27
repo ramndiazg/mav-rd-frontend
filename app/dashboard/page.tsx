@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import RutaProtegida from "@/components/auth/RutaProtegida";
 import { useAuth } from "@/contexts/AuthContext";
+import ProgresoCarretera from "@/components/dashboard/ProgresoCarretera";
 
 type Progreso = {
   sesionActualDesbloqueada: number;
@@ -208,53 +209,56 @@ function DashboardContenido() {
         )}
 
         {!cargando && !error && inscripcion?.estadoPago === "pagado" && progreso && (
-          <div className="grid gap-4">
-            {SESIONES.map((numero) => {
-              const estado = estadoSesion(numero, progreso);
-              const etiqueta =
-                estado === "aprobada"
-                  ? "Aprobada"
-                  : estado === "desbloqueada"
-                    ? "Disponible"
-                    : "Bloqueada";
-              const colorEtiqueta =
-                estado === "aprobada"
-                  ? "bg-status-success text-white"
-                  : estado === "desbloqueada"
-                    ? "bg-brand-pink text-white"
-                    : "bg-neutral-bg text-neutral-text";
+          <>
+            <ProgresoCarretera progreso={progreso} />
+            <div className="grid gap-4">
+              {SESIONES.map((numero) => {
+                const estado = estadoSesion(numero, progreso);
+                const etiqueta =
+                  estado === "aprobada"
+                    ? "Aprobada"
+                    : estado === "desbloqueada"
+                      ? "Disponible"
+                      : "Bloqueada";
+                const colorEtiqueta =
+                  estado === "aprobada"
+                    ? "bg-status-success text-white"
+                    : estado === "desbloqueada"
+                      ? "bg-brand-pink text-white"
+                      : "bg-neutral-bg text-neutral-text";
 
-              const tarjeta = (
-                <div className="rounded-xl bg-white border border-neutral-bg p-6 flex items-center justify-between hover:shadow-md transition-shadow">
-                  <p className="font-display font-semibold text-brand-blue">
-                    Sesion {numero}
-                  </p>
-                  <span
-                    className={`text-xs font-medium px-3 py-1 rounded-full ${colorEtiqueta}`}
-                  >
-                    {etiqueta}
-                  </span>
-                </div>
-              );
+                const tarjeta = (
+                  <div className="rounded-xl bg-white border border-neutral-bg p-6 flex items-center justify-between hover:shadow-md transition-shadow">
+                    <p className="font-display font-semibold text-brand-blue">
+                      Sesion {numero}
+                    </p>
+                    <span
+                      className={`text-xs font-medium px-3 py-1 rounded-full ${colorEtiqueta}`}
+                    >
+                      {etiqueta}
+                    </span>
+                  </div>
+                );
 
-              return estado === "bloqueada" ? (
-                <div key={numero}>{tarjeta}</div>
-              ) : (
-                <Link key={numero} href={`/aula-virtual/${numero}`}>
-                  {tarjeta}
+                return estado === "bloqueada" ? (
+                  <div key={numero}>{tarjeta}</div>
+                ) : (
+                  <Link key={numero} href={`/aula-virtual/${numero}`}>
+                    {tarjeta}
+                  </Link>
+                );
+              })}
+
+              {progreso.cursoCompletado && (
+                <Link
+                  href="/diploma"
+                  className="rounded-xl bg-brand-blue text-white p-6 text-center font-display font-semibold hover:opacity-90 transition-opacity"
+                >
+                  Ver mi diploma
                 </Link>
-              );
-            })}
-
-            {progreso.cursoCompletado && (
-              <Link
-                href="/diploma"
-                className="rounded-xl bg-brand-blue text-white p-6 text-center font-display font-semibold hover:opacity-90 transition-opacity"
-              >
-                Ver mi diploma
-              </Link>
-            )}
-          </div>
+              )}
+            </div>
+          </>
         )}
       </div>
     </main>
