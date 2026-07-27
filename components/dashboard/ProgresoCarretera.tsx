@@ -10,10 +10,6 @@ type Progreso = {
 // íconos dibujados más abajo.
 const X = { inicio: 39, s1: 166, s2: 282, s3: 398, practica: 514, diploma: 630 };
 
-// Según cuántas sesiones lleva aprobadas, dónde se coloca el carrito.
-// Índice 0 = todavía ninguna aprobada, 3 = las 3 aprobadas (va camino a la práctica).
-const CARRO_X_POR_APROBADAS = [X.inicio, X.s1, X.s2, X.practica];
-
 const COLOR_APROBADA = "#4A7FC9"; // brand-blueLight
 const COLOR_PENDIENTE = "#9CA3AF"; // gris neutro
 const COLOR_CHECK = "#2F9E44"; // status-success
@@ -42,14 +38,26 @@ function Libro({ x, aprobada }: { x: number; aprobada: boolean }) {
   );
 }
 
-export default function ProgresoCarretera({ progreso }: { progreso: Progreso }) {
+export default function ProgresoCarretera({
+  progreso,
+  diplomaListo = false,
+}: {
+  progreso: Progreso;
+  diplomaListo?: boolean;
+}) {
   const aprobadas = progreso.sesionesAprobadas.length;
-  const carroX = CARRO_X_POR_APROBADAS[Math.min(aprobadas, 3)];
+  // Si ya se generó el diploma, el carrito llega hasta el final. Si no,
+  // se queda en la última parada según cuántas sesiones lleva aprobadas
+  // (0 a 3 → Inicio, Sesión 1, Sesión 2, Práctica).
+  const carroX = diplomaListo
+    ? X.diploma
+    : [X.inicio, X.s1, X.s2, X.practica][Math.min(aprobadas, 3)];
+  const colorBandera = diplomaListo ? COLOR_APROBADA : COLOR_PENDIENTE;
 
   return (
     <div className="mb-8">
       <p className="text-center text-xs font-medium text-brand-blue mb-2">
-        {aprobadas} de 3 sesiones aprobadas
+        {diplomaListo ? "¡Diploma listo!" : `${aprobadas} de 3 sesiones aprobadas`}
       </p>
 
       <svg viewBox="0 0 680 130" className="w-full h-auto" role="img" aria-label="Progreso del curso">
@@ -97,14 +105,27 @@ export default function ProgresoCarretera({ progreso }: { progreso: Progreso }) 
         <g transform={`translate(${X.diploma},58)`}>
           <line x1="0" y1="0" x2="0" y2="53" stroke="#5f5e5a" strokeWidth="2" />
           <rect x="0" y="0" width="7" height="6" fill="#5f5e5a" />
-          <rect x="7" y="0" width="7" height="6" fill={COLOR_PENDIENTE} />
+          <rect x="7" y="0" width="7" height="6" fill={colorBandera} />
           <rect x="14" y="0" width="7" height="6" fill="#5f5e5a" />
-          <rect x="0" y="6" width="7" height="6" fill={COLOR_PENDIENTE} />
+          <rect x="0" y="6" width="7" height="6" fill={colorBandera} />
           <rect x="7" y="6" width="7" height="6" fill="#5f5e5a" />
-          <rect x="14" y="6" width="7" height="6" fill={COLOR_PENDIENTE} />
+          <rect x="14" y="6" width="7" height="6" fill={colorBandera} />
           <rect x="0" y="12" width="7" height="6" fill="#5f5e5a" />
-          <rect x="7" y="12" width="7" height="6" fill={COLOR_PENDIENTE} />
+          <rect x="7" y="12" width="7" height="6" fill={colorBandera} />
           <rect x="14" y="12" width="7" height="6" fill="#5f5e5a" />
+          {diplomaListo && (
+            <>
+              <circle cx="30" cy="-6" r="8" fill={COLOR_CHECK} />
+              <path
+                d="M25,-6 L29,-2 L36,-11"
+                fill="none"
+                stroke="#ffffff"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </>
+          )}
         </g>
 
         {/* Carrito, en la posición actual de la estudiante */}

@@ -77,6 +77,7 @@ function DashboardContenido() {
   const { usuario, token } = useAuth();
   const [inscripcion, setInscripcion] = useState<Inscripcion | null>(null);
   const [progreso, setProgreso] = useState<Progreso | null>(null);
+  const [diplomaListo, setDiplomaListo] = useState(false);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(false);
 
@@ -111,6 +112,18 @@ function DashboardContenido() {
           const jsonProgreso = await resProgreso.json();
           if (!cancelado && jsonProgreso.success) {
             setProgreso(jsonProgreso.data);
+
+            // Solo tiene sentido preguntar por el diploma si ya completó
+            // las 3 sesiones — antes de eso, GET /diplomas/me siempre
+            // respondería 404, así que nos ahorramos la llamada.
+            if (jsonProgreso.data.cursoCompletado) {
+              const resDiploma = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}/diplomas/me`,
+                { headers: { Authorization: `Bearer ${token}` } },
+              );
+              const jsonDiploma = await resDiploma.json();
+              if (!cancelado) setDiplomaListo(jsonDiploma.success);
+            }
           }
         }
       } catch {
@@ -210,7 +223,7 @@ function DashboardContenido() {
 
         {!cargando && !error && inscripcion?.estadoPago === "pagado" && progreso && (
           <>
-            <ProgresoCarretera progreso={progreso} />
+            <ProgresoCarretera progreso={progreso} diplomaListo={diplomaListo} />
             <div className="grid gap-4">
               {SESIONES.map((numero) => {
                 const estado = estadoSesion(numero, progreso);
