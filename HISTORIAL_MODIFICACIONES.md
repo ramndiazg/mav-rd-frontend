@@ -1,89 +1,135 @@
 # Historial de modificaciones — Muvo RD Vial
 
 > Registro breve por sesión. El estado actual y detallado del sistema vive en
-> `ARQUITECTURA_BACKEND.md`, `ARQUITECTURA_FRONTEND.md` y `DATABASE.md` — este
+> ARQUITECTURA_BACKEND.md, ARQUITECTURA_FRONTEND.md y DATABASE.md, este
 > archivo es solo un changelog, no la fuente de verdad de cómo funciona nada.
+
+## 26/07/2026 — Barra de progreso ilustrada + fix de detección de diploma
+
+- Nueva components/dashboard/ProgresoCarretera.tsx: camino horizontal con
+  asfalto negro, línea central intermitente + zona de no rebasar, línea de
+  arrancada, libros con check por examen aprobado, parada de práctica
+  (siempre neutra, no se rastrea), y bandera de meta que se pinta de color
+  cuando el diploma ya existe.
+- Se exploraron 3 conceptos visuales distintos antes de decidir (autopista
+  horizontal, camino serpenteante vertical, y la versión final horizontal
+  compacta con detalles reales de carretera).
+- Fix real encontrado por Ramon: el carrito se quedaba parado en "Práctica"
+  aunque el diploma ya estuviera generado, porque dashboard/page.tsx nunca
+  consultaba GET /diplomas/me. Se corrigió: ahora, cuando
+  progreso.cursoCompletado es true, también se pregunta por el diploma y se
+  le pasa ese dato al componente (diplomaListo).
+
+## 25-26/07/2026 — Sistema de notificaciones (email + Telegram) + verificación
+
+- Nueva colección/CRUD destinatariosNotificacion (admin), con avisos por
+  Resend y Telegram Bot API cuando llega un voucher nuevo.
+- Plantilla de correo compartida con logo + colores de marca en
+  utils/notificaciones.js, extendida a 5 correos distintos: verificación de
+  cuenta, pago confirmado, pago rechazado (con motivo), diploma listo, y
+  recuperación de contraseña.
+- Verificación de email al registrarse (emailVerificado, con link válido
+  24h) — no bloquea el login, solo bloquea POST /inscripciones/mia.
+- Recuperación de contraseña completa (olvide-password / restablecer-password).
+- Rediseño de generarBalancePDF() (tarjetas de totales + tabla de
+  categorías) y fix de la descarga sin extensión .pdf en Contabilidad,
+  aplicando el mismo patrón que ya funcionaba en diplomas.
+- Recordatorio automático de balance mensual pendiente: sin cron (Render se
+  duerme en el tier free), se revisa cada vez que un admin abre la app
+  (GET /auth/perfil), con un marcador en Configuracion para no repetir el
+  aviso sobre el mismo mes.
+- **Bug de build en Vercel:** app/verificar-email/page.tsx usaba
+  useSearchParams() sin <Suspense>, lo que hace fallar next build al
+  pre-renderizar. Corregido, y se aplicó <Suspense> desde el inicio en
+  restablecer-password/page.tsx para no repetir el error.
+- **Hallazgo crítico (prioridad #1 actual):** Resend con el dominio de
+  pruebas (onboarding@resend.dev) solo permite enviar al correo del dueño
+  de la cuenta de Resend — confirmado en el log real de Resend (403 en
+  todos los envíos a otras direcciones). Hoy ningún correo dirigido a una
+  estudiante real llega. Requiere comprar y verificar un dominio propio en
+  Resend antes de invitar estudiantes reales. Telegram no tiene esta
+  restricción y funciona bien para avisos internos.
 
 ## 25/07/2026 — Auto-inscripción con voucher + reorganización de documentación
 
 - Nuevo flujo de auto-inscripción: la estudiante elige plan, sube su propio
-  comprobante de depósito/transferencia (banco, referencia, fecha, foto) sin
-  que la coordinadora tenga que crear nada primero. Backend: `Inscripcion`
-  gana 4 campos + 2 estados nuevos (`pendiente_verificacion`, `rechazado`);
-  nuevos endpoints `POST /inscripciones/mia` y `PATCH /:id/rechazar-pago`.
-  Frontend: `app/inscripcion/page.tsx` (nuevo, con contenido de marketing y
-  fotos reales del curso), `dashboard/page.tsx` maneja los 4 estados de pago,
-  `panel/pagos/page.tsx` tiene cola de verificación con comprobante visible.
-- Fix: `POST /api/uploads/imagen` estaba restringido a coordinadora/admin — se
-  agregó el rol `estudiante` para que pudiera subir su voucher.
-- Precios de planes actualizados en `configuracion`: Normal RD$1,000, VIP RD$7,000.
-- Se consolidaron los 6 documentos de contexto en 4: `ARQUITECTURA_BACKEND.md`,
-  `ARQUITECTURA_FRONTEND.md`, `DATABASE.md` (actualizado) y este historial.
-  Las bitácoras (`BITACORA_1.md`, `BITACORA_FRONTEND.md`) quedan absorbidas.
+  comprobante de depósito/transferencia sin que la coordinadora tenga que
+  crear nada primero. Backend: Inscripcion gana 4 campos + 2 estados nuevos
+  (pendiente_verificacion, rechazado); nuevos endpoints POST /inscripciones/mia
+  y PATCH /:id/rechazar-pago. Frontend: app/inscripcion/page.tsx (con
+  contenido de marketing y fotos reales del curso), dashboard/page.tsx
+  maneja los 4 estados de pago, panel/pagos/page.tsx tiene cola de
+  verificación con comprobante visible.
+- Fix: POST /api/uploads/imagen estaba restringido a coordinadora/admin, se
+  agregó el rol estudiante.
+- Precios de planes actualizados en configuracion: Normal RD$1,000, VIP RD$7,000.
+- Se consolidaron los 6 documentos de contexto en 4 (esta reorganización).
+- Análisis de factibilidad de pasarela de pago en RD entregado. Decisión
+  final tomada por la fundadora: NO se implementará Azul por ahora, la
+  transferencia manual con auto-inscripción ya resuelve la necesidad real.
 
 ## 24-25/07/2026 — Panel de administración a tarjetas
 
-- `app/(coordinadora)/panel/page.tsx` (nuevo): pantalla de tarjetas con íconos
-  (`lucide-react`, nueva dependencia) agrupadas en "Gestión del curso",
-  "Contenido público" y "Solo fundadora" (esta última solo admin). Reemplaza
-  la barra de pills que existía antes.
-- `panel/layout.tsx` y `admin/layout.tsx` simplificados a solo header + link
-  "volver". `admin/page.tsx` (nuevo) redirige a `/panel`.
-- Se actualizó Next.js de 16.2.10 a 16.2.11 (parche) resolviendo 3 de 4
-  vulnerabilidades `high` de `npm audit`. Queda pendiente 1 (`brace-expansion`
-  vía ESLint), requiere salto de versión mayor de ESLint — no urgente.
+- app/(coordinadora)/panel/page.tsx: pantalla de tarjetas con íconos
+  (lucide-react) agrupadas en "Gestión del curso", "Contenido público" y
+  "Solo fundadora" (solo admin). Reemplaza la barra de pills que existía antes.
+- panel/layout.tsx y admin/layout.tsx simplificados a solo header + link volver.
+- Se actualizó Next.js de 16.2.10 a 16.2.11 (parche), resolviendo 3 de 4
+  vulnerabilidades high de npm audit. Queda pendiente 1 (brace-expansion vía
+  ESLint), requiere salto de versión mayor, no urgente.
 
 ## 22-23/07/2026 — Open Graph + bug crítico de detalle de noticia
 
-- Open Graph completo: `app/layout.tsx` con `metadataBase`/`openGraph`/`twitter`,
-  `public/og-image.png` generada, `generateMetadata` dinámico en
-  `noticias/[id]/page.tsx`. Verificado en Facebook/WhatsApp.
-- **Bug encontrado:** la sesión de paginación anterior había pegado por error
-  el código del listado (`noticias/page.tsx`) encima del detalle
-  (`noticias/[id]/page.tsx`) — el clic en una noticia no llevaba a ningún lado,
-  y los componentes `CompartirBotones`/`NoticiaAcciones` (like + comentarios)
-  existían pero no estaban conectados a ninguna página. Se recuperó el archivo
-  original desde git (commit previo a la paginación) y se restauró.
-- Análisis de factibilidad de pasarela de pago en RD entregado (ver
-  `ANALISIS_FACTIBILIDAD_PASARELA_PAGO.md`) — Azul recomendado como opción
-  principal, Stripe descartado, transferencia manual con mejoras (Plan B)
-  documentado como respaldo. Pendiente de decisión de la fundadora.
+- Open Graph completo: metadataBase/openGraph/twitter, og-image.png,
+  generateMetadata dinámico en noticias/[id]/page.tsx. Verificado en
+  Facebook/WhatsApp.
+- Bug encontrado: la sesión de paginación anterior había pegado por error
+  el código del listado encima del detalle de noticia — se recuperó desde
+  git y se restauró.
+- Análisis de factibilidad de pasarela de pago en RD entregado (ver arriba,
+  decisión final tomada el 25/07).
 
 ## 22/07/2026 — Sesión larga: correcciones + paginación
 
 - Firma del diploma, rebranding a "Muvo RD Vial", fix de embeds de YouTube,
   correctas/incorrectas por pregunta en el examen, progreso automático entre
-  sesiones con espera de 24h entre exámenes (override manual disponible),
-  logo circular + favicon nuevos, incidente de dominio en Vercel resuelto
-  (CORS necesita `FRONTEND_URL` exacto, sin lista de orígenes todavía).
+  sesiones con espera de 24h entre exámenes, logo circular + favicon nuevos,
+  incidente de dominio en Vercel resuelto.
 - Paginación implementada en Estudiantes, Noticias y Movimientos contables.
-- Diseñado pero NO aplicado (pausado a propósito por Ramon, para revisar la
-  app completa primero): panel de admin a tarjetas (aplicado después, ver
-  arriba) y rediseño del PDF de balance de contabilidad + fix de extensión
-  `.pdf` (sigue sin aplicar).
 
 ## Antes del 22/07/2026 — Construcción inicial (backend + frontend)
 
-Ver `ARQUITECTURA_BACKEND.md` y `ARQUITECTURA_FRONTEND.md` para el resultado
-final de esta etapa. Resumen: autenticación JWT sin cookies, 3 roles
-(estudiante/coordinadora/admin), flujo completo de inscripción → pago →
-3 sesiones con contenido y examen → diploma con descarga firmada desde
-Cloudinary, panel de coordinadora/admin con CRUD de noticias/testimonios/FAQ/
-contenido de página/contabilidad. Contenido real sembrado: 13 materiales de
-estudio y 9 versiones de examen basados en Ley 63-17 e INTRANT.
+Ver ARQUITECTURA_BACKEND.md y ARQUITECTURA_FRONTEND.md para el resultado
+final de esta etapa. Resumen: autenticación JWT sin cookies, 3 roles,
+flujo completo de inscripción -> pago -> 3 sesiones con contenido y examen
+-> diploma con descarga firmada desde Cloudinary, panel de coordinadora/
+admin con CRUD de noticias/testimonios/FAQ/contenido de página/contabilidad.
 
 ---
 
 ## Pendientes abiertos (no resueltos, de cualquier sesión)
 
-- Seguridad: rotar `JWT_SECRET`/Mongo/Cloudinary; rate limiting en login y
-  verificación de diploma; CORS con lista de orígenes.
-- Confiabilidad: monitoreo de errores (Sentry); confirmar backups de Atlas;
-  tests unitarios para `intentarDesbloquear()`.
-- Contabilidad: rediseño de PDF de balance + fix de descarga sin extensión.
-- Panel de admin: badge de conteo de pendientes por verificar en tarjeta "Pagos".
-- Decidir si `/verificar-diploma` sigue pública o se protege.
-- Conectar Kit de Preparación y Contacto a `contenidoPagina`.
-- Pasarela de pago automática (Azul) — pendiente de decisión de la fundadora.
-- Datos bancarios reales en `app/inscripcion/page.tsx` (hoy hay un placeholder
-  de ejemplo, marcado con `TODO` en el código).
+### Prioridad #1
+
+- **Verificar un dominio propio en Resend** — sin esto, ningún correo
+  dirigido a una estudiante real llega (verificación, confirmación/rechazo
+  de pago, recuperación de contraseña). Pendiente de decisión/compra por
+  parte de la fundadora.
+
+### Decisiones ya tomadas (cerradas, dejadas aquí solo como registro)
+
+- Pasarela de pago automática (Azul): NO se hará. Cerrado.
+- Limpieza de datos de prueba en Mongo: se pospone a propósito, se
+  retomará más adelante.
+- /verificar-diploma: se queda pública (ya no está en el navbar).
+- Kit de Preparación y Contacto: se quedan como contenido estático por ahora.
+- Seguridad/confiabilidad (rate limiting, CORS dinámico, Sentry, tests):
+  al final, cuando la app esté más madura.
+
+### Mejoras menores sin empezar
+
+- Badge con el conteo de "pendientes por verificar" en la tarjeta "Pagos" del panel.
+- "Me gusta" en comentarios individuales de noticias.
+- Confirmar que el número de cuenta bancaria real en app/inscripcion/page.tsx
+  quedó bien colocado (Ramon lo puso directamente, pendiente de que Claude
+  vea el archivo para confirmarlo formalmente).
