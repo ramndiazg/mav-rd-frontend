@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { CheckCircle2, UploadCloud, Clock, GraduationCap } from "lucide-react";
+import { CheckCircle2, UploadCloud, Clock, GraduationCap, Copy, Check } from "lucide-react";
 import RutaProtegida from "@/components/auth/RutaProtegida";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -27,6 +27,11 @@ const BANCOS = [
   "Otro",
 ];
 
+const CUENTAS_BANCARIAS = [
+  { banco: "Banco Popular Dominicano", numero: "765431978" },
+  { banco: "Banco De Reservas", numero: "3370011963" },
+];
+
 function formatearMonto(valor: number) {
   return `RD$${valor.toLocaleString("es-DO")}`;
 }
@@ -37,6 +42,7 @@ function InscripcionContenido() {
   const [precios, setPrecios] = useState<Precios | null>(null);
   const [inscripcion, setInscripcion] = useState<Inscripcion | null>(null);
   const [cargando, setCargando] = useState(true);
+  const [cuentaCopiada, setCuentaCopiada] = useState<number | null>(null);
 
   // --- Formulario ---
   const [tipoPlan, setTipoPlan] = useState<"normal" | "vip">("normal");
@@ -79,6 +85,17 @@ function InscripcionContenido() {
       cancelado = true;
     };
   }, [token]);
+
+  async function copiarCuenta(numero: string, indice: number) {
+    try {
+      await navigator.clipboard.writeText(numero);
+      setCuentaCopiada(indice);
+      setTimeout(() => setCuentaCopiada(null), 2000);
+    } catch {
+      // si el navegador bloquea el portapapeles, la estudiante igual puede
+      // copiar el número a mano — no bloqueante
+    }
+  }
 
   async function enviarFormulario(e: React.FormEvent) {
     e.preventDefault();
@@ -322,18 +339,41 @@ function InscripcionContenido() {
             <div className="rounded-full bg-brand-blue text-white w-9 h-9 flex items-center justify-center font-display font-bold shrink-0">
               2
             </div>
-            <div>
-              <p className="font-medium text-brand-blue mb-1">
+            <div className="w-full">
+              <p className="font-medium text-brand-blue mb-2">
                 Deposita el monto en nuestra cuenta
               </p>
-              {/* TODO: reemplazar con el número de cuenta REAL antes de publicar */}
-              <div className="text-sm text-neutral-text bg-neutral-bg border border-neutral-bg rounded-lg p-3 inline-block">
-                Banco Popular Dominicano — Cuenta: <strong>765431978</strong>{" "}
-                (Muvo RD Vial)
-              </div>
-              <div className="text-sm text-neutral-text bg-neutral-bg border border-neutral-bg rounded-lg p-3 inline-block">
-                Banco De Reservas — Cuenta: <strong>3370011963</strong>{" "}
-                (Muvo RD Vial)
+              <div className="grid gap-2 max-w-sm">
+                {CUENTAS_BANCARIAS.map((cuenta, indice) => (
+                  <div
+                    key={cuenta.banco}
+                    className="flex items-center justify-between gap-3 text-sm bg-neutral-bg border border-neutral-bg rounded-lg p-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-xs text-neutral-text opacity-70 truncate">
+                        {cuenta.banco} · Muvo RD Vial
+                      </p>
+                      <p className="font-display font-semibold text-brand-blue tracking-wide">
+                        {cuenta.numero}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => copiarCuenta(cuenta.numero, indice)}
+                      className="shrink-0 flex items-center gap-1.5 rounded-full bg-white border border-neutral-bg px-3 py-1.5 text-xs font-medium text-brand-blue hover:bg-brand-blue hover:text-white transition-colors"
+                    >
+                      {cuentaCopiada === indice ? (
+                        <>
+                          <Check size={14} /> Copiado
+                        </>
+                      ) : (
+                        <>
+                          <Copy size={14} /> Copiar
+                        </>
+                      )}
+                    </button>
+                  </div>
+                ))}
               </div>
             </div>
           </div>

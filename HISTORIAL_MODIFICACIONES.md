@@ -133,3 +133,55 @@ admin con CRUD de noticias/testimonios/FAQ/contenido de página/contabilidad.
 - Confirmar que el número de cuenta bancaria real en app/inscripcion/page.tsx
   quedó bien colocado (Ramon lo puso directamente, pendiente de que Claude
   vea el archivo para confirmarlo formalmente).
+
+## 26/07/2026 (continuación) — Migración de Vercel + notificaciones Telegram + badge de conteo
+
+- El frontend ahora se despliega en una cuenta de Vercel de la fundadora
+  (correo propio, para que ella pueda comprar el dominio con su tarjeta sin
+  involucrar a Ramon). **Nueva URL de producción: `https://muvo-rd.vercel.app/`**
+  — reemplaza a `mav-rd-vial.vercel.app`. Recordar actualizar `FRONTEND_URL`
+  en Render si no se hizo ya, y verificar que quedó bien propagado.
+- Se completó la configuración de Telegram para el celular de Ramón: bot
+  creado con BotFather, token obtenido, `chat_id` (`781494260`) agregado
+  como destinatario en el panel de Notificaciones, y probado con éxito.
+- **Pendiente:** repetir el mismo proceso de Telegram para el celular de la
+  fundadora (ella necesita escribirle al bot y sacar su propio `chat_id` —
+  es distinto al de Ramón — y agregarlo como segundo destinatario).
+- **Pendiente/recomendado:** el token del bot de Telegram quedó escrito en
+  texto plano durante esta sesión de configuración — vale la pena
+  regenerarlo con BotFather (`/mybots` → seleccionar el bot → API Token →
+  Revoke current token) y actualizar `TELEGRAM_BOT_TOKEN` en Render con el
+  nuevo, para invalidar el que quedó expuesto.
+- Se implementó el badge de conteo pendiente en la tarjeta "Pagos" del
+  panel (`app/(coordinadora)/panel/page.tsx`) — círculo con número que
+  muestra cuántos vouchers están en `pendiente_verificacion`, reusando el
+  endpoint `GET /inscripciones?estadoPago=pendiente_verificacion` que ya
+  existía. Sin backend nuevo.
+
+## Pendientes abiertos actualizados (reemplaza la lista anterior de esta sección)
+
+### Prioridad #1
+
+- Verificar un dominio propio en Resend — sigue siendo el bloqueante real
+  para que cualquier correo le llegue a una estudiante que no sea la cuenta
+  con la que se registró Resend. Ahora que el proyecto vive en la cuenta de
+  Vercel de la fundadora, tiene sentido que el dominio (si se compra) se
+  gestione también desde ahí.
+
+### Pendiente corto, ya identificado
+
+- Terminar Telegram para el celular de la fundadora (ver arriba).
+- Regenerar el token del bot de Telegram por seguridad (ver arriba).
+- Confirmar que `FRONTEND_URL` en Render apunta a `https://muvo-rd.vercel.app`.
+
+### Decisiones ya cerradas (sin cambios)
+
+- Pasarela de pago automática (Azul): no se hará.
+- Limpieza de datos de prueba en Mongo: pospuesta a propósito.
+- /verificar-diploma: pública a propósito.
+- Kit de Preparación y Contacto: contenido estático por ahora.
+- Seguridad/confiabilidad (rate limiting, CORS dinámico, Sentry, tests): al final.
+
+### Mejoras menores sin empezar
+
+- "Me gusta" en comentarios individuales de noticias.
