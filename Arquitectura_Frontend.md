@@ -1,6 +1,6 @@
 # Arquitectura del Frontend — mav-rd-frontend
 
-> Refleja el estado REAL del código al 26/07/2026. Reemplaza la versión
+> Refleja el estado REAL del código al 03/08/2026. Reemplaza la versión
 > anterior de este mismo archivo. Para el historial de cómo se llegó aquí,
 > ver HISTORIAL_MODIFICACIONES.md.
 
@@ -143,8 +143,11 @@ adiciones:
 
 - app/inscripcion/page.tsx ahora también verifica usuario.emailVerificado
   antes de mostrar el formulario (ver sección de arriba).
-- El número de cuenta bancaria real ya fue colocado por Ramon directamente
-  en el código (reemplazando el placeholder de ejemplo).
+- El número de cuenta bancaria real (Banco Popular Dominicano y Banco De
+  Reservas) ya está colocado y confirmado — quedó verificado por Ramon.
+  Cada cuenta se muestra en su propia tarjeta con un botón "Copiar" que
+  copia el número al portapapeles (navigator.clipboard), con feedback
+  visual de "Copiado" por 2 segundos.
 
 Pasarela de pago automática (Azul): decisión tomada, NO se implementará por
 ahora. La auto-inscripción con voucher ya resuelve la necesidad real.
@@ -164,18 +167,39 @@ destinatarios (tipo email o Telegram, etiqueta, valor, activo/inactivo).
 Mismo patrón visual que el resto de CRUDs del panel (lista + formulario de
 edición que reemplaza la lista).
 
-## Barra de progreso ilustrada (NUEVO)
+## Barra de progreso ilustrada (rediseñada 01-03/08/2026)
 
 components/dashboard/ProgresoCarretera.tsx: camino horizontal estilo
-carretera (asfalto negro, línea central amarilla intermitente de principio
-a fin + línea continua desde la mitad indicando zona de no rebasar, línea
-de arrancada a cuadros al inicio) con 6 paradas: Inicio, Sesión 1, Sesión 2,
-Sesión 3 (libro con check al aprobar cada examen), Práctica en vehículo
-(ícono de guía, siempre neutro — no se rastrea en la app), y Diploma
-(bandera a cuadros, se pinta de color + check cuando GET /diplomas/me
-confirma que ya existe). El carrito se posiciona automáticamente según
-progreso.sesionesAprobadas.length, y salta hasta la bandera si diplomaListo
-es true.
+carretera (asfalto con degradado, línea central amarilla intermitente de
+principio a fin + línea continua desde la mitad indicando zona de no
+rebasar, línea de arrancada a cuadros al inicio) con 6 paradas: Inicio,
+Sesión 1, Sesión 2, Sesión 3 (libro con check al aprobar cada examen),
+Práctica en vehículo (ícono de guía, siempre neutro — no se rastrea en la
+app), y Diploma (bandera a cuadros, se pinta de color + check cuando
+GET /diplomas/me confirma que ya existe). El carrito se posiciona
+automáticamente según progreso.sesionesAprobadas.length, y salta hasta la
+bandera si diplomaListo es true.
+
+Rediseño de esta sesión — antes era estática, ahora tiene vida:
+
+- El tramo de la línea central ya recorrido se pinta sólido y de color
+  (no solo el carrito indica avance, la carretera misma lo muestra).
+- El carrito se desliza con una transición suave al cambiar de parada
+  (CSS transition sobre transform, easing con leve rebote) y tiene un
+  balanceo sutil constante mientras está detenido.
+- Mensaje motivacional debajo del contador ("2 de 3 sesiones aprobadas"),
+  con texto distinto según la etapa (ej. "Vas bien — la Sesión 2 ya está
+  disponible"). Función mensajeMotivacional() dentro del mismo componente.
+- Cuando diplomaListo es true: la bandera ondea (animación de skew) y se
+  dispara un destello de celebración (pequeños círculos que se expanden y
+  desvanecen) — único momento "llamativo" del componente, todo lo demás
+  se mantiene discreto a propósito.
+- Todas las animaciones respetan prefers-reduced-motion (desactivadas por
+  completo si el sistema del usuario lo pide) — reglas nuevas en
+  app/globals.css, al final del archivo, después de .road-divider.
+- La transición del tramo recorrido usa CSS transition sobre el atributo
+  SVG x2 — funciona en navegadores modernos; en navegadores muy viejos
+  simplemente no anima (salta), no se rompe.
 
 Se colocó justo arriba del listado de sesiones en app/dashboard/page.tsx.
 Las etiquetas de texto van como HTML normal debajo del SVG (no dentro del
@@ -183,7 +207,10 @@ viewBox) para que no se encojan ilegibles en pantallas angostas de celular.
 
 dashboard/page.tsx ahora, cuando progreso.cursoCompletado es true, también
 llama a GET /diplomas/me para saber si ya se generó el diploma y pasarle
-ese dato (diplomaListo) al componente.
+ese dato (diplomaListo) al componente. Además, cada tarjeta de sesión
+ahora muestra un ícono según su estado (candado/libro/check, lucide-react)
+y entra con un fundido escalonado (session-card-in en globals.css) al
+cargar la página.
 
 ## Open Graph / metadata para compartir en redes
 
@@ -215,7 +242,3 @@ horizontal compacto sobre uno más elaborado).
 ## Pendiente real (frontend)
 
 - "Me gusta" en comentarios individuales de noticias.
-- Badge con el conteo de pendientes de verificar en la tarjeta "Pagos" del panel.
-- Verificar que el número de cuenta bancaria colocado por Ramon en
-  app/inscripcion/page.tsx haya reemplazado bien el placeholder (pendiente
-  de que Claude vea el archivo de nuevo para confirmar).
