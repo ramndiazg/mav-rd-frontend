@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { BookOpen, CheckCircle2, Lock, Trophy } from "lucide-react";
 import RutaProtegida from "@/components/auth/RutaProtegida";
 import { useAuth } from "@/contexts/AuthContext";
 import ProgresoCarretera from "@/components/dashboard/ProgresoCarretera";
@@ -225,7 +226,7 @@ function DashboardContenido() {
           <>
             <ProgresoCarretera progreso={progreso} diplomaListo={diplomaListo} />
             <div className="grid gap-4">
-              {SESIONES.map((numero) => {
+              {SESIONES.map((numero, indice) => {
                 const estado = estadoSesion(numero, progreso);
                 const etiqueta =
                   estado === "aprobada"
@@ -239,12 +240,26 @@ function DashboardContenido() {
                     : estado === "desbloqueada"
                       ? "bg-brand-pink text-white"
                       : "bg-neutral-bg text-neutral-text";
+                const Icono =
+                  estado === "aprobada" ? CheckCircle2 : estado === "desbloqueada" ? BookOpen : Lock;
+                const colorIcono =
+                  estado === "aprobada"
+                    ? "text-status-success"
+                    : estado === "desbloqueada"
+                      ? "text-brand-pink"
+                      : "text-neutral-text opacity-40";
 
                 const tarjeta = (
-                  <div className="rounded-xl bg-white border border-neutral-bg p-6 flex items-center justify-between hover:shadow-md transition-shadow">
-                    <p className="font-display font-semibold text-brand-blue">
-                      Sesion {numero}
-                    </p>
+                  <div
+                    className="session-card-in rounded-xl bg-white border border-neutral-bg p-6 flex items-center justify-between hover:shadow-md transition-shadow"
+                    style={{ animationDelay: `${indice * 80}ms` }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Icono size={20} className={colorIcono} />
+                      <p className="font-display font-semibold text-brand-blue">
+                        Sesion {numero}
+                      </p>
+                    </div>
                     <span
                       className={`text-xs font-medium px-3 py-1 rounded-full ${colorEtiqueta}`}
                     >
@@ -265,8 +280,10 @@ function DashboardContenido() {
               {progreso.cursoCompletado && (
                 <Link
                   href="/diploma"
-                  className="rounded-xl bg-brand-blue text-white p-6 text-center font-display font-semibold hover:opacity-90 transition-opacity"
+                  className="session-card-in rounded-xl bg-brand-blue text-white p-6 text-center font-display font-semibold hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                  style={{ animationDelay: `${SESIONES.length * 80}ms` }}
                 >
+                  <Trophy size={20} />
                   Ver mi diploma
                 </Link>
               )}
