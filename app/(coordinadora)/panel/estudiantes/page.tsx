@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import Paginacion from "@/components/ui/Paginacion";
 
@@ -63,57 +63,57 @@ export default function PanelEstudiantesPage() {
     return "activo=false"; // inactivas — archivadas, tengan o no diploma
   }
 
-  async function cargarLista(termino: string, paginaBuscada: number, pestanaActual: Pestana) {
-    setCargando(true);
-    try {
-      const [resUsuarios, resInscripciones] = await Promise.all([
-        fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/usuarios?rol=estudiante&${queryParaPestana(pestanaActual)}&search=${encodeURIComponent(termino)}&page=${paginaBuscada}&limit=${POR_PAGINA}`,
-          { headers: { Authorization: `Bearer ${token}` } },
-        ),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/inscripciones`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-      ]);
-      const jsonUsuarios = await resUsuarios.json();
-      const jsonInscripciones = await resInscripciones.json();
+  const cargarLista = useCallback(
+    async (termino: string, paginaBuscada: number, pestanaActual: Pestana) => {
+      setCargando(true);
+      try {
+        const [resUsuarios, resInscripciones] = await Promise.all([
+          fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/usuarios?rol=estudiante&${queryParaPestana(pestanaActual)}&search=${encodeURIComponent(termino)}&page=${paginaBuscada}&limit=${POR_PAGINA}`,
+            { headers: { Authorization: `Bearer ${token}` } },
+          ),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/inscripciones`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ]);
+        const jsonUsuarios = await resUsuarios.json();
+        const jsonInscripciones = await resInscripciones.json();
 
-      if (jsonUsuarios.success) {
-        setEstudiantes(jsonUsuarios.data);
-        setTotalPaginas(jsonUsuarios.paginacion?.totalPaginas || 1);
-      }
+        if (jsonUsuarios.success) {
+          setEstudiantes(jsonUsuarios.data);
+          setTotalPaginas(jsonUsuarios.paginacion?.totalPaginas || 1);
+        }
 
-      if (jsonInscripciones.success) {
-        const mapa: Record<string, EstadoPago> = {};
-        jsonInscripciones.data.forEach((ins: Inscripcion) => {
-          mapa[ins.userId._id] = ins.estadoPago;
-        });
-        const conEstado: Record<string, EstadoMostrado> = {};
-        (jsonUsuarios.success ? jsonUsuarios.data : []).forEach((est: Estudiante) => {
-          conEstado[est._id] = mapa[est._id] || "sin_inscripcion";
-        });
-        setEstadosPago(conEstado);
+        if (jsonInscripciones.success) {
+          const mapa: Record<string, EstadoPago> = {};
+          jsonInscripciones.data.forEach((ins: Inscripcion) => {
+            mapa[ins.userId._id] = ins.estadoPago;
+          });
+          const conEstado: Record<string, EstadoMostrado> = {};
+          (jsonUsuarios.success ? jsonUsuarios.data : []).forEach((est: Estudiante) => {
+            conEstado[est._id] = mapa[est._id] || "sin_inscripcion";
+          });
+          setEstadosPago(conEstado);
+        }
+      } catch {
+        setMensaje({ tipo: "error", texto: "No pudimos cargar la lista de estudiantes." });
+      } finally {
+        setCargando(false);
       }
-    } catch {
-      setMensaje({ tipo: "error", texto: "No pudimos cargar la lista de estudiantes." });
-    } finally {
-      setCargando(false);
-    }
-  }
+    },
+    [token],
+  );
 
   useEffect(() => {
     if (!token) return;
-    setPagina(1);
-    cargarLista(busqueda, 1, pestana);
-    // Solo se dispara al cambiar de token o de pestaña — buscar() y
-    // irAPagina() manejan sus propios recargos por separado.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, pestana]);
+    queueMicrotask(() => cargarLista("", 1, pestana));
+  }, [token, pestana, cargarLista]);
 
   function cambiarPestana(nueva: Pestana) {
     if (nueva === pestana) return;
     setSeleccionada(null);
     setBusqueda("");
+    setPagina(1);
     setPestana(nueva);
   }
 
