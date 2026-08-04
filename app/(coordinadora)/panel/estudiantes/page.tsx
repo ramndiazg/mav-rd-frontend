@@ -10,6 +10,7 @@ type Estudiante = {
   apellido: string;
   cedula: string;
   email: string;
+  activo: boolean;
 };
 
 type EstadoPago = "pendiente" | "pendiente_verificacion" | "pagado" | "rechazado";
@@ -33,11 +34,14 @@ type Intento = {
   fechaFin: string | null;
 };
 
+type Pestana = "activas" | "graduadas" | "inactivas";
+
 const POR_PAGINA = 20;
 
 export default function PanelEstudiantesPage() {
   const { token } = useAuth();
 
+  const [pestana, setPestana] = useState<Pestana>("activas");
   const [busqueda, setBusqueda] = useState("");
   const [estudiantes, setEstudiantes] = useState<Estudiante[]>([]);
   const [estadosPago, setEstadosPago] = useState<Record<string, EstadoMostrado>>({});
@@ -49,15 +53,22 @@ export default function PanelEstudiantesPage() {
   const [progreso, setProgreso] = useState<Progreso | null>(null);
   const [intentos, setIntentos] = useState<Intento[]>([]);
   const [cargandoDetalle, setCargandoDetalle] = useState(false);
+  const [cambiandoEstado, setCambiandoEstado] = useState(false);
 
   const [mensaje, setMensaje] = useState<{ tipo: "ok" | "error"; texto: string } | null>(null);
 
-  async function cargarLista(termino: string, paginaBuscada: number) {
+  function queryParaPestana(p: Pestana) {
+    if (p === "activas") return "activo=true&conDiploma=false";
+    if (p === "graduadas") return "activo=true&conDiploma=true";
+    return "activo=false"; // inactivas — archivadas, tengan o no diploma
+  }
+
+  async function cargarLista(termino: string, paginaBuscada: number, pestanaActual: Pestana) {
     setCargando(true);
     try {
       const [resUsuarios, resInscripciones] = await Promise.all([
         fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/usuarios?rol=estudiante&search=${encodeURIComponent(termino)}&page=${paginaBuscada}&limit=${POR_PAGINA}`,
+          `${process.env.NEXT_PUBLIC_API_URL}/usuarios?rol=estudiante&${queryParaPestana(pestanaActual)}&search=${encodeURIComponent(termino)}&page=${paginaBuscada}&limit=${POR_PAGINA}`,
           { headers: { Authorization: `Bearer ${token}` } },
         ),
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/inscripciones`, {
@@ -92,62 +103,29 @@ export default function PanelEstudiantesPage() {
 
   useEffect(() => {
     if (!token) return;
-    let cancelado = false;
+    setPagina(1);
+    cargarLista(busqueda, 1, pestana);
+    // Solo se dispara al cambiar de token o de pestaña — buscar() y
+    // irAPagina() manejan sus propios recargos por separado.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, pestana]);
 
-    (async () => {
-      try {
-        const [resUsuarios, resInscripciones] = await Promise.all([
-          fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/usuarios?rol=estudiante&search=&page=1&limit=${POR_PAGINA}`,
-            { headers: { Authorization: `Bearer ${token}` } },
-          ),
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/inscripciones`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-        ]);
-        const jsonUsuarios = await resUsuarios.json();
-        const jsonInscripciones = await resInscripciones.json();
-        if (cancelado) return;
-
-        if (jsonUsuarios.success) {
-          setEstudiantes(jsonUsuarios.data);
-          setTotalPaginas(jsonUsuarios.paginacion?.totalPaginas || 1);
-        }
-
-        if (jsonInscripciones.success) {
-          const mapa: Record<string, EstadoPago> = {};
-          jsonInscripciones.data.forEach((ins: Inscripcion) => {
-            mapa[ins.userId._id] = ins.estadoPago;
-          });
-          const conEstado: Record<string, EstadoMostrado> = {};
-          (jsonUsuarios.success ? jsonUsuarios.data : []).forEach((est: Estudiante) => {
-            conEstado[est._id] = mapa[est._id] || "sin_inscripcion";
-          });
-          setEstadosPago(conEstado);
-        }
-      } catch {
-        if (!cancelado) {
-          setMensaje({ tipo: "error", texto: "No pudimos cargar la lista de estudiantes." });
-        }
-      } finally {
-        if (!cancelado) setCargando(false);
-      }
-    })();
-
-    return () => {
-      cancelado = true;
-    };
-  }, [token]);
+  function cambiarPestana(nueva: Pestana) {
+    if (nueva === pestana) return;
+    setSeleccionada(null);
+    setBusqueda("");
+    setPestana(nueva);
+  }
 
   function buscar(e: React.FormEvent) {
     e.preventDefault();
     setPagina(1);
-    cargarLista(busqueda, 1);
+    cargarLista(busqueda, 1, pestana);
   }
 
   function irAPagina(nuevaPagina: number) {
     setPagina(nuevaPagina);
-    cargarLista(busqueda, nuevaPagina);
+    cargarLista(busqueda, nuevaPagina, pestana);
   }
 
   async function seleccionar(est: Estudiante) {
@@ -178,6 +156,43 @@ export default function PanelEstudiantesPage() {
     }
   }
 
+  // PATCH /usuarios/:id/estado — archivar (activo:false) o reactivar (activo:true)
+  async function cambiarEstadoCuenta(nuevoActivo: boolean) {
+    if (!seleccionada) return;
+    setCambiandoEstado(true);
+    setMensaje(null);
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/usuarios/${seleccionada._id}/estado`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ activo: nuevoActivo }),
+        },
+      );
+      const json = await res.json();
+      if (json.success) {
+        setSeleccionada(json.data);
+        setMensaje({
+          tipo: "ok",
+          texto: nuevoActivo ? "Cuenta reactivada." : "Cuenta archivada.",
+        });
+        // La estudiante probablemente ya no pertenece a esta pestaña —
+        // recargamos la lista de fondo para que quede consistente al volver.
+        cargarLista(busqueda, pagina, pestana);
+      } else {
+        setMensaje({ tipo: "error", texto: json.error || "No se pudo actualizar el estado." });
+      }
+    } catch {
+      setMensaje({ tipo: "error", texto: "No se pudo actualizar el estado." });
+    } finally {
+      setCambiandoEstado(false);
+    }
+  }
+
   // Las 4 llaves reales de estadoPago + "sin_inscripcion". Si en el futuro se
   // agrega un valor nuevo a estadoPago en el backend, hay que agregarlo aquí
   // también o vuelve a pasar el mismo error (undefined.clase).
@@ -188,6 +203,12 @@ export default function PanelEstudiantesPage() {
     rechazado: { texto: "Voucher rechazado", clase: "bg-neutral-text text-white" },
     sin_inscripcion: { texto: "Sin inscripción", clase: "bg-neutral-bg text-neutral-text" },
   };
+
+  const pestanas: { id: Pestana; etiqueta: string }[] = [
+    { id: "activas", etiqueta: "Activas" },
+    { id: "graduadas", etiqueta: "Graduadas" },
+    { id: "inactivas", etiqueta: "Inactivas" },
+  ];
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -200,6 +221,21 @@ export default function PanelEstudiantesPage() {
 
       {!seleccionada && (
         <>
+          <div className="flex gap-1 mb-4 border-b border-neutral-bg">
+            {pestanas.map((p) => (
+              <button
+                key={p.id}
+                onClick={() => cambiarPestana(p.id)}
+                className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${pestana === p.id
+                  ? "border-brand-blue text-brand-blue"
+                  : "border-transparent text-neutral-text hover:text-brand-blue"
+                  }`}
+              >
+                {p.etiqueta}
+              </button>
+            ))}
+          </div>
+
           <form onSubmit={buscar} className="flex gap-2 mb-6">
             <input
               type="text"
@@ -218,6 +254,14 @@ export default function PanelEstudiantesPage() {
 
           {cargando && <p className="text-sm text-neutral-text">Cargando...</p>}
 
+          {!cargando && estudiantes.length === 0 && (
+            <p className="text-sm text-neutral-text">
+              {pestana === "activas" && "No hay estudiantes activas."}
+              {pestana === "graduadas" && "Todavía no hay estudiantes graduadas."}
+              {pestana === "inactivas" && "No hay estudiantes archivadas."}
+            </p>
+          )}
+
           <div className="grid gap-2">
             {estudiantes.map((est) => {
               const estado = estadosPago[est._id] || "sin_inscripcion";
@@ -235,9 +279,17 @@ export default function PanelEstudiantesPage() {
                       {est.cedula} · {est.email}
                     </p>
                   </div>
-                  <span className={`text-xs font-medium px-3 py-1 rounded-full shrink-0 ml-3 ${etiquetaPago[estado].clase}`}>
-                    {etiquetaPago[estado].texto}
-                  </span>
+                  <div className="flex gap-2 shrink-0 ml-3">
+                    {pestana === "graduadas" ? (
+                      <span className="text-xs font-medium px-3 py-1 rounded-full bg-status-success text-white">
+                        Graduada
+                      </span>
+                    ) : (
+                      <span className={`text-xs font-medium px-3 py-1 rounded-full ${etiquetaPago[estado].clase}`}>
+                        {etiquetaPago[estado].texto}
+                      </span>
+                    )}
+                  </div>
                 </button>
               );
             })}
@@ -263,12 +315,38 @@ export default function PanelEstudiantesPage() {
           </button>
 
           <div className="rounded-xl bg-white border border-neutral-bg p-6 mb-4">
-            <p className="font-display font-semibold text-brand-blue">
-              {seleccionada.nombre} {seleccionada.apellido}
-            </p>
-            <p className="text-xs text-neutral-text">
-              {seleccionada.cedula} · {seleccionada.email}
-            </p>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="font-display font-semibold text-brand-blue">
+                  {seleccionada.nombre} {seleccionada.apellido}
+                </p>
+                <p className="text-xs text-neutral-text">
+                  {seleccionada.cedula} · {seleccionada.email}
+                </p>
+              </div>
+              {seleccionada.activo ? (
+                <button
+                  onClick={() => cambiarEstadoCuenta(false)}
+                  disabled={cambiandoEstado}
+                  className="text-xs font-medium px-3 py-1.5 rounded-lg border border-neutral-bg text-neutral-text hover:border-brand-pink hover:text-brand-pink transition-colors shrink-0 disabled:opacity-50"
+                >
+                  {cambiandoEstado ? "..." : "Archivar cuenta"}
+                </button>
+              ) : (
+                <button
+                  onClick={() => cambiarEstadoCuenta(true)}
+                  disabled={cambiandoEstado}
+                  className="text-xs font-medium px-3 py-1.5 rounded-lg border border-status-success text-status-success hover:bg-status-success hover:text-white transition-colors shrink-0 disabled:opacity-50"
+                >
+                  {cambiandoEstado ? "..." : "Reactivar cuenta"}
+                </button>
+              )}
+            </div>
+            {!seleccionada.activo && (
+              <p className="text-xs text-neutral-text mt-3 bg-neutral-bg rounded-lg px-3 py-2">
+                Esta cuenta está archivada — no puede iniciar sesión mientras esté así.
+              </p>
+            )}
           </div>
 
           {cargandoDetalle && <p className="text-sm text-neutral-text">Cargando...</p>}
@@ -338,7 +416,12 @@ export default function PanelEstudiantesPage() {
       )}
 
       {mensaje && (
-        <div className="mt-6 rounded-lg p-4 text-sm bg-brand-pinkLight border border-brand-pink text-brand-blue">
+        <div
+          className={`mt-6 rounded-lg p-4 text-sm ${mensaje.tipo === "ok"
+            ? "bg-status-success/10 border border-status-success text-status-success"
+            : "bg-brand-pinkLight border border-brand-pink text-brand-blue"
+            }`}
+        >
           {mensaje.texto}
         </div>
       )}
