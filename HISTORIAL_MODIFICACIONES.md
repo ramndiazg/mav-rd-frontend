@@ -4,6 +4,128 @@
 > ARQUITECTURA_BACKEND.md, ARQUITECTURA_FRONTEND.md y DATABASE.md, este
 > archivo es solo un changelog, no la fuente de verdad de cómo funciona nada.
 
+## Próxima sesión — Diploma compartible en redes sociales (marketing)
+
+Decidido y diseñado en la sesión del 04/08/2026, listo para construir apenas
+se retome. No se escribió código todavía, solo se acordó el diseño completo.
+
+**Qué es:** en `app/(estudiante)/diploma/page.tsx`, debajo del botón actual
+de "Ver / descargar mi diploma (PDF)", una segunda sección con una imagen
+de logro generada al vuelo (nombre de la estudiante, "completó el curso de
+educación vial", código de verificación, fecha) + un mensaje + un botón de
+compartir.
+
+**Decisiones ya tomadas (no volver a discutir):**
+
+- **100% frontend, sin backend ni Cloudinary nuevos.** La imagen se genera
+  en el navegador con `<canvas>`, a partir de datos que `/diploma` ya tiene
+  cargados (`diploma.codigoVerificacion`, `diploma.fechaEmision`, nombre de
+  `useAuth()`/perfil). No es el PDF del diploma, es una imagen aparte
+  pensada para compartir.
+- **Mensaje del botón/copy** (elegido por maximizar probabilidad de
+  compartir — el foco va en el orgullo personal de la estudiante primero,
+  el efecto en otras mujeres después, sin sonar a que se le pide un favor
+  a la organización):
+  > Comparte tu logro y anima a otra mujer a manejar con confianza
+- **Texto del botón:** "Compartir mi logro".
+- **Mecanismo de compartir:** `navigator.share()` cuando el navegador lo
+  soporte (la mayoría de estudiantes entra desde celular), con fallback a
+  descarga directa de la imagen si no está disponible.
+- **Formato de imagen:** sin definir dimensiones exactas todavía — el único
+  requisito acordado es que se vea bien compartida desde celular (no se
+  sabe la red social preferida de cada estudiante, así que no se optimiza
+  para una sola). Definir proporción (vertical tipo historia vs. cuadrada)
+  al momento de construirlo.
+- Estilo visual de referencia (mockup ya aprobado): tarjeta azul marca
+  (`#1B3A6B`), ícono de volante, "MUVO RD VIAL" arriba, nombre grande al
+  centro, código + fecha abajo en chico, botón rosa marca (`#D6336C`) con
+  ícono de compartir.
+
+**Archivos a pedir al retomar:**
+
+1. `app/(estudiante)/diploma/page.tsx` (ya se tiene el contenido completo
+   de esta sesión — confirmar si sigue igual antes de editarlo, por si
+   hubo cambios entremedio).
+2. Confirmar con Ramon el nombre completo de la estudiante disponible en
+   `useAuth()` (revisar `AuthContext.tsx` si no está ya claro ahí).
+
+**Pendiente de resolver en esa sesión:** nada bloqueante — se puede
+construir de una vez que se retome.
+
+## Corrección pendiente de documentación (detectada, no resuelta)
+
+Al pasar el archivo de diploma en la sesión del 04/08/2026 se reveló que
+vive en `app/(estudiante)/diploma/page.tsx`, no en `app/diploma/page.tsx`
+como estaba documentado (ver ARQUITECTURA_FRONTEND.md, sección de
+estructura de carpetas). Existe un grupo de ruta `(estudiante)` no
+documentado hasta ahora. **Pendiente confirmar** si `dashboard`,
+`aula-virtual`, `examen`, `inscripcion` y `perfil/cambiar-password`
+también viven bajo ese mismo grupo o si `diploma` es la excepción —
+corregir ARQUITECTURA_FRONTEND.md con la estructura real la próxima vez
+que se toque cualquiera de esas páginas.
+
+## 04/08/2026 — Cierre del anexo: exámenes/contenido desactivables + pestañas de estudiantes
+
+- Se cerró el anexo de continuidad que había quedado pendiente de una
+  sesión anterior (purga de usuarios de prueba + soft delete/versionado +
+  panel de estudiantes menos cargado con el tiempo). Decisión tomada por
+  Ramon: la pestaña **Graduadas** se queda **separada** de **Inactivas**
+  (se descartó la idea de una pestaña "Historial" combinada).
+- Confirmado por revisión de código real (no había que asumir nada):
+  `Examen` y `ContenidoSesion` **ya tenían** soporte completo de
+  `activo`/soft delete desde antes de esta sesión — no hizo falta tocar
+  ningún modelo ni controlador de esos dos. `eliminarExamen` y
+  `eliminarContenido` ya eran soft delete puro (nunca borran físico), y
+  ambos listados ya separaban lo que ve la estudiante (`activo: true`) de
+  lo que administra el panel (todo, incluidos inactivos).
+- **Backend nuevo — `GET /api/diplomas`** (`listarTodos` en
+  `diplomaController.js`): coordinadora/admin, devuelve todos los diplomas
+  generados. Mismo patrón que ya se usaba con `GET /inscripciones` para
+  cruzar estados en el frontend.
+- **Backend — `usuarioController.js`:** `listarUsuarios` gana el query
+  param `conDiploma` (true/false), que filtra a nivel de base de datos
+  cruzando contra la colección `Diploma` — necesario para que la
+  paginación (`totalPaginas`/`totalDocumentos`) salga exacta en cada
+  pestaña del panel, en vez de resolverse en el frontend después de traer
+  los datos.
+- **Frontend — `panel/estudiantes/page.tsx` rediseñado** con 3 pestañas
+  (Activas / Graduadas / Inactivas) y botón de Archivar/Reactivar cuenta
+  en el detalle de cada estudiante (usa el `PATCH /usuarios/:id/estado`
+  que ya existía desde antes, sin cambios de backend para eso).
+- **Fix de React (2 rondas):** el patrón de carga inicial disparaba el
+  warning nuevo `react-hooks/set-state-in-effect`. Se resolvió moviendo
+  `cargarLista` a `useCallback([token])` (identidad estable entre
+  renders) y dejando que el `useEffect` de carga dependa de
+  `[token, pestana, cargarLista]` directamente, sin resetear estado
+  (`setPagina`) de forma manual dentro del cuerpo del efecto — el reseteo
+  de página/búsqueda ahora vive en `cambiarPestana()`, que es un
+  manejador de evento, no un efecto.
+- Subido a Render (backend) y Vercel (frontend) y probado — funcionando.
+- El anexo de continuidad que traía todo este análisis ya puede borrarse
+  — todo lo aplicable quedó integrado aquí y en ARQUITECTURA_BACKEND.md /
+  ARQUITECTURA_FRONTEND.md.
+- **Corrección de un error propio:** en esta misma sesión Claude había
+  listado por error "badge de pendientes por verificar en la tarjeta de
+  Pagos" como pendiente — ya estaba resuelto desde el 26/07/2026 (ver esa
+  entrada más abajo), fue un dato tomado de una lista de pendientes vieja
+  del propio historial que ya había sido reemplazada. Corregido, sin
+  impacto en código.
+- **Brainstorm de la próxima funcionalidad grande:** se evaluaron 4 ideas
+  (diploma compartible, recordatorio de examen disponible, pedir
+  testimonio automático al graduarse, recordatorio de pago
+  pendiente/rechazado). Decisión de Ramon: diploma compartible es la
+  prioridad inmediata (ver sección de arriba, "Próxima sesión"). Los
+  recordatorios de examen disponible y de pago pendiente/rechazado
+  interesan pero **solo por correo** (no Telegram, porque no se hace
+  activación de Telegram por estudiante) — quedan como ideas a futuro,
+  sin diseñar todavía, con una duda de diseño abierta y sin resolver: sin
+  cron real (Render se duerme en el tier free), falta decidir un
+  disparador confiable para ambos, ya que a diferencia del recordatorio
+  de balance mensual (que un admin dispara sin querer al abrir el panel
+  seguido), nadie abre la app justo cuando se cumple el plazo de una
+  estudiante específica. Pedir testimonio automático se descartó — solo
+  se necesitan algunos testimonios, no automatizar la captura.
+
 ## 03/08/2026 — Análisis de funcionalidades futuras
 
 - Sesión de brainstorm sobre hacia dónde crecer la app, en tres direcciones
@@ -142,7 +264,6 @@
   verificación con comprobante visible.
 - Fix: POST /api/uploads/imagen estaba restringido a coordinadora/admin, se
   agregó el rol estudiante.
-- Precios de planes actualizados en configuracion: Normal RD$1,000, VIP RD$7,000.
 - Se consolidaron los 6 documentos de contexto en 4 (esta reorganización).
 - Análisis de factibilidad de pasarela de pago en RD entregado. Decisión
   final tomada por la fundadora: NO se implementará Azul por ahora, la
@@ -187,90 +308,61 @@ admin con CRUD de noticias/testimonios/FAQ/contenido de página/contabilidad.
 
 ---
 
-## Pendientes abiertos (no resueltos, de cualquier sesión)
+## Pendientes abiertos (reemplaza cualquier lista anterior de esta sección)
 
-### Prioridad #1
+### Prioridad #1 — bloqueado hasta la próxima reunión con la fundadora
 
 - **Verificar un dominio propio en Resend** — sin esto, ningún correo
   dirigido a una estudiante real llega (verificación, confirmación/rechazo
-  de pago, recuperación de contraseña). Pendiente de decisión/compra por
-  parte de la fundadora.
+  de pago, recuperación de contraseña). Manual paso a paso ya entregado a
+  Ramon para cuando se retome. Ella compra el dominio en su cuenta de
+  Vercel.
+- Terminar Telegram para el celular de la fundadora (sacar su `chat_id` y
+  agregarlo en el panel de Notificaciones). Manual paso a paso ya
+  entregado.
+
+### Próxima funcionalidad a construir (sin bloqueo, lista para empezar)
+
+- **Diploma compartible en redes sociales** — ver sección al inicio de
+  este documento, diseño completo y acordado, solo falta escribir el
+  código.
+
+### Corrección de documentación pendiente (sin bloqueo)
+
+- Confirmar y corregir la estructura real de rutas del estudiante en
+  ARQUITECTURA_FRONTEND.md — ver sección al inicio de este documento
+  ("Corrección pendiente de documentación").
+
+### Ideas a futuro sin diseñar (interesan, pero sin resolver el disparador)
+
+- Recordatorio por correo cuando el examen ya está disponible (pasaron las
+  24h de espera).
+- Recordatorio por correo de voucher pendiente_verificacion/rechazado sin
+  seguimiento después de varios días.
+- Ambas comparten la misma duda sin resolver: sin cron real (Render se
+  duerme en el tier free), falta decidir un disparador confiable — a
+  diferencia del recordatorio de balance mensual, nadie abre la app justo
+  cuando se cumple el plazo de una estudiante específica en particular.
 
 ### Decisiones ya tomadas (cerradas, dejadas aquí solo como registro)
 
 - Pasarela de pago automática (Azul): NO se hará. Cerrado.
-- Limpieza de datos de prueba en Mongo: se pospone a propósito, se
-  retomará más adelante.
+- Limpieza de datos de prueba en Mongo: se pospone a propósito. La purga
+  deberá incluir en cascada Inscripcion, IntentoExamen,
+  ProgresoEstudiante, Diploma (ya hay 6 diplomas de prueba, confirmado en
+  el backup del 31/07/2026) y MovimientoContable de pagos de prueba
+  confirmados — no solo el User. Cómo identificar cuáles son de prueba:
+  sin definir todavía, revisar juntos cuando llegue el momento.
 - /verificar-diploma: se queda pública (ya no está en el navbar).
 - Kit de Preparación y Contacto: se quedan como contenido estático por ahora.
 - Seguridad/confiabilidad (rate limiting, CORS dinámico, Sentry, tests):
   al final, cuando la app esté más madura.
-
-### Mejoras menores sin empezar
-
-- Badge con el conteo de "pendientes por verificar" en la tarjeta "Pagos" del panel.
-- "Me gusta" en comentarios individuales de noticias.
-- Confirmar que el número de cuenta bancaria real en app/inscripcion/page.tsx
-  quedó bien colocado (Ramon lo puso directamente, pendiente de que Claude
-  vea el archivo para confirmarlo formalmente).
-
-## 26/07/2026 (continuación) — Migración de Vercel + notificaciones Telegram + badge de conteo
-
-- El frontend ahora se despliega en una cuenta de Vercel de la fundadora
-  (correo propio, para que ella pueda comprar el dominio con su tarjeta sin
-  involucrar a Ramon). **Nueva URL de producción: `https://muvo-rd.vercel.app/`**
-  — reemplaza a `mav-rd-vial.vercel.app`. Recordar actualizar `FRONTEND_URL`
-  en Render si no se hizo ya, y verificar que quedó bien propagado.
-- Se completó la configuración de Telegram para el celular de Ramón: bot
-  creado con BotFather, token obtenido, `chat_id` (`781494260`) agregado
-  como destinatario en el panel de Notificaciones, y probado con éxito.
-- **Pendiente:** repetir el mismo proceso de Telegram para el celular de la
-  fundadora (ella necesita escribirle al bot y sacar su propio `chat_id` —
-  es distinto al de Ramón — y agregarlo como segundo destinatario).
-- **Pendiente/recomendado:** el token del bot de Telegram quedó escrito en
-  texto plano durante esta sesión de configuración — vale la pena
-  regenerarlo con BotFather (`/mybots` → seleccionar el bot → API Token →
-  Revoke current token) y actualizar `TELEGRAM_BOT_TOKEN` en Render con el
-  nuevo, para invalidar el que quedó expuesto.
-- Se implementó el badge de conteo pendiente en la tarjeta "Pagos" del
-  panel (`app/(coordinadora)/panel/page.tsx`) — círculo con número que
-  muestra cuántos vouchers están en `pendiente_verificacion`, reusando el
-  endpoint `GET /inscripciones?estadoPago=pendiente_verificacion` que ya
-  existía. Sin backend nuevo.
-
-## Pendientes abiertos actualizados (reemplaza la lista anterior de esta sección)
-
-### Bloqueado hasta la próxima reunión con la fundadora
-
-Todo lo que depende de ella queda detenido a propósito hasta esa reunión:
-
-- **Prioridad #1**: comprar el dominio en Vercel (ella paga la
-  suscripción) y verificarlo en Resend — sigue siendo el bloqueante real
-  para que cualquier correo le llegue a una estudiante que no sea la
-  cuenta con la que se registró Resend. Manual paso a paso ya entregado
-  a Ramon para cuando se retome.
-- Terminar Telegram para el celular de la fundadora (sacar su `chat_id`
-  y agregarlo en el panel de Notificaciones). Manual paso a paso ya
-  entregado.
-
-### Cerrado desde la última actualización
-
-- ~~Regenerar el token del bot de Telegram~~ — hecho, actualizado en Render.
-- ~~Confirmar que FRONTEND_URL en Render apunta a muvo-rd.vercel.app~~ — confirmado.
-- ~~Confirmar cuenta bancaria real en app/inscripcion/page.tsx~~ — confirmada, y se le agregó botón de copiar.
-- ~~Barra de progreso "muy sencilla"~~ — rediseñada con animaciones, ver entrada 01-03/08/2026.
-
-### Decisiones ya cerradas (sin cambios)
-
-- Pasarela de pago automática (Azul): no se hará.
-- Limpieza de datos de prueba en Mongo: pospuesta a propósito.
-- /verificar-diploma: pública a propósito.
-- Kit de Preparación y Contacto: contenido estático por ahora.
-- Seguridad/confiabilidad (rate limiting, CORS dinámico, Sentry, tests): al final.
-- Recordatorio/botón de backup automatizado desde el panel de admin:
-  evaluado, descartado por ahora — el backup se mantiene 100% manual.
 - Foro/preguntas por sesión: pospuesto a una segunda etapa, después de
-  validar con las primeras estudiantes reales (ver entrada 03/08/2026).
+  validar con las primeras estudiantes reales.
+- Pedir testimonio automáticamente al graduarse: descartado — solo se
+  necesitan algunos testimonios, no vale la pena automatizar la captura.
+- Recordatorio/botón de backup automatizado desde el panel de admin:
+  evaluado, descartado — el backup se mantiene 100% manual.
 
 ### Mejoras menores sin empezar
 
@@ -279,11 +371,12 @@ Todo lo que depende de ella queda detenido a propósito hasta esa reunión:
   `readAnyDatabase@admin` a un rol Read específico sobre `mav_rd` (mínimo
   privilegio, no urgente ya que es de solo lectura de todas formas).
 
-### Ideas a futuro (solo análisis, nada construido)
+### Ya resuelto (para no volver a preguntarlo)
 
-- Cerrar la brecha de la práctica en vehículo (agenda, instructor/vehículo,
-  checklist de habilidades) — la dirección más natural a seguir según el
-  análisis del 03/08/2026.
-- Catálogo de cursos genérico (expandir más allá del curso de manejo).
-- Mejoras al sitio de noticias: categorías, buscador, newsletter.
-- Página de donaciones, reusando el patrón de pago con voucher existente.
+- Badge de conteo de "pendientes por verificar" en la tarjeta "Pagos" del
+  panel — implementado desde el 26/07/2026.
+- Panel de estudiantes "que iba a crecer indefinidamente" — resuelto con
+  las 3 pestañas (Activas/Graduadas/Inactivas) + archivar cuenta, ver
+  entrada 04/08/2026.
+- Examen/ContenidoSesion desactivables — confirmado que ya lo soportaban
+  ambos desde antes, ver entrada 04/08/2026.
