@@ -7,8 +7,11 @@ type Progreso = {
 };
 
 // Posiciones X fijas dentro del viewBox de 680 — deben coincidir con los
-// íconos dibujados más abajo.
-const X = { inicio: 39, s1: 166, s2: 282, s3: 398, practica: 514, diploma: 630 };
+// íconos dibujados más abajo. Ampliado de 6 a 7 paradas (Sesión 4) el
+// 06/08/2026 — inicio y diploma se mantuvieron en los mismos extremos
+// (39 y 630) para no tener que tocar la carretera/línea de arrancada; solo
+// se recalcularon las 5 paradas intermedias con espaciado parejo (~98-99px).
+const X = { inicio: 39, s1: 138, s2: 236, s3: 335, s4: 433, practica: 532, diploma: 630 };
 
 const COLOR_APROBADA = "#4A7FC9"; // brand-blueLight
 const COLOR_PENDIENTE = "#9CA3AF"; // gris neutro
@@ -21,6 +24,7 @@ function mensajeMotivacional(progreso: Progreso, diplomaListo: boolean) {
   if (progreso.cursoCompletado) return "Teoría completa — ahora toca la práctica en carretera.";
   if (aprobadas === 0) return "La Sesión 1 ya te está esperando.";
   if (aprobadas === 1) return "Vas bien — la Sesión 2 ya está disponible.";
+  if (aprobadas === 2) return "Vas bien — la Sesión 3 ya está disponible.";
   return "Última sesión de teoría — ya casi terminas.";
 }
 
@@ -67,17 +71,20 @@ export default function ProgresoCarretera({
   const aprobadas = progreso.sesionesAprobadas.length;
   // Si ya se generó el diploma, el carrito llega hasta el final. Si no,
   // se queda en la última parada según cuántas sesiones lleva aprobadas
-  // (0 a 3 → Inicio, Sesión 1, Sesión 2, Práctica).
+  // (0 a 4 → Inicio, Sesión 1, Sesión 2, Sesión 3, Práctica). Igual que
+  // antes con la Sesión 3, la parada visual de la Sesión 4 se salta a
+  // propósito: aprobar la última sesión de teoría manda directo a
+  // "Práctica", no tiene sentido pausar el carrito justo ahí.
   const carroX = diplomaListo
     ? X.diploma
-    : [X.inicio, X.s1, X.s2, X.practica][Math.min(aprobadas, 3)];
+    : [X.inicio, X.s1, X.s2, X.s3, X.practica][Math.min(aprobadas, 4)];
   const colorBandera = diplomaListo ? COLOR_APROBADA : COLOR_PENDIENTE;
   const mensaje = mensajeMotivacional(progreso, diplomaListo);
 
   return (
     <div className="mb-8">
       <p className="text-center text-xs font-medium text-brand-blue mb-1">
-        {diplomaListo ? "¡Diploma listo!" : `${aprobadas} de 3 sesiones aprobadas`}
+        {diplomaListo ? "¡Diploma listo!" : `${aprobadas} de 4 sesiones aprobadas`}
       </p>
       <p
         key={mensaje}
@@ -141,10 +148,11 @@ export default function ProgresoCarretera({
         <rect x="34" y="106" width="10" height="10" fill="#2c2c2a" />
         <rect x="44" y="116" width="10" height="10" fill="#2c2c2a" />
 
-        {/* Libros: Sesión 1, 2, 3 */}
+        {/* Libros: Sesión 1, 2, 3, 4 */}
         <Libro x={X.s1} aprobada={progreso.sesionesAprobadas.includes(1)} />
         <Libro x={X.s2} aprobada={progreso.sesionesAprobadas.includes(2)} />
         <Libro x={X.s3} aprobada={progreso.sesionesAprobadas.includes(3)} />
+        <Libro x={X.s4} aprobada={progreso.sesionesAprobadas.includes(4)} />
 
         {/* Guía (práctica en vehículo) — siempre neutro, no se rastrea en la app */}
         <g transform={`translate(${X.practica},70)`} filter="url(#sombraSuave)">
@@ -236,6 +244,7 @@ export default function ProgresoCarretera({
         <span>Sesión 1</span>
         <span>Sesión 2</span>
         <span>Sesión 3</span>
+        <span>Sesión 4</span>
         <span>Práctica</span>
         <span>Diploma</span>
       </div>

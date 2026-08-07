@@ -1,6 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
 
+// TODO: cuando se confirmen los temas reales de la 4ta sesión, agregar la
+// tarjeta "04" aquí. Se dejó el título de la sección sin número explícito
+// ("en sesiones, en orden" en vez de "tres sesiones") justamente para que
+// no quede desactualizado mientras se decide el contenido nuevo.
 const sesiones = [
   {
     numero: "01",
@@ -45,19 +49,19 @@ export default function Home() {
             <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
               <Image
                 src="/logo-mav-rd.png"
-                alt="Mujeres al Volante RD"
+                alt="Muvo RD Vial"
                 width={88}
                 height={88}
                 priority
                 className="shrink-0"
               />
               <h1 className="font-display text-4xl font-bold leading-tight sm:text-5xl">
-                Detrás de cada mujer que conduce, hay una que decidió aprender.
+                Todos merecen la oportunidad de aprender a manejar con confianza.
               </h1>
             </div>
             <p className="mt-5 max-w-lg text-white/85">
-              Mujeres al Volante RD es una fundación dominicana que enseña a
-              mujeres a conducir con confianza, desde la teoría hasta el
+              Muvo RD Vial es una fundación dominicana que enseña a mujeres y
+              jóvenes a conducir con confianza, desde la teoría hasta el
               examen del INTRANT — presencial, en grupo, y sin prisa.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
@@ -82,8 +86,8 @@ export default function Home() {
             </p>
             <p className="mt-3 text-lg leading-relaxed text-white">
               Fundada por María Díaz en Santo Domingo, con una idea simple:
-              ninguna mujer debería quedarse sin aprender a manejar por falta
-              de un espacio hecho para ella.
+              nadie debería quedarse sin aprender a manejar por falta de un
+              espacio seguro y accesible para hacerlo.
             </p>
           </div>
         </div>
@@ -91,11 +95,11 @@ export default function Home() {
 
       <div className="road-divider" />
 
-      {/* Las 3 sesiones — sí es una secuencia real, por eso se numera */}
+      {/* Las sesiones del curso — sí es una secuencia real, por eso se numera */}
       <section className="mx-auto max-w-6xl px-4 py-16">
         <div className="max-w-2xl">
           <h2 className="font-display text-3xl font-bold text-brand-blue">
-            Un curso, tres sesiones, en orden.
+            Un curso completo, en sesiones, en orden.
           </h2>
           <p className="mt-3 text-neutral-text/80">
 
@@ -159,7 +163,7 @@ export default function Home() {
       {/* CTA final */}
       <section className="mx-auto max-w-6xl px-4 py-16 text-center">
         <h2 className="font-display text-3xl font-bold text-brand-blue">
-          ¿Lista para empezar?
+          ¿Todo listo para empezar?
         </h2>
         <p className="mx-auto mt-3 max-w-xl text-neutral-text/80">
 

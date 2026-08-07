@@ -21,7 +21,8 @@ type Inscripcion = {
   notaRechazo?: string | null;
 };
 
-const SESIONES = [1, 2, 3];
+// Ampliado de 3 a 4 sesiones el 06/08/2026 — ver HISTORIAL_MODIFICACIONES.md.
+const SESIONES = [1, 2, 3, 4];
 
 function estadoSesion(numero: number, progreso: Progreso) {
   if (progreso.sesionesAprobadas.includes(numero)) return "aprobada";
@@ -115,7 +116,7 @@ function DashboardContenido() {
             setProgreso(jsonProgreso.data);
 
             // Solo tiene sentido preguntar por el diploma si ya completó
-            // las 3 sesiones — antes de eso, GET /diplomas/me siempre
+            // las sesiones — antes de eso, GET /diplomas/me siempre
             // respondería 404, así que nos ahorramos la llamada.
             if (jsonProgreso.data.cursoCompletado) {
               const resDiploma = await fetch(
@@ -186,7 +187,7 @@ function DashboardContenido() {
             </p>
             <p className="text-sm text-neutral-text">
               Una vez tu coordinadora confirme el pago, aquí vas a ver el
-              acceso a las 3 sesiones del curso.
+              acceso a las 4 sesiones del curso.
             </p>
           </div>
         )}

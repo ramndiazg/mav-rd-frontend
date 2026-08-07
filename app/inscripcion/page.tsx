@@ -202,8 +202,8 @@ function InscripcionContenido() {
               Aprende a conducir con confianza
             </h1>
             <p className="text-sm md:text-base opacity-90">
-              Clases teóricas y prácticas guiadas por Mujeres al Volante RD —
-              embajadoras de la educación vial.
+              Clases teóricas y prácticas guiadas por Muvo RD Vial —
+              embajadores de la educación vial.
             </p>
           </div>
         </div>
@@ -263,8 +263,8 @@ function InscripcionContenido() {
                 </li>
                 <li className="flex gap-2">
                   <CheckCircle2 size={18} className="text-brand-blueLight shrink-0" />
-                  Práctica en grupo — conduces por turnos junto a otras
-                  estudiantes
+                  Práctica en grupo — conduces por turnos junto a tus
+                  compañeros de curso
                 </li>
                 <li className="flex gap-2">
                   <CheckCircle2 size={18} className="text-brand-blueLight shrink-0" />
@@ -301,7 +301,8 @@ function InscripcionContenido() {
                 </li>
                 <li className="flex gap-2">
                   <CheckCircle2 size={18} className="text-brand-pink shrink-0" />
-                  Práctica 1 a 1 — solo tú y el chofer, sin esperar turno
+                  Práctica 1 a 1 — solo tú y quien te instruye, sin esperar
+                  turno
                 </li>
                 <li className="flex gap-2">
                   <CheckCircle2 size={18} className="text-brand-pink shrink-0" />

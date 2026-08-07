@@ -25,7 +25,7 @@ const MODULOS = [
 ];
 
 export const metadata = {
-  title: "Kit de Preparacion INTRANT | Mujeres al Volante RD",
+  title: "Kit de Preparacion INTRANT | Muvo RD Vial",
 };
 
 export default function KitPreparacionPage() {
@@ -38,8 +38,8 @@ export default function KitPreparacionPage() {
           </h1>
           <p className="font-body text-brand-blueLight text-lg leading-relaxed">
             Antes de tu clase presencial, mira los modulos en video y practica
-            con el simulador oficial. Cuando termines, ya estaras lista para
-            aprobar el examen teorico y sacar tu carnet de aprendizaje.
+            con el simulador oficial. Cuando termines, ya tendras lo necesario
+            para aprobar el examen teorico y sacar tu carnet de aprendizaje.
           </p>
         </div>
       </section>
