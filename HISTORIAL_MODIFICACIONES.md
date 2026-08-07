@@ -4,53 +4,149 @@
 > ARQUITECTURA_BACKEND.md, ARQUITECTURA_FRONTEND.md y DATABASE.md, este
 > archivo es solo un changelog, no la fuente de verdad de cómo funciona nada.
 
-## Próxima sesión — Diploma compartible en redes sociales (marketing)
+## 06-07/08/2026 — Diploma compartible, ampliación a 4 sesiones, audiencia inclusiva, purga de datos de prueba
 
-Decidido y diseñado en la sesión del 04/08/2026, listo para construir apenas
-se retome. No se escribió código todavía, solo se acordó el diseño completo.
+### Diploma compartible en redes sociales — construido de principio a fin
 
-**Qué es:** en `app/(estudiante)/diploma/page.tsx`, debajo del botón actual
-de "Ver / descargar mi diploma (PDF)", una segunda sección con una imagen
-de logro generada al vuelo (nombre de la estudiante, "completó el curso de
-educación vial", código de verificación, fecha) + un mensaje + un botón de
-compartir.
+Empezó como el pendiente #1 de la sesión anterior ("diseñado, sin
+construir"). Primera versión: ícono de volante dibujado en canvas,
+degradado azul/rosa, código de diploma visible. Feedback del usuario tras
+verla: no se parecía a la marca real, faltaba el logo, y no había ningún
+link para que contactos interesados llegaran a la app.
 
-**Decisiones ya tomadas (no volver a discutir):**
+Se pidió el logo real (`public/logo-mav-rd.png` — azul marino `#08244B`,
+dorado `#F8CB1A`, rojo `#D11523`) y se iteró el diseño con mockups en
+vivo antes de tocar código (usando el visualizador de la conversación,
+no archivos reales) hasta cerrar: foto real de fondo (buscada y elegida
+de Unsplash, licencia libre — `person driving car during daytime` de
+Stephan Mahlke — descargada a `public/diploma-compartir.jpg` porque el
+`<canvas>` necesita imágenes del mismo origen o `toBlob()` falla en
+silencio por contaminación CORS), logo real superpuesto, sin código de
+diploma en la imagen (se decidió que ese dato se quede solo en la
+tarjeta del PDF), mensaje motivador enmarcado como oportunidad, y un
+bloque con QR + link a la página de inicio. Se agregó la dependencia
+`qrcode` (+ `@types/qrcode`) para generar el QR 100% en el navegador.
 
-- **100% frontend, sin backend ni Cloudinary nuevos.** La imagen se genera
-  en el navegador con `<canvas>`, a partir de datos que `/diploma` ya tiene
-  cargados (`diploma.codigoVerificacion`, `diploma.fechaEmision`, nombre de
-  `useAuth()`/perfil). No es el PDF del diploma, es una imagen aparte
-  pensada para compartir.
-- **Mensaje del botón/copy** (elegido por maximizar probabilidad de
-  compartir — el foco va en el orgullo personal de la estudiante primero,
-  el efecto en otras mujeres después, sin sonar a que se le pide un favor
-  a la organización):
-  > Comparte tu logro y anima a otra mujer a manejar con confianza
-- **Texto del botón:** "Compartir mi logro".
-- **Mecanismo de compartir:** `navigator.share()` cuando el navegador lo
-  soporte (la mayoría de estudiantes entra desde celular), con fallback a
-  descarga directa de la imagen si no está disponible.
-- **Formato de imagen:** sin definir dimensiones exactas todavía — el único
-  requisito acordado es que se vea bien compartida desde celular (no se
-  sabe la red social preferida de cada estudiante, así que no se optimiza
-  para una sola). Definir proporción (vertical tipo historia vs. cuadrada)
-  al momento de construirlo.
-- Estilo visual de referencia (mockup ya aprobado): tarjeta azul marca
-  (`#1B3A6B`), ícono de volante, "MUVO RD VIAL" arriba, nombre grande al
-  centro, código + fecha abajo en chico, botón rosa marca (`#D6336C`) con
-  ícono de compartir.
+Colores: se probó una paleta tomada directo del logo (azul marino/
+dorado/rojo) pero se descartó — el degradado azul/rosa de marca que ya
+se había mostrado antes gustó más, así que se mantuvo para el fondo,
+reservando los colores del logo solo para el logo mismo.
 
-**Archivos a pedir al retomar:**
+Pendiente: agregar una sección "Lo que aprendiste" con los temas reales
+del curso — se dejó fuera porque los 4 temas todavía no están definidos
+(ver más abajo).
 
-1. `app/(estudiante)/diploma/page.tsx` (ya se tiene el contenido completo
-   de esta sesión — confirmar si sigue igual antes de editarlo, por si
-   hubo cambios entremedio).
-2. Confirmar con Ramon el nombre completo de la estudiante disponible en
-   `useAuth()` (revisar `AuthContext.tsx` si no está ya claro ahí).
+### Ampliación de 3 a 4 sesiones
 
-**Pendiente de resolver en esa sesión:** nada bloqueante — se puede
-construir de una vez que se retome.
+El usuario preguntó qué tan difícil sería este cambio y dónde afectaría,
+antes de tocar nada — se hizo un análisis archivo por archivo (10 en
+total, backend y frontend) antes de escribir código.
+
+Hallazgo principal: casi toda la lógica de negocio (`intentarDesbloquear`
+en `examenController.js`, `ContenidoSesion`, `ProgresoEstudiante`,
+`contenidoSesionController.js`, rutas dinámicas `aula-virtual/[sesion]` y
+`examen/[intentoId]`) ya estaba escrita de forma genérica, sin el número
+3 quemado. Los cambios reales quedaron acotados a 4 lugares:
+
+1. `models/Sesion.js`: `numero` tenía `max: 3` a nivel de esquema de
+   Mongoose — el verdadero candado del sistema, hubiera rechazado
+   cualquier intento de crear una Sesión 4 sin importar que el resto del
+   código ya generalizara bien. Cambiado a `max: 4`.
+2. `intentoExamenController.js`, dentro de `entregarIntento`: tres
+   números `3` quemados (avance de teoría, corte de "próxima sesión con
+   espera", umbral de `cursoCompletado`) — cambiados a `4`.
+3. `components/dashboard/ProgresoCarretera.tsx`: rediseño de 6 a 7
+   paradas (se agregó Sesión 4), posiciones recalculadas manteniendo
+   Inicio y Diploma en los mismos extremos para no tocar la carretera
+   base; mismo patrón de "salto visual" que ya existía con la Sesión 3
+   (el carrito no pausa en la última sesión de teoría, salta directo a
+   Práctica).
+4. `app/dashboard/page.tsx`: `SESIONES = [1,2,3,4]` + corrección de copy.
+
+### Audiencia ampliada: el curso ya no es solo para mujeres
+
+Decisión de negocio comunicada a mitad de la sesión: el curso pasa a
+incluir adolescentes de ambos sexos, además de mujeres. Se aplicó
+lenguaje neutral a todo lo que se tocó de aquí en adelante (instrucción
+explícita del usuario: cambiar donde se toque, no hacer una pasada
+retroactiva de todo el sitio en este momento).
+
+Archivos corregidos: `app/page.tsx` (inicio — nombre actualizado a "Muvo
+RD Vial", título principal y CTA sin adjetivos de género, "tres
+sesiones" generalizado a "en sesiones" para no quedar desactualizado),
+`kit-preparacion/page.tsx` (metadata title + "ya estarás lista" → "ya
+tendrás lo necesario"), `inscripcion/page.tsx` ("embajadoras" →
+"embajadores", coincidiendo con el logo real; "otras estudiantes" →
+"tus compañeros de curso"; "el chofer" → "quien te instruye"). Los
+testimonios existentes (Rosa M., Yolanda P.) se dejaron intactos a
+propósito — son citas reales, reescribirlas cambiaría lo que esas
+personas realmente dijeron.
+
+Confirmado sin cambios necesarios: `aula-virtual/[sesion]/page.tsx`,
+`examen/[intentoId]/page.tsx`, `faq/page.tsx`.
+
+Pendiente: `testimonios/page.tsx`, `registro/page.tsx` (sin revisar
+todavía), y las fotos de `public/inscripcion/` (probablemente muestran
+solo mujeres, de clases anteriores al cambio de audiencia — reemplazo es
+trabajo de contenido, no de código).
+
+### Purga completa de datos de prueba
+
+Ya estaba planeada de antes ("pospuesta hasta que la app esté lista para
+producción", con instrucción de hacerse por terminal, nunca desde la
+UI). Se aprovechó este momento porque, con el cambio a 4 sesiones, había
+que reorganizar y recargar contenido real de todas formas.
+
+Se construyó `scripts/purgarDatosPrueba.js` (dry-run por defecto,
+requiere `--confirmar` + escribir `BORRAR` a mano) en vez de un
+`deleteMany` genérico. Alcance confirmado con el usuario antes de
+escribirlo: sobrevive únicamente `maria@test.com` (admin); se borran
+todos los demás usuarios (estudiante y coordinadora, sin excepción),
+todas las `Sesion` (con sus exámenes, para reconstruir desde cero según
+el material real que hay que clasificar), y en cascada `Examen`,
+`ContenidoSesion`, `IntentoExamen`, `ProgresoEstudiante`, `Inscripcion`,
+`Diploma`.
+
+Corrido en modo real el 06/08/2026. Conteos purgados: 17 usuarios, 3
+sesiones, 15 exámenes, 22 contenidos de sesión, 30 intentos de examen,
+11 progresos de estudiante, 13 inscripciones, 6 diplomas — ver
+DATABASE.md para el detalle completo.
+
+### Hueco descubierto: no existe forma de crear sesiones desde el panel
+
+Al purgar y quedarse con 0 sesiones, se descubrió que
+`sesionController.js` nunca tuvo un endpoint `POST /sesiones` — solo
+`GET` (listar), `GET /:numero` (para la estudiante) y `PATCH /:numero`
+(editar una que ya existe). Las 3 sesiones originales se habían creado
+directo en Atlas, a mano. Esto explicaba tres síntomas reportados por el
+usuario a la vez: "Sesión no encontrada" al entrar como estudiante nueva,
+el botón de "agregar contenido" que no aparecía en el panel, y el examen
+que "se creaba" pero sin dónde asignarlo (en realidad nunca se guardaba:
+`sesionId` quedaba `null` porque no había pestañas de sesión que
+seleccionar, y el mensaje de validación del formulario era engañoso —
+decía "completa los campos" incluso con todo lleno).
+
+Solución adoptada: `scripts/crearSesionesIniciales.js` (mismo patrón
+dry-run + `--confirmar`) en vez de construir el endpoint — es una
+operación de una sola vez. Creado pero **todavía sin ejecutar** al cierre
+de esta sesión de trabajo.
+
+También quedó anotado, pero pospuesto a propósito: el panel de
+coordinadora tampoco tiene un formulario para _renombrar_ una sesión
+(el backend sí lo permite vía `PATCH /sesiones/:numero`, el frontend no
+tiene pantalla que lo use) — se retoma cuando haga falta.
+
+### Pendiente real, en orden, para la próxima sesión
+
+1. Correr `scripts/crearSesionesIniciales.js --confirmar`.
+2. Definir los 4 temas del curso con la fundadora.
+3. Clasificar y organizar el material real disponible por tema.
+4. Crear las 4 `Sesion` con títulos finales (renombrar las provisionales).
+5. Subir `ContenidoSesion` y crear versiones de `Examen` para cada una.
+6. Probar de punta a punta con una cuenta de estudiante nueva.
+7. Agregar la sección "Lo que aprendiste" al diploma compartible una vez
+   estén los temas.
+8. Revisar lenguaje de género pendiente en `testimonios` y `registro`.
 
 ## Corrección pendiente de documentación (detectada, no resuelta)
 

@@ -1,11 +1,12 @@
 # Arquitectura del Frontend — mav-rd-frontend
 
-> Refleja el estado REAL del código al 04/08/2026. Reemplaza la versión
+> Refleja el estado REAL del código al 07/08/2026. Reemplaza la versión
 > anterior de este mismo archivo. Para el historial de cómo se llegó aquí,
 > ver HISTORIAL_MODIFICACIONES.md.
 
 Stack: Next.js 16 (App Router) + React 19 + Tailwind CSS v4 + lucide-react
-(íconos) + despliegue en Vercel (muvo-rd.vercel.app).
+(íconos) + `qrcode` (NUEVO — QR generado en el navegador, ver Diploma
+compartible abajo) + despliegue en Vercel (muvo-rd.vercel.app).
 
 ## Infraestructura y despliegue
 
@@ -15,79 +16,87 @@ Stack: Next.js 16 (App Router) + React 19 + Tailwind CSS v4 + lucide-react
   a la URL de Vercel (sin / al final).
 - Dominio: muvo-rd.vercel.app.
 
-## ⚠️ Corrección pendiente de esta misma sección
+## ⚠️ Corrección pendiente (sin cambios esta sesión, sigue abierta)
 
-Al pasar `app/(estudiante)/diploma/page.tsx` el 04/08/2026 se confirmó que
-esa página vive bajo un grupo de ruta `(estudiante)` que **no estaba
-documentado** en el árbol de carpetas de abajo (ahí sigue listada como
-`diploma/page.tsx` plana, a la espera de confirmar). **No se sabe todavía**
-si `dashboard`, `aula-virtual/[sesion]`, `examen/[intentoId]`,
-`inscripcion` y `perfil/cambiar-password` también están bajo ese mismo
-grupo, o si `diploma` es la única excepción. Confirmar y corregir el árbol
-de abajo la próxima vez que se toque cualquiera de esas páginas — mientras
-tanto, tratar el árbol de carpetas de esta sección como aproximado para
-esas rutas específicas, no como fuente exacta.
+Al pasar `app/(estudiante)/diploma/page.tsx` se confirmó que esa página
+vive bajo un grupo de ruta `(estudiante)` que **no estaba documentado**
+en el árbol de carpetas. **Sigue sin saberse** si `dashboard`,
+`aula-virtual/[sesion]`, `examen/[intentoId]`, `inscripcion` y
+`perfil/cambiar-password` también están bajo ese mismo grupo, o si
+`diploma` es la única excepción. Tratar el árbol de abajo como
+aproximado para esas rutas específicas.
+
+## Audiencia del curso (cambio de alcance, 06/08/2026)
+
+El curso **ya no es exclusivo para mujeres** — ahora también incluye
+adolescentes de ambos sexos. Esto significa que todo texto nuevo o
+tocado de aquí en adelante debe usar lenguaje neutral (no "mujer",
+"lista", "otras estudiantes", etc.). Ya se corrigió en los archivos que
+se tocaron esta sesión (ver detalle en cada sección abajo); **quedan
+pendientes de revisar** las páginas que todavía no se han vuelto a tocar
+(`testimonios`, `registro`, correos transaccionales en el backend, y
+cualquier imagen/foto que muestre solo participantes de un género — las
+fotos actuales en `public/inscripcion/` son de clases anteriores,
+probablemente solo mujeres; reemplazarlas es trabajo de contenido, no de
+código).
 
 ## Estructura de carpetas (real)
-
-Los grupos de ruta confirmados son (coordinadora) y (admin). Existe
-además un grupo (estudiante) cuyo alcance real está sin confirmar del
-todo — ver corrección arriba.
 
 ```
 mav-rd-frontend/
 ├── app/
-│   ├── page.tsx                          # Inicio
+│   ├── page.tsx                          # Inicio — lenguaje neutral, marca actualizada (06/08/2026)
 │   ├── acerca-de-nosotros/page.tsx
-│   ├── kit-preparacion/page.tsx
-│   ├── noticias/page.tsx                 # listado público, paginado
-│   ├── noticias/[id]/page.tsx            # detalle, like, comentarios, compartir, OG dinámico
-│   ├── testimonios/page.tsx
-│   ├── faq/page.tsx
-│   ├── verificar-diploma/page.tsx        # pública a propósito (ya no está en el navbar)
-│   ├── login/page.tsx                    # + link "¿Olvidaste tu contraseña?"
-│   ├── registro/page.tsx
+│   ├── kit-preparacion/page.tsx          # metadata + copy actualizados (06/08/2026)
+│   ├── noticias/page.tsx
+│   ├── noticias/[id]/page.tsx
+│   ├── testimonios/page.tsx              # sin revisar esta sesión — pendiente
+│   ├── faq/page.tsx                      # confirmado sin cambios necesarios
+│   ├── verificar-diploma/page.tsx
+│   ├── login/page.tsx
+│   ├── registro/page.tsx                 # sin revisar esta sesión — pendiente
 │   ├── olvide-password/page.tsx
-│   ├── restablecer-password/page.tsx     # usa <Suspense> por useSearchParams
-│   ├── verificar-email/page.tsx          # usa <Suspense> por useSearchParams
-│   ├── dashboard/page.tsx                # protegida, rol estudiante — ¿bajo (estudiante)? sin confirmar
-│   ├── inscripcion/page.tsx              # auto-inscripción con voucher, con candado de email verificado
-│   ├── aula-virtual/[sesion]/page.tsx
-│   ├── examen/[intentoId]/page.tsx
+│   ├── restablecer-password/page.tsx
+│   ├── verificar-email/page.tsx
+│   ├── dashboard/page.tsx                # SESIONES = [1,2,3,4] (06/08/2026)
+│   ├── inscripcion/page.tsx              # lenguaje neutral (06/08/2026)
+│   ├── aula-virtual/[sesion]/page.tsx    # confirmado: sin conteo quemado, sin lenguaje de género
+│   ├── examen/[intentoId]/page.tsx       # confirmado: sin conteo quemado, sin lenguaje de género
 │   ├── (estudiante)/
-│   │   └── diploma/page.tsx              # CONFIRMADO bajo este grupo — ver sección de arriba
+│   │   └── diploma/page.tsx              # diploma compartible construido (06/08/2026, ver detalle abajo)
 │   ├── perfil/cambiar-password/page.tsx
 │   ├── (coordinadora)/
-│   │   ├── panel/layout.tsx              # header simple + link volver
-│   │   ├── panel/page.tsx                # pantalla de tarjetas (home del panel)
-│   │   ├── panel/pagos/page.tsx          # inscripción manual + cola de verificación de vouchers
-│   │   ├── panel/estudiantes/page.tsx    # 3 pestañas + archivar/reactivar (ver detalle abajo)
-│   │   ├── panel/aula-virtual/page.tsx
-│   │   ├── panel/examenes/page.tsx
+│   │   ├── panel/layout.tsx
+│   │   ├── panel/page.tsx
+│   │   ├── panel/pagos/page.tsx
+│   │   ├── panel/estudiantes/page.tsx
+│   │   ├── panel/aula-virtual/page.tsx   # sin cambios de código; su selector de sesión depende de que existan Sesion — ver nota abajo
+│   │   ├── panel/examenes/page.tsx       # sin cambios de código; mismo caso
 │   │   ├── panel/diplomas/page.tsx
 │   │   ├── panel/noticias/page.tsx
 │   │   ├── panel/testimonios/page.tsx
 │   │   └── panel/faq/page.tsx
 │   ├── (admin)/
-│   │   ├── admin/layout.tsx              # header simple + link volver a /panel
-│   │   ├── admin/page.tsx                # redirige a /panel
-│   │   ├── admin/contabilidad/page.tsx   # descarga de balance vía endpoint firmado
+│   │   ├── admin/layout.tsx
+│   │   ├── admin/page.tsx
+│   │   ├── admin/contabilidad/page.tsx
 │   │   ├── admin/contenido-pagina/page.tsx
-│   │   └── admin/notificaciones/page.tsx # CRUD de destinatarios email/Telegram
-│   ├── layout.tsx                        # metadata general + Open Graph + Twitter Card
+│   │   └── admin/notificaciones/page.tsx
+│   ├── layout.tsx
 │   └── globals.css
 ├── components/
 │   ├── ui/Paginacion.tsx
 │   ├── layout/Navbar.tsx, Footer.tsx
 │   ├── noticias/NoticiaAcciones.tsx, CompartirBotones.tsx
 │   ├── auth/RutaProtegida.tsx
-│   ├── dashboard/ProgresoCarretera.tsx   # barra de progreso ilustrada
+│   ├── dashboard/ProgresoCarretera.tsx   # rediseñado para 7 paradas (06/08/2026, ver detalle abajo)
 │   └── contabilidad/
-├── contexts/AuthContext.tsx              # Usuario incluye emailVerificado
+├── contexts/AuthContext.tsx
 ├── public/
-│   ├── logo-mav-rd.png
+│   ├── logo-mav-rd.png                   # logo real: azul marino #08244B, dorado #F8CB1A, rojo #D11523
+│   ├── diploma-compartir.jpg             # NUEVO — foto de Unsplash (licencia libre, uso comercial permitido), usada en el diploma compartible
 │   ├── og-image.png
-│   └── inscripcion/                      # imágenes de la página de auto-inscripción
+│   └── inscripcion/
 │       ├── teoria-1.jpg, teoria-2.jpg, teoria-3.jpg
 │       ├── practica-vip.jpg
 │       └── practica-normal-ilustracion.jpg
@@ -97,7 +106,7 @@ mav-rd-frontend/
 └── package.json
 ```
 
-## Tokens de color (Tailwind)
+## Tokens de color (Tailwind) — sin cambios
 
 ```js
 colors: {
@@ -112,128 +121,124 @@ colors: {
 }
 ```
 
-Tipografía: Poppins (títulos), Inter (cuerpo).
+Tipografía: Poppins (títulos), Inter (cuerpo). El logo real usa una
+paleta distinta (azul marino, dorado, rojo) — se decidió mantener la
+paleta azul/rosa de Tailwind para toda la UI de la app, y usar los
+colores reales del logo solo donde el logo aparece embebido de forma
+prominente (ver diploma compartible abajo, que combina ambas: degradado
+azul→rosa de fondo, logo real superpuesto).
 
-## Autenticación
+## Autenticación — sin cambios
 
-- Login/registro guardan token + usuario en AuthContext + localStorage.
-- Cada request protegido agrega Authorization: Bearer <token> a mano.
-- Protección de rutas vía <RutaProtegida rolesPermitidos={[...]}> (cliente),
-  no middleware.ts de servidor (no hay cookie).
-- Usuario (tipo en AuthContext) incluye emailVerificado: boolean.
-- Redirección post-login por rol: estudiante -> /dashboard, coordinadora/admin
-  -> /panel.
+## Sesiones — ahora son 4, no 3 (06/08/2026)
 
-## Variables de entorno
+`dashboard/page.tsx`: `const SESIONES = [1, 2, 3, 4]`. Corregido también
+el copy que decía "acceso a las 3 sesiones del curso".
 
-```
-NEXT_PUBLIC_API_URL=https://mav-rd-backend.onrender.com/api
-```
+**Nota importante para la próxima sesión de trabajo:** justo después de
+este cambio se purgó la base de datos (ver DATABASE.md) y quedaron 0
+documentos `Sesion`. Mientras no se recreen (con
+`scripts/crearSesionesIniciales.js` en el backend), el dashboard va a
+seguir marcando "Sesión 1: Disponible" para estudiantes nuevas — porque
+esa lógica depende solo de `progreso.sesionActualDesbloqueada`, no
+verifica si el documento `Sesion` existe — pero al entrar va a mostrar
+"Sesión no encontrada". Comportamiento esperado dado el estado actual,
+no es un bug.
 
-## Verificación de email y recuperación de contraseña
+También quedó expuesto que **el panel de coordinadora no tiene forma de
+crear sesiones nuevas** (`panel/aula-virtual/page.tsx` y
+`panel/examenes/page.tsx` solo _listan_ sesiones existentes vía
+`GET /sesiones` — si esa lista viene vacía, no hay pestañas de sesión
+que mostrar, y por lo tanto tampoco aparece el botón de "+ Agregar
+material" ni se puede asignar un examen a una sesión). Ver
+ARQUITECTURA_BACKEND.md para la solución adoptada (script de terminal,
+no un endpoint nuevo).
 
-Sin cambios desde la versión anterior de este documento. Ambas páginas
-públicas que usan `useSearchParams` (`verificar-email`, `restablecer-password`)
-están envueltas en `<Suspense>` — obligatorio en Next.js App Router o el
-build de producción falla al pre-renderizar.
+## Barra de progreso ilustrada — rediseñada para 4 sesiones (06/08/2026)
 
-## Inscripción y pagos (autoservicio con voucher)
+`components/dashboard/ProgresoCarretera.tsx` — ahora tiene **7 paradas**
+en vez de 6: Inicio, Sesión 1, Sesión 2, Sesión 3, Sesión 4, Práctica,
+Diploma. Los extremos (Inicio en x=39, Diploma en x=630) se mantuvieron
+en el mismo lugar a propósito, para no tener que tocar la carretera, la
+línea de arrancada ni la zona de no rebasar — solo se recalcularon las 5
+posiciones intermedias con espaciado parejo (~98-99px). El carrito sigue
+el mismo patrón que ya tenía con la Sesión 3: al aprobar la última
+sesión de teoría (ahora la 4), salta directo a la parada "Práctica" en
+vez de pausar visualmente en la Sesión 4. Mensaje motivacional ampliado
+para cubrir el caso de 2 sesiones aprobadas (antes solo cubría 0 y 1,
+porque con 3 sesiones ese era el único hueco).
 
-Sin cambios desde la versión anterior. Pasarela de pago automática (Azul):
-decisión cerrada, no se implementará.
+## Diploma compartible en redes sociales — CONSTRUIDO (06/08/2026)
 
-## Panel de coordinadora/admin — pantalla de tarjetas
+`app/(estudiante)/diploma/page.tsx` — pasó de "diseñado, sin construir" a
+implementado y entregado. Genera una imagen vertical tipo "historia"
+(1080×1920, formato 9:16, pensado para WhatsApp Status/Instagram
+Stories) 100% en el navegador con `<canvas>`, sin backend ni Cloudinary.
 
-Sin cambios desde la versión anterior.
+**Composición final de la imagen:**
 
-## Panel de estudiantes — pestañas (NUEVO 04/08/2026)
+- Franja de foto real arriba (`public/diploma-compartir.jpg`, foto libre
+  de Unsplash, recortada tipo "cover" a 1080×700), con degradado oscuro
+  en la base para legibilidad.
+- Logo real (`public/logo-mav-rd.png`) recortado en círculo, superpuesto
+  en la transición foto → fondo.
+- Fondo degradado azul (`#1B3A6B`) → rosa oscuro (`#4A1236`) para el
+  resto de la tarjeta.
+- Nombre de la estudiante en grande (con wrap automático para nombres
+  largos).
+- **Sin código de diploma ni fecha en la imagen** — se decidió a
+  propósito que esos datos se queden solo en la tarjeta del PDF, no en
+  la imagen para compartir.
+- Mensaje motivador enmarcado como oportunidad: "Tu oportunidad de
+  aprender a manejar con confianza empieza aquí".
+- Bloque blanco al fondo con QR + link de texto, ambos apuntando a
+  `https://muvo-rd.vercel.app` (la página de inicio).
 
-`app/(coordinadora)/panel/estudiantes/page.tsx`: 3 pestañas — **Activas**
-(`activo:true`, sin diploma), **Graduadas** (`activo:true`, con diploma),
-**Inactivas** (`activo:false`, archivadas, tengan o no diploma; se
-decidió a propósito **no** combinar Graduadas e Inactivas en una sola
-pestaña "Historial"). Cada pestaña hace su propia llamada a
-`GET /usuarios` con `activo` y `conDiploma` como query params —
-paginación independiente y exacta por pestaña, resuelta en el backend, no
-cruzada en el frontend.
+**Decisiones de diseño que se descartaron en el camino** (para que no se
+vuelvan a proponer sin motivo): un ícono de volante dibujado a mano en
+vez del logo real (descartado al conseguir el logo), y una paleta
+tomada directo de los colores del logo — azul marino/dorado/rojo — para
+toda la tarjeta (descartada porque la paleta azul/rosa de marca gustó
+más; los colores del logo real solo se usan en el logo mismo, no en el
+fondo).
 
-Desde el detalle de una estudiante: botón **Archivar cuenta** /
-**Reactivar cuenta** (según el estado actual) que llama a
-`PATCH /usuarios/:id/estado`, con aviso visible cuando la cuenta está
-archivada ("no puede iniciar sesión mientras esté así").
+**Dependencia nueva:** `qrcode` + `@types/qrcode` — el QR se genera
+100% en el navegador con `QRCode.toDataURL()`, sin ningún servicio
+externo.
 
-Detalle de implementación (por si se repite el patrón en otra pantalla):
-`cargarLista` vive en `useCallback([token])` para tener identidad estable
-entre renders, y el `useEffect` de carga inicial depende de
-`[token, pestana, cargarLista]` sin resetear estado manualmente dentro
-del cuerpo del efecto — el reseteo de página/búsqueda al cambiar de
-pestaña ocurre en `cambiarPestana()`, que es un manejador de evento. Este
-patrón evita el warning de React `react-hooks/set-state-in-effect`
-(llamar a `setState` de forma síncrona dentro de un `useEffect`).
+**Detalle técnico importante:** tanto la foto como el logo tienen que
+cargarse desde `public/` (mismo origen) — si el `<canvas>` carga una
+imagen de otro dominio sin CORS configurado, el canvas queda
+"contaminado" y `toBlob()` falla en silencio. Por eso la foto de
+Unsplash se descargó y se guardó localmente en vez de referenciarla en
+vivo.
 
-## Diploma compartible en redes sociales (DISEÑADO, sin construir — próxima sesión)
+**Botón "Compartir mi logro"**: usa `navigator.share()` con el archivo
+PNG si el navegador lo soporta (celular), con fallback a descarga
+directa si no (la mayoría de navegadores de escritorio). Maneja
+`AbortError` (la estudiante cierra el diálogo sin elegir nada) sin
+mostrar error falso.
 
-`app/(estudiante)/diploma/page.tsx`: se agregará una segunda sección
-debajo del botón actual "Ver / descargar mi diploma (PDF)", con una
-**imagen de logro** generada en el navegador (`<canvas>`, no el PDF) a
-partir de datos que la página ya tiene cargados (nombre de la estudiante,
-código de verificación, fecha de emisión) — **100% frontend, sin cambios
-de backend ni Cloudinary**.
+**Pendiente para retomar**: agregar de vuelta una sección "Lo que
+aprendiste" con los 3-4 temas reales del curso dentro de la imagen —
+se dejó fuera a propósito porque los temas todavía no están definidos
+(ver ARQUITECTURA_BACKEND.md, sección de sesiones).
 
-Decisiones ya cerradas (ver HISTORIAL_MODIFICACIONES.md para el detalle
-completo del acuerdo):
-
-- Mensaje: "Comparte tu logro y anima a otra mujer a manejar con confianza".
-- Botón: "Compartir mi logro", usa `navigator.share()` con fallback a
-  descarga directa de la imagen si el navegador no lo soporta.
-- Estilo: tarjeta azul marca (`#1B3A6B`), ícono de volante, "MUVO RD VIAL"
-  arriba, nombre grande al centro, código + fecha abajo en chico, botón
-  rosa marca (`#D6336C`).
-- Formato/dimensiones exactas: sin definir todavía, solo debe verse bien
-  compartida desde celular — decidir proporción (vertical tipo historia
-  vs. cuadrada) al momento de construirlo.
-
-## Barra de progreso ilustrada
-
-Sin cambios desde la versión anterior de este documento.
-`components/dashboard/ProgresoCarretera.tsx` — camino horizontal
-ilustrado con 6 paradas, tramo recorrido pintado de color, transición
-suave del carrito, mensaje motivacional dinámico, destello de celebración
-al completar el diploma, todo respetando `prefers-reduced-motion`.
-
-## Open Graph / metadata para compartir en redes
-
-Sin cambios desde la versión anterior de este documento.
-
-## Contenido editable por la fundadora
-
-Sin cambios desde la versión anterior. Kit de Preparación y Contacto se
-quedan como contenido estático por decisión de Ramon (no es prioridad).
-
-## Notas de diseño
-
-Sin cambios: paleta rosa+azul intencional, mobile-first (la mayoría de las
-estudiantes entra desde el celular — motivo por el cual la barra de
-progreso separa el texto del SVG, y por el cual el diploma compartible
-debe verse bien en formato celular antes que nada).
-
-## Testing antes de cada commit importante
-
-- npm run build local sin errores antes de push — ESPECIAL cuidado con
-  cualquier página nueva que use useSearchParams: SIEMPRE envolver en
-  <Suspense>, si no el build de producción falla al pre-renderizar.
-- Probar flujo completo contra el backend real.
-- Verificar responsive en móvil antes de desplegar a Vercel.
-- Toda ruta nueva requiere reiniciar npm run dev.
-- Cuidado con `react-hooks/set-state-in-effect` en páginas con carga de
-  datos + pestañas/filtros: usar `useCallback` para la función de carga y
-  dejar que el `useEffect` dependa de ella, en vez de resetear estado a
-  mano dentro del cuerpo del efecto (ver "Panel de estudiantes" arriba).
+## Testing antes de cada commit importante — sin cambios
 
 ## Pendiente real (frontend)
 
-- Diploma compartible en redes — diseño cerrado, construir la próxima
-  sesión (ver sección de arriba).
-- Confirmar y corregir el alcance real del grupo de ruta (estudiante) en
-  este documento (ver aviso al inicio).
+- Agregar la sección "Lo que aprendiste" (temas reales) a la imagen del
+  diploma compartible, cuando estén definidos los 4 temas.
+- Confirmar y corregir el alcance real del grupo de ruta (estudiante) —
+  sigue sin resolverse.
+- Revisar lenguaje de género en `testimonios/page.tsx` y
+  `registro/page.tsx` — no se tocaron esta sesión.
+- Reemplazar las fotos de `public/inscripcion/` cuando haya material
+  nuevo que refleje la audiencia ampliada (adolescentes + mujeres) —
+  trabajo de contenido/fotografía, no de código.
+- Construir un formulario en `panel/aula-virtual/page.tsx` (o donde
+  tenga más sentido) para renombrar sesiones desde el panel, en vez de
+  requerir una petición manual a `PATCH /sesiones/:numero` — pospuesto a
+  propósito, se retoma cuando haga falta.
 - "Me gusta" en comentarios individuales de noticias.
