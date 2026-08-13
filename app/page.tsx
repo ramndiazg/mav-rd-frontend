@@ -39,7 +39,61 @@ const testimonios = [
   },
 ];
 
-export default function Home() {
+// El curso teórico es el mismo para todas — la diferencia real entre
+// planes está solo en la práctica de manejo (ver detalle de cada uno).
+const planes = [
+  {
+    id: "normal" as const,
+    nombre: "Normal",
+    destacado: false,
+    detalle:
+      "Práctica de manejo en grupo, con el acompañamiento de nuestros instructores en cada sesión.",
+    caracteristicas: [
+      "4 sesiones de teoría",
+      "Práctica de manejo en grupo",
+      "Preparación para el examen del INTRANT",
+      "Diploma al completar el curso",
+    ],
+  },
+  {
+    id: "vip" as const,
+    nombre: "VIP",
+    destacado: true,
+    detalle:
+      "Práctica de manejo más personalizada, con más tiempo uno a uno junto a tu instructor.",
+    caracteristicas: [
+      "4 sesiones de teoría",
+      "Práctica personalizada, más tiempo con tu instructor",
+      "Preparación para el examen del INTRANT",
+      "Diploma al completar el curso",
+    ],
+  },
+];
+
+type Precios = { precio_plan_normal: number; precio_plan_vip: number };
+
+function formatearMonto(valor: number) {
+  return `RD$${valor.toLocaleString("es-DO")}`;
+}
+
+// Se pide en cada visita (no se cachea): el precio puede cambiar sin que
+// haya un nuevo despliegue del frontend, ya que vive en la base de datos.
+async function obtenerPrecios(): Promise<Precios | null> {
+  try {
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/configuracion`,
+      { cache: "no-store" },
+    );
+    const json = await res.json();
+    return json.success ? json.data : null;
+  } catch {
+    return null;
+  }
+}
+
+export default async function Home() {
+  const precios = await obtenerPrecios();
+
   return (
     <>
       {/* Hero */}
@@ -128,6 +182,75 @@ export default function Home() {
 
       <div className="road-divider" />
 
+      {/* NUEVO: Planes y precios */}
+      <section className="mx-auto max-w-6xl px-4 py-16">
+        <div className="max-w-2xl">
+          <h2 className="font-display text-3xl font-bold text-brand-blue">
+            Un solo curso, dos formas de practicar.
+          </h2>
+          <p className="mt-3 text-neutral-text/80">
+            La teoría es la misma para todas — la diferencia está en cómo
+            quieres vivir la práctica de manejo.
+          </p>
+        </div>
+
+        <div className="mt-10 grid gap-6 sm:grid-cols-2">
+          {planes.map((plan) => {
+            const precio =
+              plan.id === "normal"
+                ? precios?.precio_plan_normal
+                : precios?.precio_plan_vip;
+
+            return (
+              <div
+                key={plan.id}
+                className={`rounded-xl border p-6 shadow-sm transition hover:shadow-md ${plan.destacado
+                  ? "border-brand-pink bg-brand-pink-light/40"
+                  : "border-brand-blue/10 bg-white"
+                  }`}
+              >
+                <div className="flex items-baseline justify-between">
+                  <h3 className="font-display text-xl font-bold text-brand-blue">
+                    Plan {plan.nombre}
+                  </h3>
+                  {plan.destacado && (
+                    <span className="rounded-full bg-brand-pink px-3 py-1 text-xs font-semibold text-white">
+                      Más personalizado
+                    </span>
+                  )}
+                </div>
+
+                <p className="mt-3 font-display text-3xl font-bold text-brand-blue">
+                  {precio ? formatearMonto(precio) : "Consultar"}
+                </p>
+
+                <p className="mt-2 text-sm text-neutral-text/75">
+                  {plan.detalle}
+                </p>
+
+                <ul className="mt-5 space-y-2 text-sm text-neutral-text/85">
+                  {plan.caracteristicas.map((c) => (
+                    <li key={c} className="flex items-start gap-2">
+                      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-pink" />
+                      {c}
+                    </li>
+                  ))}
+                </ul>
+
+                <Link
+                  href="/registro"
+                  className="mt-6 inline-block rounded-full bg-brand-pink px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-pink/90"
+                >
+                  Empezar con este plan
+                </Link>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      <div className="road-divider" />
+
       {/* Testimonios */}
       <section className="bg-brand-pink-light">
         <div className="mx-auto max-w-6xl px-4 py-16">
@@ -157,6 +280,27 @@ export default function Home() {
               Ver todos los testimonios →
             </Link>
           </div>
+        </div>
+      </section>
+
+      {/* NUEVO: Banner hacia el programa empresarial */}
+      <section className="bg-brand-blue">
+        <div className="mx-auto flex max-w-6xl flex-col items-start gap-4 px-4 py-12 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="font-display text-2xl font-bold text-white">
+              ¿Buscas capacitar a tu equipo?
+            </h2>
+            <p className="mt-2 max-w-xl text-white/80">
+              Llevamos educación vial y manejo defensivo a empresas, con un
+              plan que se ajusta al tamaño de tu grupo.
+            </p>
+          </div>
+          <Link
+            href="/empresas"
+            className="shrink-0 rounded-full border border-white/40 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+          >
+            Conoce el programa empresarial
+          </Link>
         </div>
       </section>
 

@@ -9,6 +9,7 @@ const enlaces = [
   { href: "/", label: "Inicio" },
   { href: "/acerca-de-nosotros", label: "Acerca de Nosotros" },
   { href: "/kit-preparacion", label: "Kit de Preparación" },
+  { href: "/empresas", label: "Empresas" },
   { href: "/noticias", label: "Noticias" },
   { href: "/testimonios", label: "Testimonios" },
   { href: "/faq", label: "Preguntas Frecuentes" },
