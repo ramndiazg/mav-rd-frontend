@@ -4,6 +4,158 @@
 > ARQUITECTURA_BACKEND.md, ARQUITECTURA_FRONTEND.md y DATABASE.md, este
 > archivo es solo un changelog, no la fuente de verdad de cómo funciona nada.
 
+## 13/08/2026 — PDF de material de estudio, sección de Planes en el home, programa Empresas
+
+### Contexto de arranque de la sesión
+
+Se reinició la conversación desde cero (memoria del proyecto vive en
+estos 3 archivos + los modelos/controllers reales). Se aclaró que
+`scripts/crearSesionesIniciales.js --confirmar` ya se había ejecutado en
+una sesión anterior pero nunca quedó registrado — corregido en
+ARQUITECTURA_BACKEND.md y DATABASE.md.
+
+### Material de estudio: PDF como archivo real, no solo URL pegada
+
+Pedido: la coordinadora quería poder subir PDFs de verdad (no solo pegar
+un link externo) para el material de estudio, con miras a eventualmente
+tener texto enriquecido con imágenes también (esto último se identificó
+como un pedido aparte, más grande, y se dejó fuera de este bloque).
+
+Se revisó primero el patrón ya existente para PDFs en el proyecto: los
+diplomas ya subían PDFs a Cloudinary como `resourceType: "raw"` y los
+entregaban con una URL firmada generada al momento
+(`generarUrlDescargaFirmada`, porque Cloudinary bloquea la entrega
+pública de recursos `raw`). Se replicó exactamente ese patrón para
+`ContenidoSesion` en vez de inventar uno nuevo:
+
+- `middleware/upload.js`: se separó en `uploadImagen` (sin cambios de
+  comportamiento) y `uploadPDF` (nuevo, 15MB, `application/pdf`).
+- `POST /api/uploads/pdf` (nuevo, coordinadora/admin) sube el buffer a
+  `mav-rd/contenido-sesion` y devuelve `{ url, publicId }`.
+- `ContenidoSesion` ganó el campo `publicIdCloudinary` (opcional — solo
+  se llena si el pdf se subió como archivo, no si se pegó una URL
+  externa a mano).
+- `GET /api/contenido-sesion/:id/archivo` (nuevo): genera la URL firmada
+  al momento y sirve el PDF inline, verificando el token manualmente
+  (header o `?token=`, mismo patrón que `diplomaController.js`) porque un
+  `<a href>` de descarga no manda headers. A diferencia del diploma, sí
+  valida que la sesión esté desbloqueada para la estudiante antes de
+  entregarle el archivo.
+- Frontend: `panel/aula-virtual/page.tsx` gana un selector de archivo
+  para PDF (antes cualquier tipo no-video/no-texto caía en un `<input
+  type="text">` genérico); `aula-virtual/[sesion]/page.tsx` arma el link
+  al endpoint firmado cuando hay `publicIdCloudinary`, con fallback a
+  `url` directo para no romper contenido viejo.
+
+Complicación durante la sesión: el usuario subió dos veces un archivo
+llamado `page.tsx` (el de la vista de estudiante y luego el del panel de
+coordinadora), y el segundo sobrescribió al primero en disco antes de
+poder leerlo completo — hubo que pedir que lo resubiera con otro nombre
+para poder devolver el archivo completo sin inventar el tramo que
+faltaba (la lógica de la cuenta regresiva `disponibleEn`/`tiempoRestanteMs`).
+Lección para sesiones futuras: pedir nombres de archivo distintos cuando
+se suben varios `page.tsx` en la misma tanda.
+
+Estado real al cierre: el flujo completo se probó en producción (deploy
+en Render + Vercel) y funciona — **no se cargó contenido real todavía**,
+solo se confirmó que subir/guardar/abrir un PDF funciona de punta a
+punta.
+
+### Análisis de la competencia (academiavial.com) y aclaración de la estructura de planes
+
+El usuario pidió analizar academiavial.com como referencia de una
+página de inicio más "comercial" (animaciones, precios visibles desde el
+home, sección empresarial). Se navegó el sitio real (home + página de
+servicios empresariales) antes de opinar.
+
+Se identificó qué vale la pena adoptar vs. qué no, dado el stack real
+(Next.js/Tailwind, sin el builder de animaciones que trae WordPress/
+Elementor) y la restricción de infraestructura gratuita:
+
+- **Sí adoptar:** precio visible desde el inicio (sin forzar a entrar a
+  `/inscripcion`), sección de "por qué elegirnos", y una página
+  empresarial — encaja con la misión de la fundación, es contenido +
+  formulario, no requiere lógica nueva compleja.
+- **No adoptar:** su estructura de múltiples "programas" con precios
+  distintos (Muvo vende un solo curso, no un catálogo — forzar esa
+  estructura habría sido inventar complejidad que no existe), ni el
+  carrusel decorativo del hero (mucho esfuerzo visual para un solo
+  curso).
+- Animaciones: se sugirió `framer-motion` como opción de bajo costo si
+  se quiere ir en esa dirección más adelante — no se implementó en este
+  bloque, quedó fuera de alcance.
+
+A mitad del análisis, el usuario aclaró un punto de negocio que no
+estaba bien reflejado en el sitio: no son varios cursos, es **un solo
+curso teórico con dos variantes de práctica** (Normal y VIP — la
+diferencia es personalización/tiempo con el instructor, no contenido
+teórico distinto). Esto ya vivía correctamente en el backend
+(`Inscripcion.tipoPlan`), solo faltaba comunicarlo bien en el home.
+
+### Sección de Planes y Precios en el home
+
+`app/page.tsx` se convirtió en un componente servidor async que hace
+`fetch` a `GET /api/configuracion` (`cache: "no-store"`) y muestra dos
+tarjetas (Normal/VIP) con precio real, características, y CTA hacia
+`/registro`. El copy se iteró varias veces en vivo con el usuario hasta
+llegar a una versión explícitamente más comercial ("Sal manejando con
+confianza. Tú eliges cómo llegar ahí...") en vez de solo descriptiva —
+incluyó dos correcciones de redacción en español (tilde en "más", y
+mayúscula indebida después de un guión largo).
+
+Se agregó también un banner hacia `/empresas` entre Testimonios y el CTA
+final del home.
+
+### Programa Empresarial (`/empresas`) — primera versión
+
+Se preguntó explícitamente qué tan lejos llegar en esta primera versión,
+dando dos opciones: informativa (tabla/contenido + formulario, sin
+cambios de backend más allá de un endpoint de envío) vs. inscripción
+real con la empresa como unidad de pago. El usuario eligió la opción
+informativa — sin precios fijos en el sitio, cotización por correo según
+cantidad de estudiantes, curso completo (teoría + práctica) igual que el
+individual.
+
+Construido:
+
+- `app/empresas/page.tsx` (nuevo): hero, 4 beneficios con ícono, "cómo
+  funciona" en 3 pasos, formulario (`nombreEmpresa`, `contacto`, `cargo`
+  opcional, `telefono`, `email`, `cantidadEstudiantes`, `mensaje`
+  opcional).
+- `POST /api/empresas/contacto` (nuevo, público): `controllers/empresasController.js`
+  + `routes/empresasRoutes.js`, montado en `app.js`. Reutiliza
+  `DestinatarioNotificacion` vía una función nueva en
+  `utils/notificaciones.js` (`enviarSolicitudEmpresarial`) — mismo canal
+  de correo/Telegram institucional que ya usan los avisos de voucher y
+  balance pendiente, sin configuración nueva.
+- **Decisión explícita:** no se persiste el lead en Mongo en esta
+  primera versión — si Resend falla (sigue bloqueado por el dominio
+  pendiente) o el mensaje se pierde, no queda registro. Anotado como
+  pendiente a evaluar, no bloqueante para esta primera versión.
+- `components/layout/Navbar.tsx`: se agregó el link "Empresas" al array
+  `enlaces` compartido entre el menú de escritorio y el móvil.
+
+Detalle de nomenclatura durante la sesión: el archivo de rutas se llamó
+primero `routes/empresas.js`, pero al ver el `app.js` real del usuario
+se confirmó que la convención del proyecto es `algoRoutes.js`
+(`uploadRoutes.js`, `inscripcionRoutes.js`, etc.) — se corrigió a
+`routes/empresasRoutes.js` antes de que el usuario lo desplegara.
+
+### Pendiente real dejado para la próxima sesión
+
+- Cargar contenido real (PDFs, videos, texto) en las 4 sesiones — el
+  flujo técnico ya está listo.
+- Evaluar si el formulario de Empresas necesita persistencia en Mongo.
+- Construir una UI de admin para editar `configuracion` (precios) —
+  ahora más visible al estar también en el home público.
+- Texto enriquecido con imágenes en `contenidoTexto` — pedido
+  identificado, no empezado.
+- Animaciones más elaboradas en el home (framer-motion) — sugerido, no
+  implementado.
+- Unificar convención de nombres de color Tailwind (`brand-blue-light`
+  vs `brand-blueLight`), inconsistente entre archivos — se detectó al
+  editar el home, sin urgencia.
+
 ## 06-07/08/2026 — Diploma compartible, ampliación a 4 sesiones, audiencia inclusiva, purga de datos de prueba
 
 ### Diploma compartible en redes sociales — construido de principio a fin
