@@ -186,11 +186,13 @@ export default async function Home() {
       <section className="mx-auto max-w-6xl px-4 py-16">
         <div className="max-w-2xl">
           <h2 className="font-display text-3xl font-bold text-brand-blue">
-            Un solo curso, dos formas de practicar.
+            Sal manejando con confianza. Tú eliges cómo llegar ahí.
           </h2>
           <p className="mt-3 text-neutral-text/80">
-            La teoría es la misma para todas — la diferencia está en cómo
-            quieres vivir la práctica de manejo.
+            La teoría más completa y detallada, los mejores instructores
+            certificados — hacemos la diferencia con nuestra atención
+            personalizada en la práctica de manejo. Elige el plan que se
+            ajuste a tu ritmo.
           </p>
         </div>
 
