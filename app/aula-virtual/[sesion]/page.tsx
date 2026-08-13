@@ -24,6 +24,7 @@ type ContenidoItem = {
   titulo: string;
   tipo: "video" | "pdf" | "enlace" | "texto";
   url?: string;
+  publicIdCloudinary?: string;
   contenidoTexto?: string;
   imagenUrl?: string;
 };
@@ -430,9 +431,13 @@ function AulaVirtualContenido() {
                       </div>
                     )}
 
-                    {item.tipo === "pdf" && item.url && (
+                    {item.tipo === "pdf" && (item.publicIdCloudinary || item.url) && (
                       <a
-                        href={item.url}
+                        href={
+                          item.publicIdCloudinary
+                            ? `${process.env.NEXT_PUBLIC_API_URL}/contenido-sesion/${item._id}/archivo?token=${token}`
+                            : item.url
+                        }
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-sm text-brand-blueLight hover:underline mb-3 inline-block"

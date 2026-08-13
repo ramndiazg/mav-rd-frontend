@@ -26,6 +26,7 @@ type ContenidoItem = {
   titulo: string;
   tipo: TipoContenido;
   url?: string;
+  publicIdCloudinary?: string;
   contenidoTexto?: string;
   imagenUrl?: string;
   orden: number;
@@ -37,6 +38,7 @@ function contenidoVacio() {
     titulo: "",
     tipo: "video" as TipoContenido,
     url: "",
+    publicIdCloudinary: "",
     contenidoTexto: "",
     imagenUrl: "",
     orden: 0,
@@ -237,6 +239,7 @@ export default function PanelAulaVirtualPage() {
   const [formContenido, setFormContenido] = useState(contenidoVacio());
   const [guardandoContenido, setGuardandoContenido] = useState(false);
   const [subiendoImagenContenido, setSubiendoImagenContenido] = useState(false);
+  const [subiendoPDFContenido, setSubiendoPDFContenido] = useState(false);
 
   async function subirImagenContenido(e: React.ChangeEvent<HTMLInputElement>) {
     const archivo = e.target.files?.[0];
@@ -260,6 +263,39 @@ export default function PanelAulaVirtualPage() {
       setMensaje({ tipo: "error", texto: "No pudimos conectar con el servidor." });
     } finally {
       setSubiendoImagenContenido(false);
+    }
+  }
+
+  // NUEVO: sube el PDF del material de estudio a Cloudinary (resourceType
+  // 'raw') y guarda tanto la url pública como el publicId — la entrega real
+  // a la estudiante se hace luego con una URL firmada generada al momento
+  // (ver aula-virtual/[sesion]/page.tsx y contenidoSesionController.js).
+  async function subirPDFContenido(e: React.ChangeEvent<HTMLInputElement>) {
+    const archivo = e.target.files?.[0];
+    if (!archivo) return;
+    setSubiendoPDFContenido(true);
+    try {
+      const datosForm = new FormData();
+      datosForm.append("pdf", archivo);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/uploads/pdf`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: datosForm,
+      });
+      const json = await res.json();
+      if (json.success) {
+        setFormContenido((prev) => ({
+          ...prev,
+          url: json.data.url,
+          publicIdCloudinary: json.data.publicId,
+        }));
+      } else {
+        setMensaje({ tipo: "error", texto: json.error || "No se pudo subir el PDF." });
+      }
+    } catch {
+      setMensaje({ tipo: "error", texto: "No pudimos conectar con el servidor." });
+    } finally {
+      setSubiendoPDFContenido(false);
     }
   }
 
@@ -295,6 +331,7 @@ export default function PanelAulaVirtualPage() {
       titulo: item.titulo,
       tipo: item.tipo,
       url: item.url || "",
+      publicIdCloudinary: item.publicIdCloudinary || "",
       contenidoTexto: item.contenidoTexto || "",
       imagenUrl: item.imagenUrl || "",
       orden: item.orden,
@@ -509,19 +546,50 @@ export default function PanelAulaVirtualPage() {
                     className="mt-1 w-full rounded-lg border border-neutral-bg px-3 py-2 text-sm"
                   />
                 </label>
-              ) : (
+              ) : formContenido.tipo === "video" ? (
                 <label className="text-sm text-neutral-text">
-                  {formContenido.tipo === "video" ? "URL de embed de YouTube" : "URL"}
+                  URL de embed de YouTube
                   <input
                     type="text"
                     required
                     value={formContenido.url}
                     onChange={(e) => setFormContenido((p) => ({ ...p, url: e.target.value }))}
-                    placeholder={
-                      formContenido.tipo === "video"
-                        ? "https://www.youtube.com/embed/XXXXXXXXXXX"
-                        : "https://..."
-                    }
+                    placeholder="https://www.youtube.com/embed/XXXXXXXXXXX"
+                    className="mt-1 w-full rounded-lg border border-neutral-bg px-3 py-2 text-sm"
+                  />
+                </label>
+              ) : formContenido.tipo === "pdf" ? (
+                <div className="text-sm text-neutral-text">
+                  Archivo PDF
+                  <input
+                    type="file"
+                    accept="application/pdf"
+                    onChange={subirPDFContenido}
+                    className="mt-1 w-full text-sm"
+                  />
+                  {subiendoPDFContenido && (
+                    <p className="text-xs text-brand-blueLight mt-1">Subiendo...</p>
+                  )}
+                  {formContenido.url && !subiendoPDFContenido && (
+                    <a
+                      href={formContenido.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-brand-blueLight hover:underline mt-2 inline-block"
+                    >
+                      PDF cargado ↗
+                    </a>
+                  )}
+                </div>
+              ) : (
+                <label className="text-sm text-neutral-text">
+                  URL
+                  <input
+                    type="text"
+                    required
+                    value={formContenido.url}
+                    onChange={(e) => setFormContenido((p) => ({ ...p, url: e.target.value }))}
+                    placeholder="https://..."
                     className="mt-1 w-full rounded-lg border border-neutral-bg px-3 py-2 text-sm"
                   />
                 </label>
@@ -562,7 +630,7 @@ export default function PanelAulaVirtualPage() {
 
               <button
                 type="submit"
-                disabled={guardandoContenido || subiendoImagenContenido}
+                disabled={guardandoContenido || subiendoImagenContenido || subiendoPDFContenido}
                 className="rounded-lg bg-brand-pink text-white text-sm px-4 py-2 font-medium hover:opacity-90 disabled:opacity-60 w-fit"
               >
                 {guardandoContenido ? "Guardando..." : "Guardar"}
