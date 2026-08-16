@@ -6,12 +6,23 @@
   Los tokens se definen aquí con @theme y Tailwind genera las utilidades
   automáticamente (ej. --color-brand-blue → bg-brand-blue, text-brand-blue).
   Ver Arquitectura_Frontend.md para el origen de esta paleta.
+
+  NUEVO (16/08/2026): se agregaron brand-yellow y brand-mamey — colores
+  tomados de la señalización vial real (amarillo de advertencia y el
+  naranja "mamey" de señales de trabajo/precaución), para que la app se
+  sienta más conectada visualmente con lo que enseña. Se usan como acento
+  puntual (insignias, detalles), no como color base de fondo — el azul y
+  el rosa siguen siendo la paleta principal de la marca.
 */
 @theme {
   --color-brand-blue: #1b3a6b;
   --color-brand-blue-light: #4a7fc9;
   --color-brand-pink: #d6336c;
   --color-brand-pink-light: #fbe4ec;
+  --color-brand-yellow: #ffc629;
+  --color-brand-yellow-light: #fff4d6;
+  --color-brand-mamey: #f2994a;
+  --color-brand-mamey-light: #fde8d8;
   --color-neutral-bg: #f7f8fa;
   --color-neutral-text: #1f2937;
   --color-status-success: #2f9e44;

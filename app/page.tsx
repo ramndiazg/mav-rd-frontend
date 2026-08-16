@@ -1,28 +1,33 @@
 import Image from "next/image";
 import Link from "next/link";
 
-// TODO: cuando se confirmen los temas reales de la 4ta sesión, agregar la
-// tarjeta "04" aquí. Se dejó el título de la sección sin número explícito
-// ("en sesiones, en orden" en vez de "tres sesiones") justamente para que
-// no quede desactualizado mientras se decide el contenido nuevo.
+// Las 4 sesiones/módulos reales del curso (actualizado 16/08/2026 — antes
+// tenía 3 tarjetas con títulos viejos que ya no correspondían a los 4
+// módulos de contenido reales que se cargaron en la plataforma).
 const sesiones = [
   {
     numero: "01",
-    titulo: "Ley de Tránsito",
+    titulo: "Bienvenida y Cultura Vial",
     detalle:
-      "Las reglas de la Ley 63-17, señales de tránsito y por qué existen — no para memorizar, sino para entender la calle.",
+      "Por qué manejar es una responsabilidad con la vida de todos — valores, cultura vial y el factor humano detrás del volante.",
   },
   {
     numero: "02",
-    titulo: "Manejo defensivo",
+    titulo: "Marco Legal y Señalización",
     detalle:
-      "Cómo anticipar el peligro antes de que ocurra: distancia, puntos ciegos, y decisiones bajo presión.",
+      "La Ley 63-17, las señales de tránsito y los límites que existen para protegerte, no para limitarte.",
   },
   {
     numero: "03",
-    titulo: "Práctica y examen INTRANT",
+    titulo: "El Vehículo: Mecánica y Seguridad",
     detalle:
-      "Todo lo que necesitas saber para llegar segura al examen del INTRANT, sin sorpresas.",
+      "Cómo funciona tu vehículo por dentro, sus sistemas de seguridad, y cómo mantenerlo en condiciones seguras.",
+  },
+  {
+    numero: "04",
+    titulo: "Técnicas de Conducción",
+    detalle:
+      "Maniobras, conducción defensiva y cómo reaccionar ante condiciones adversas o emergencias en la vía.",
   },
 ];
 
@@ -160,21 +165,28 @@ export default async function Home() {
           </p>
         </div>
 
-        <div className="mt-10 grid gap-6 sm:grid-cols-3">
+        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {sesiones.map((sesion) => (
             <div
               key={sesion.numero}
-              className="rounded-xl border border-brand-blue/10 bg-white p-6 shadow-sm"
+              className="overflow-hidden rounded-xl border border-brand-blue/10 bg-white shadow-sm"
             >
-              <span className="font-display text-3xl font-bold text-brand-pink">
-                {sesion.numero}
-              </span>
-              <h3 className="mt-3 font-display text-lg font-semibold text-brand-blue">
-                {sesion.titulo}
-              </h3>
-              <p className="mt-2 text-sm text-neutral-text/75">
-                {sesion.detalle}
-              </p>
+              {/* Franja tipo señal de tránsito — amarillo de advertencia
+                  con el borde inferior en "mamey", el naranja que se usa
+                  en las señales de precaución/trabajo en la vía. */}
+              <div className="bg-brand-yellow px-6 py-3 border-b-4 border-brand-mamey">
+                <span className="font-display text-2xl font-bold text-brand-blue">
+                  {sesion.numero}
+                </span>
+              </div>
+              <div className="p-6">
+                <h3 className="font-display text-lg font-semibold text-brand-blue">
+                  {sesion.titulo}
+                </h3>
+                <p className="mt-2 text-sm text-neutral-text/75">
+                  {sesion.detalle}
+                </p>
+              </div>
             </div>
           ))}
         </div>
