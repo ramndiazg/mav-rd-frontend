@@ -126,7 +126,7 @@ export default async function Home() {
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
                 href="/registro"
-                className="rounded-full bg-brand-pink px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-pink/90"
+                className="rounded-full bg-brand-blue px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-blue/90"
               >
                 Crear cuenta gratis
               </Link>
@@ -218,17 +218,14 @@ export default async function Home() {
             return (
               <div
                 key={plan.id}
-                className={`rounded-xl border p-6 shadow-sm transition hover:shadow-md ${plan.destacado
-                  ? "border-brand-pink bg-brand-pink-light/40"
-                  : "border-brand-blue/10 bg-white"
-                  }`}
+                className="rounded-xl border-2 border-brand-pink bg-white p-6 shadow-sm transition hover:shadow-md"
               >
                 <div className="flex items-baseline justify-between">
                   <h3 className="font-display text-xl font-bold text-brand-blue">
                     Plan {plan.nombre}
                   </h3>
                   {plan.destacado && (
-                    <span className="rounded-full bg-brand-pink px-3 py-1 text-xs font-semibold text-white">
+                    <span className="rounded-full bg-brand-yellow px-3 py-1 text-xs font-semibold text-brand-blue">
                       Más personalizado
                     </span>
                   )}
@@ -253,7 +250,7 @@ export default async function Home() {
 
                 <Link
                   href="/registro"
-                  className="mt-6 inline-block rounded-full bg-brand-pink px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-pink/90"
+                  className="mt-6 inline-block rounded-full bg-brand-blue px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-blue/90"
                 >
                   Empezar con este plan
                 </Link>
@@ -265,8 +262,69 @@ export default async function Home() {
 
       <div className="road-divider" />
 
+      {/* NUEVO: Promoción del libro de la fundadora — colocado después de
+          Planes (refuerza autoridad justo cuando se evalúa el curso) y
+          antes de Testimonios, sin competir con el CTA de inscripción. */}
+      <section className="mx-auto max-w-6xl px-4 py-16">
+        <div className="grid gap-8 rounded-2xl border-2 border-brand-pink bg-white p-6 sm:grid-cols-[auto_1fr] sm:items-center sm:p-10">
+          {/* Portada — reemplazar /libro-maria-diaz.jpg por la portada real
+              cuando la tengas (súbela a public/ con ese nombre, o cambia
+              la ruta aquí). Mientras tanto queda este marcador visual. */}
+          <div className="mx-auto flex h-52 w-36 shrink-0 items-center justify-center rounded-lg bg-brand-blue text-center shadow-md sm:mx-0">
+            <Image
+              src="/libro-maria-diaz.jpg"
+              alt="Portada del libro de María Díaz"
+              width={144}
+              height={208}
+              className="h-full w-full rounded-lg object-cover"
+            />
+          </div>
+
+          <div>
+            <p className="font-display text-sm font-semibold uppercase tracking-wide text-brand-pink">
+              Escrito por nuestra fundadora
+            </p>
+            <h2 className="mt-2 font-display text-2xl font-bold text-brand-blue sm:text-3xl">
+              Cómo protegerte de un conductor temerario
+            </h2>
+            <p className="mt-3 text-neutral-text/80">
+              María Díaz —auditora y magíster en seguridad vial— convirtió
+              años de trabajo en la vía en una guía práctica sobre cómo
+              anticiparte al peligro y proteger tu vida y la de los demás.
+              El mismo enfoque de conducción preventiva que aprendes en
+              Muvo, ahora en un libro para profundizar a tu ritmo.
+            </p>
+            <p className="mt-3 border-l-4 border-brand-yellow pl-4 text-sm italic text-brand-blue">
+              “Más que conductores somos vidas en movimiento, anticiparse y
+              protegerse salva vidas…”
+            </p>
+
+            <div className="mt-6 flex flex-wrap gap-3">
+              <a
+                href="https://www.amazon.com/dp/B0H85GFK1M"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-full bg-brand-blue px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-blue/90"
+              >
+                Comprar en Amazon
+              </a>
+              <a
+                href="https://www.amazon.com/dp/B0H85CRBR9"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-full bg-brand-yellow px-6 py-3 text-sm font-semibold text-brand-blue transition hover:bg-brand-yellow/90"
+              >
+                Versión Kindle
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div className="road-divider" />
+
       {/* Testimonios */}
-      <section className="bg-brand-pink-light">
+      <section className="bg-brand-blue-light/10">
         <div className="mx-auto max-w-6xl px-4 py-16">
           <h2 className="font-display text-3xl font-bold text-brand-blue">
             Lo que dicen quienes ya se sentaron al volante
@@ -276,7 +334,7 @@ export default async function Home() {
             {testimonios.map((testimonio) => (
               <blockquote
                 key={testimonio.nombre}
-                className="rounded-xl bg-white p-6 shadow-sm"
+                className="rounded-xl border-2 border-brand-pink bg-white p-6 shadow-sm"
               >
                 <p className="text-neutral-text/85">“{testimonio.texto}”</p>
                 <footer className="mt-4 font-display text-sm font-semibold text-brand-blue">
@@ -311,7 +369,7 @@ export default async function Home() {
           </div>
           <Link
             href="/empresas"
-            className="shrink-0 rounded-full border border-white/40 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+            className="shrink-0 rounded-full bg-brand-yellow px-6 py-3 text-sm font-semibold text-brand-blue transition hover:bg-brand-yellow/90"
           >
             Conoce el programa empresarial
           </Link>
@@ -328,7 +386,7 @@ export default async function Home() {
         </p>
         <Link
           href="/registro"
-          className="mt-6 inline-block rounded-full bg-brand-pink px-8 py-3 text-sm font-semibold text-white transition hover:bg-brand-pink/90"
+          className="mt-6 inline-block rounded-full bg-brand-blue px-8 py-3 text-sm font-semibold text-white transition hover:bg-brand-blue/90"
         >
           Crear cuenta gratis
         </Link>
