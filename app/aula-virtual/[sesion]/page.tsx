@@ -440,7 +440,7 @@ function AulaVirtualContenido() {
                         }
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sm text-brand-blueLight hover:underline mb-3 inline-block"
+                        className="mb-3 flex items-center justify-center rounded-lg border border-brand-blue/15 bg-neutral-bg px-4 py-8 text-sm font-medium text-brand-blueLight hover:bg-brand-blue/5 hover:underline"
                       >
                         Abrir PDF ↗
                       </a>
@@ -451,7 +451,7 @@ function AulaVirtualContenido() {
                         href={item.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sm text-brand-blueLight hover:underline mb-3 inline-block"
+                        className="mb-3 flex items-center justify-center rounded-lg border border-brand-blue/15 bg-neutral-bg px-4 py-8 text-sm font-medium text-brand-blueLight hover:bg-brand-blue/5 hover:underline"
                       >
                         Abrir enlace ↗
                       </a>
@@ -465,13 +465,15 @@ function AulaVirtualContenido() {
                     )}
 
                     {!visto && (
-                      <button
-                        onClick={() => marcarVisto(item)}
-                        disabled={marcandoId === item._id}
-                        className="text-sm rounded-lg bg-brand-blue text-white px-4 py-2 font-medium hover:opacity-90 disabled:opacity-60"
-                      >
-                        {marcandoId === item._id ? "Marcando..." : "Marcar como visto"}
-                      </button>
+                      <div className="flex justify-center">
+                        <button
+                          onClick={() => marcarVisto(item)}
+                          disabled={marcandoId === item._id}
+                          className="text-sm rounded-lg bg-brand-blue text-white px-6 py-2 font-medium hover:opacity-90 disabled:opacity-60"
+                        >
+                          {marcandoId === item._id ? "Marcando..." : "Marcar como visto"}
+                        </button>
+                      </div>
                     )}
                   </div>
                 );
