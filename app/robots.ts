@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-const SITE_URL = "https://muvo-rd.vercel.app";
+const SITE_URL = "https://www.muvordvial.com";
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -18,7 +18,6 @@ export default function robots(): MetadataRoute.Robots {
           "/aula-virtual",
           "/examen",
           "/perfil",
-          "/inscripcion",
         ],
       },
     ],

@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-const SITE_URL = "https://muvo-rd.vercel.app";
+const SITE_URL = "https://www.muvordvial.com";
 
 // Solo páginas PÚBLICAS — nada que requiera login (dashboard, panel,
 // aula-virtual, examen, perfil) va aquí. Esas ya quedaron bloqueadas en
