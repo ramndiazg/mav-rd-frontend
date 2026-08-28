@@ -21,7 +21,7 @@ const inter = Inter({
 // ("muvo-rd.vercel.app"). Esto hacía que las etiquetas Open Graph,
 // Twitter Card y la URL canónica apuntaran todas a un dominio ajeno,
 // confundiendo a Google y a las vistas previas de WhatsApp/Facebook.
-const SITE_URL = "https://muvo-rd.vercel.app";
+const SITE_URL = "https://www.muvordvial.com";
 
 // Descripción reescrita para incluir las palabras que la gente realmente
 // busca en Google ("escuela de manejo", "licencia de conducir",
