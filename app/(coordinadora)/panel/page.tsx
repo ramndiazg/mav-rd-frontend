@@ -14,6 +14,7 @@ import {
   Landmark,
   FileEdit,
   BellRing,
+  Bot,
   type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -43,6 +44,9 @@ const MODULOS_ADMIN: Tarjeta[] = [
   { href: "/admin/contabilidad", titulo: "Contabilidad", descripcion: "Movimientos y balances", Icono: Landmark },
   { href: "/admin/contenido-pagina", titulo: "Contenido de página", descripcion: "Textos e imágenes del sitio", Icono: FileEdit },
   { href: "/admin/notificaciones", titulo: "Notificaciones", descripcion: "Quién recibe avisos de pagos nuevos", Icono: BellRing },
+  // NUEVO (28/08/2026): chatbot con acceso de solo lectura a los datos
+  // reales de la app (Gemini + function calling). Ver ARQUITECTURA_BACKEND.md.
+  { href: "/admin/asistente", titulo: "Asistente", descripcion: "Pregúntale por cifras reales de la app", Icono: Bot },
 ];
 
 function GrupoTarjetas({
