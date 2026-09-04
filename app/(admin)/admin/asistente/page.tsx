@@ -31,7 +31,7 @@ export default function AsistentePage() {
       id: idUnico(),
       rol: "asistente",
       texto:
-        "Hola, María. Puedo responder preguntas sobre inscripciones, pagos, estudiantes, balance contable, solicitudes de Empresas y resultados de exámenes — con datos reales de la app, nunca inventados. ¿Qué quieres saber?",
+        "Hola, María. Puedo responder preguntas sobre inscripciones, pagos, estudiantes, balance contable, solicitudes de Empresas y resultados de exámenes. ¿Qué quieres saber?",
     },
   ]);
   const [pregunta, setPregunta] = useState("");
@@ -107,8 +107,8 @@ export default function AsistentePage() {
         Asistente
       </h2>
       <p className="text-sm text-neutral-text mb-6">
-        Pregúntale por cifras reales de la app — nunca inventa datos, solo
-        responde con lo que encuentra en la base de datos.
+        Consulta inscripciones, pagos, estudiantes, balance contable,
+        solicitudes de Empresas y resultados de exámenes.
       </p>
 
       <div className="rounded-xl bg-white border border-neutral-bg p-4 mb-4 h-[60vh] overflow-y-auto flex flex-col gap-3">
