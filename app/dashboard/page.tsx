@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { BookOpen, CheckCircle2, Lock, Trophy } from "lucide-react";
+import { BookOpen, CheckCircle2, Lock, Trophy, ClipboardList } from "lucide-react";
 import RutaProtegida from "@/components/auth/RutaProtegida";
 import { useAuth } from "@/contexts/AuthContext";
 import ProgresoCarretera from "@/components/dashboard/ProgresoCarretera";
@@ -75,10 +75,36 @@ function AvisoEmailSinVerificar() {
   );
 }
 
+// NUEVO (04/09/2026): antes de poder ver cualquier sesión, hay que
+// completar el cuestionario de perfil conductual. El backend ya lo
+// exige en obtenerSesionParaEstudiante — esto es solo la UI para que
+// la estudiante no llegue a un 403 confuso al hacer clic.
+function AvisoTestPendiente() {
+  return (
+    <div className="rounded-xl bg-white border border-neutral-bg p-8 text-center">
+      <ClipboardList className="mx-auto mb-3 text-brand-blue" size={32} />
+      <p className="font-display font-semibold text-brand-blue text-lg mb-2">
+        Antes de empezar, completa tu cuestionario de perfil
+      </p>
+      <p className="text-sm text-neutral-text mb-6">
+        Es un paso único, tarda unos minutos y nos ayuda a conocer tu
+        experiencia previa antes de tu primera sesión.
+      </p>
+      <Link
+        href="/test-psicologico"
+        className="inline-block rounded-full bg-brand-pink text-white px-6 py-3 font-medium hover:opacity-90"
+      >
+        Completar cuestionario
+      </Link>
+    </div>
+  );
+}
+
 function DashboardContenido() {
   const { usuario, token } = useAuth();
   const [inscripcion, setInscripcion] = useState<Inscripcion | null>(null);
   const [progreso, setProgreso] = useState<Progreso | null>(null);
+  const [testCompletado, setTestCompletado] = useState<boolean | null>(null);
   const [diplomaListo, setDiplomaListo] = useState(false);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(false);
@@ -107,25 +133,33 @@ function DashboardContenido() {
         // Solo si el pago ya está confirmado tiene sentido cargar el progreso
         // del Aula Virtual — para los otros 3 estados no existe todavía.
         if (inscripcionActual?.estadoPago === "pagado") {
-          const resProgreso = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/progreso/me`,
-            { headers: { Authorization: `Bearer ${token}` } },
-          );
+          const [resProgreso, resTest] = await Promise.all([
+            fetch(`${process.env.NEXT_PUBLIC_API_URL}/progreso/me`, {
+              headers: { Authorization: `Bearer ${token}` },
+            }),
+            fetch(
+              `${process.env.NEXT_PUBLIC_API_URL}/test-psicologico/mi-respuesta`,
+              { headers: { Authorization: `Bearer ${token}` } },
+            ),
+          ]);
           const jsonProgreso = await resProgreso.json();
-          if (!cancelado && jsonProgreso.success) {
-            setProgreso(jsonProgreso.data);
+          const jsonTest = await resTest.json();
 
-            // Solo tiene sentido preguntar por el diploma si ya completó
-            // las sesiones — antes de eso, GET /diplomas/me siempre
-            // respondería 404, así que nos ahorramos la llamada.
-            if (jsonProgreso.data.cursoCompletado) {
-              const resDiploma = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/diplomas/me`,
-                { headers: { Authorization: `Bearer ${token}` } },
-              );
-              const jsonDiploma = await resDiploma.json();
-              if (!cancelado) setDiplomaListo(jsonDiploma.success);
-            }
+          if (cancelado) return;
+
+          if (jsonProgreso.success) setProgreso(jsonProgreso.data);
+          if (jsonTest.success) setTestCompletado(jsonTest.completado);
+
+          // Solo tiene sentido preguntar por el diploma si ya completó
+          // las sesiones — antes de eso, GET /diplomas/me siempre
+          // respondería 404, así que nos ahorramos la llamada.
+          if (jsonProgreso.success && jsonProgreso.data.cursoCompletado) {
+            const resDiploma = await fetch(
+              `${process.env.NEXT_PUBLIC_API_URL}/diplomas/me`,
+              { headers: { Authorization: `Bearer ${token}` } },
+            );
+            const jsonDiploma = await resDiploma.json();
+            if (!cancelado) setDiplomaListo(jsonDiploma.success);
           }
         }
       } catch {
@@ -223,74 +257,84 @@ function DashboardContenido() {
           </div>
         )}
 
-        {!cargando && !error && inscripcion?.estadoPago === "pagado" && progreso && (
-          <>
-            <ProgresoCarretera progreso={progreso} diplomaListo={diplomaListo} />
-            <div className="grid gap-4">
-              {SESIONES.map((numero, indice) => {
-                const estado = estadoSesion(numero, progreso);
-                const etiqueta =
-                  estado === "aprobada"
-                    ? "Aprobada"
-                    : estado === "desbloqueada"
-                      ? "Disponible"
-                      : "Bloqueada";
-                const colorEtiqueta =
-                  estado === "aprobada"
-                    ? "bg-status-success text-white"
-                    : estado === "desbloqueada"
-                      ? "bg-brand-pink text-white"
-                      : "bg-neutral-bg text-neutral-text";
-                const Icono =
-                  estado === "aprobada" ? CheckCircle2 : estado === "desbloqueada" ? BookOpen : Lock;
-                const colorIcono =
-                  estado === "aprobada"
-                    ? "text-status-success"
-                    : estado === "desbloqueada"
-                      ? "text-brand-pink"
-                      : "text-neutral-text opacity-40";
+        {!cargando &&
+          !error &&
+          inscripcion?.estadoPago === "pagado" &&
+          progreso &&
+          testCompletado === false && <AvisoTestPendiente />}
 
-                const tarjeta = (
-                  <div
-                    className="session-card-in rounded-xl bg-white border border-neutral-bg p-6 flex items-center justify-between hover:shadow-md transition-shadow"
-                    style={{ animationDelay: `${indice * 80}ms` }}
-                  >
-                    <div className="flex items-center gap-3">
-                      <Icono size={20} className={colorIcono} />
-                      <p className="font-display font-semibold text-brand-blue">
-                        Sesion {numero}
-                      </p>
-                    </div>
-                    <span
-                      className={`text-xs font-medium px-3 py-1 rounded-full ${colorEtiqueta}`}
+        {!cargando &&
+          !error &&
+          inscripcion?.estadoPago === "pagado" &&
+          progreso &&
+          testCompletado === true && (
+            <>
+              <ProgresoCarretera progreso={progreso} diplomaListo={diplomaListo} />
+              <div className="grid gap-4">
+                {SESIONES.map((numero, indice) => {
+                  const estado = estadoSesion(numero, progreso);
+                  const etiqueta =
+                    estado === "aprobada"
+                      ? "Aprobada"
+                      : estado === "desbloqueada"
+                        ? "Disponible"
+                        : "Bloqueada";
+                  const colorEtiqueta =
+                    estado === "aprobada"
+                      ? "bg-status-success text-white"
+                      : estado === "desbloqueada"
+                        ? "bg-brand-pink text-white"
+                        : "bg-neutral-bg text-neutral-text";
+                  const Icono =
+                    estado === "aprobada" ? CheckCircle2 : estado === "desbloqueada" ? BookOpen : Lock;
+                  const colorIcono =
+                    estado === "aprobada"
+                      ? "text-status-success"
+                      : estado === "desbloqueada"
+                        ? "text-brand-pink"
+                        : "text-neutral-text opacity-40";
+
+                  const tarjeta = (
+                    <div
+                      className="session-card-in rounded-xl bg-white border border-neutral-bg p-6 flex items-center justify-between hover:shadow-md transition-shadow"
+                      style={{ animationDelay: `${indice * 80}ms` }}
                     >
-                      {etiqueta}
-                    </span>
-                  </div>
-                );
+                      <div className="flex items-center gap-3">
+                        <Icono size={20} className={colorIcono} />
+                        <p className="font-display font-semibold text-brand-blue">
+                          Sesion {numero}
+                        </p>
+                      </div>
+                      <span
+                        className={`text-xs font-medium px-3 py-1 rounded-full ${colorEtiqueta}`}
+                      >
+                        {etiqueta}
+                      </span>
+                    </div>
+                  );
 
-                return estado === "bloqueada" ? (
-                  <div key={numero}>{tarjeta}</div>
-                ) : (
-                  <Link key={numero} href={`/aula-virtual/${numero}`}>
-                    {tarjeta}
+                  return estado === "bloqueada" ? (
+                    <div key={numero}>{tarjeta}</div>
+                  ) : (
+                    <Link key={numero} href={`/aula-virtual/${numero}`}>
+                      {tarjeta}
+                    </Link>
+                  );
+                })}
+
+                {progreso.cursoCompletado && (
+                  <Link
+                    href="/diploma"
+                    className="session-card-in rounded-xl bg-brand-blue text-white p-6 text-center font-display font-semibold hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                    style={{ animationDelay: `${SESIONES.length * 80}ms` }}
+                  >
+                    <Trophy size={20} />
+                    Ver mi diploma
                   </Link>
-                );
-              })}
-
-              {progreso.cursoCompletado && (
-                <Link
-                  href="/diploma"
-                  className="session-card-in rounded-xl bg-brand-blue text-white p-6 text-center font-display font-semibold hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
-                  style={{ animationDelay: `${SESIONES.length * 80}ms` }}
-                >
-                  <Trophy size={20} />
-                  Ver mi diploma
-                </Link>
-              )}
-            </div>
-          </>
-        )}
+                )}
+              </div>
+            </>
+          )}
       </div>
     </main>
   );

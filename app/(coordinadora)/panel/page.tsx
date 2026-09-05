@@ -15,6 +15,7 @@ import {
   FileEdit,
   BellRing,
   Bot,
+  ClipboardList,
   type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -32,6 +33,9 @@ const MODULOS_CURSO: Tarjeta[] = [
   { href: "/panel/aula-virtual", titulo: "Aula virtual", descripcion: "Contenido de las sesiones", Icono: GraduationCap },
   { href: "/panel/examenes", titulo: "Exámenes", descripcion: "Bancos de preguntas", Icono: ClipboardCheck },
   { href: "/panel/diplomas", titulo: "Diplomas", descripcion: "Generar y verificar diplomas", Icono: Award },
+  // NUEVO (04/09/2026): ver ARQUITECTURA_BACKEND.md — solo secciones A-H
+  // del test en papel, sin puntaje calculado.
+  { href: "/panel/test-psicologico", titulo: "Perfil conductual", descripcion: "Cuestionario previo al curso", Icono: ClipboardList },
 ];
 
 const MODULOS_CONTENIDO: Tarjeta[] = [
@@ -44,8 +48,6 @@ const MODULOS_ADMIN: Tarjeta[] = [
   { href: "/admin/contabilidad", titulo: "Contabilidad", descripcion: "Movimientos y balances", Icono: Landmark },
   { href: "/admin/contenido-pagina", titulo: "Contenido de página", descripcion: "Textos e imágenes del sitio", Icono: FileEdit },
   { href: "/admin/notificaciones", titulo: "Notificaciones", descripcion: "Quién recibe avisos de pagos nuevos", Icono: BellRing },
-  // NUEVO (28/08/2026): chatbot con acceso de solo lectura a los datos
-  // reales de la app (Gemini + function calling). Ver ARQUITECTURA_BACKEND.md.
   { href: "/admin/asistente", titulo: "Asistente", descripcion: "Pregúntale por cifras reales de la app", Icono: Bot },
 ];
 
