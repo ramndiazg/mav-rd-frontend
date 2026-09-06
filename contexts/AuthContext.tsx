@@ -8,7 +8,7 @@ import {
   ReactNode,
 } from "react";
 
-type Rol = "estudiante" | "coordinadora" | "admin";
+type Rol = "estudiante" | "coordinadora" | "admin" | "conductor";
 
 type Usuario = {
   _id: string;
@@ -56,8 +56,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [cargando, setCargando] = useState(true);
 
-  // Al montar la app, si hay un token guardado, lo validamos contra el
-  // backend (GET /api/auth/perfil). Si el token expiro (401), lo borramos.
   useEffect(() => {
     let cancelado = false;
 
@@ -132,9 +130,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { ok: false, error: json.error || "No se pudo crear la cuenta." };
       }
 
-      // No esta confirmado si /api/auth/registro devuelve token como login.
-      // Cubrimos ambos casos: si viene token, dejamos a la persona logueada;
-      // si no, que inicie sesion manualmente despues.
       if (json.data?.token) {
         window.localStorage.setItem("token", json.data.token);
         setToken(json.data.token);

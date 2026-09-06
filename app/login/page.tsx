@@ -30,6 +30,9 @@ export default function LoginPage() {
 
     if (resultado.rol === "coordinadora" || resultado.rol === "admin") {
       router.push("/panel/pagos");
+    } else if (resultado.rol === "conductor") {
+      // NUEVO (05/09/2026): el conductor tiene su propio dashboard de práctica.
+      router.push("/practica");
     } else {
       router.push("/dashboard");
     }

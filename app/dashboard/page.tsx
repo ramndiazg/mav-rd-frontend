@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { BookOpen, CheckCircle2, Lock, Trophy, ClipboardList } from "lucide-react";
+import { BookOpen, CheckCircle2, Lock, Trophy, ClipboardList, Phone, Mail, Clock } from "lucide-react";
 import RutaProtegida from "@/components/auth/RutaProtegida";
 import { useAuth } from "@/contexts/AuthContext";
 import ProgresoCarretera from "@/components/dashboard/ProgresoCarretera";
@@ -11,6 +11,7 @@ type Progreso = {
   sesionActualDesbloqueada: number;
   sesionesAprobadas: number[];
   cursoCompletado: boolean;
+  practicaAprobada: boolean; // NUEVO (05/09/2026)
 };
 
 type Inscripcion = {
@@ -21,8 +22,23 @@ type Inscripcion = {
   notaRechazo?: string | null;
 };
 
-// Ampliado de 3 a 4 sesiones el 06/08/2026 — ver HISTORIAL_MODIFICACIONES.md.
+type Instructor = {
+  _id: string;
+  diasDisponibles: { dia: string; horario: string }[];
+  userId: { nombre: string; apellido: string; telefono: string; email: string };
+};
+
 const SESIONES = [1, 2, 3, 4];
+
+const NOMBRES_DIA: Record<string, string> = {
+  lunes: "Lunes",
+  martes: "Martes",
+  miercoles: "Miércoles",
+  jueves: "Jueves",
+  viernes: "Viernes",
+  sabado: "Sábado",
+  domingo: "Domingo",
+};
 
 function estadoSesion(numero: number, progreso: Progreso) {
   if (progreso.sesionesAprobadas.includes(numero)) return "aprobada";
@@ -75,10 +91,6 @@ function AvisoEmailSinVerificar() {
   );
 }
 
-// NUEVO (04/09/2026): antes de poder ver cualquier sesión, hay que
-// completar el cuestionario de perfil conductual. El backend ya lo
-// exige en obtenerSesionParaEstudiante — esto es solo la UI para que
-// la estudiante no llegue a un 403 confuso al hacer clic.
 function AvisoTestPendiente() {
   return (
     <div className="rounded-xl bg-white border border-neutral-bg p-8 text-center">
@@ -96,6 +108,124 @@ function AvisoTestPendiente() {
       >
         Completar cuestionario
       </Link>
+    </div>
+  );
+}
+
+// NUEVO (05/09/2026): terminó toda la teoría, todavía no la aprueba un
+// instructor. En vez de las tarjetas de sesión, felicitación + lista de
+// choferes activos para que la estudiante misma los contacte.
+function PantallaListaParaPractica() {
+  const { token } = useAuth();
+  const [instructores, setInstructores] = useState<Instructor[]>([]);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    let cancelado = false;
+
+    (async () => {
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/instructores/activos`,
+          { headers: { Authorization: `Bearer ${token}` } },
+        );
+        const json = await res.json();
+        if (!cancelado) {
+          if (json.success) setInstructores(json.data);
+          else setError(true);
+        }
+      } catch {
+        if (!cancelado) setError(true);
+      } finally {
+        if (!cancelado) setCargando(false);
+      }
+    })();
+
+    return () => {
+      cancelado = true;
+    };
+  }, [token]);
+
+  return (
+    <div className="rounded-xl bg-white border border-neutral-bg p-8 text-center">
+      <Trophy className="mx-auto mb-3 text-brand-pink" size={36} />
+      <p className="font-display font-semibold text-brand-blue text-xl mb-2">
+        ¡Felicidades, terminaste toda la teoría!
+      </p>
+      <p className="text-sm text-neutral-text mb-6">
+        Ahora falta la parte práctica en carretera. Contacta a uno de
+        nuestros instructores para coordinar día y hora — cuando confirme
+        tu práctica, tu diploma quedará disponible.
+      </p>
+
+      {cargando && <p className="text-sm text-neutral-text">Cargando instructores...</p>}
+
+      {error && !cargando && (
+        <p className="text-sm text-brand-pink">
+          No pudimos cargar la lista de instructores. Intenta de nuevo en
+          unos minutos.
+        </p>
+      )}
+
+      {!cargando && !error && instructores.length === 0 && (
+        <p className="text-sm text-neutral-text">
+          Todavía no hay instructores disponibles — tu coordinadora te
+          contactará pronto.
+        </p>
+      )}
+
+      {!cargando && !error && instructores.length > 0 && (
+        <div className="grid gap-3 text-left">
+          {instructores.map((instructor) => (
+            <div
+              key={instructor._id}
+              className="rounded-lg border border-neutral-bg p-4"
+            >
+              <p className="font-display font-semibold text-brand-blue mb-2">
+                {instructor.userId.nombre} {instructor.userId.apellido}
+              </p>
+              <div className="flex flex-col gap-1 text-sm text-neutral-text">
+                <span className="flex items-center gap-2">
+                  <Phone size={14} className="text-brand-pink shrink-0" />
+                  {instructor.userId.telefono}
+                </span>
+                <span className="flex items-center gap-2">
+                  <Mail size={14} className="text-brand-pink shrink-0" />
+                  {instructor.userId.email}
+                </span>
+                {instructor.diasDisponibles.length > 0 && (
+                  <span className="flex items-start gap-2">
+                    <Clock size={14} className="text-brand-pink shrink-0 mt-0.5" />
+                    <span>
+                      {instructor.diasDisponibles
+                        .map((d) => `${NOMBRES_DIA[d.dia] || d.dia} ${d.horario}`)
+                        .join(" · ")}
+                    </span>
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// NUEVO (05/09/2026): terminó teoría Y el instructor ya aprobó la práctica —
+// solo falta que la coordinadora genere el diploma.
+function PantallaPracticaAprobada() {
+  return (
+    <div className="rounded-xl bg-white border border-neutral-bg p-8 text-center">
+      <Trophy className="mx-auto mb-3 text-status-success" size={36} />
+      <p className="font-display font-semibold text-brand-blue text-xl mb-2">
+        ¡Tu instructor confirmó tu práctica!
+      </p>
+      <p className="text-sm text-neutral-text">
+        Ya completaste el curso por completo. Tu diploma está siendo
+        preparado — te avisaremos por correo en cuanto esté listo.
+      </p>
     </div>
   );
 }
@@ -130,8 +260,6 @@ function DashboardContenido() {
         const inscripcionActual: Inscripcion | null = jsonInscripcion.data;
         setInscripcion(inscripcionActual);
 
-        // Solo si el pago ya está confirmado tiene sentido cargar el progreso
-        // del Aula Virtual — para los otros 3 estados no existe todavía.
         if (inscripcionActual?.estadoPago === "pagado") {
           const [resProgreso, resTest] = await Promise.all([
             fetch(`${process.env.NEXT_PUBLIC_API_URL}/progreso/me`, {
@@ -150,10 +278,14 @@ function DashboardContenido() {
           if (jsonProgreso.success) setProgreso(jsonProgreso.data);
           if (jsonTest.success) setTestCompletado(jsonTest.completado);
 
-          // Solo tiene sentido preguntar por el diploma si ya completó
-          // las sesiones — antes de eso, GET /diplomas/me siempre
-          // respondería 404, así que nos ahorramos la llamada.
-          if (jsonProgreso.success && jsonProgreso.data.cursoCompletado) {
+          // Ahora solo tiene sentido preguntar por el diploma si, además de
+          // completar la teoría, ya tiene la práctica aprobada — antes de
+          // eso GET /diplomas/me siempre respondería 404.
+          if (
+            jsonProgreso.success &&
+            jsonProgreso.data.cursoCompletado &&
+            jsonProgreso.data.practicaAprobada
+          ) {
             const resDiploma = await fetch(
               `${process.env.NEXT_PUBLIC_API_URL}/diplomas/me`,
               { headers: { Authorization: `Bearer ${token}` } },
@@ -270,69 +402,79 @@ function DashboardContenido() {
           testCompletado === true && (
             <>
               <ProgresoCarretera progreso={progreso} diplomaListo={diplomaListo} />
-              <div className="grid gap-4">
-                {SESIONES.map((numero, indice) => {
-                  const estado = estadoSesion(numero, progreso);
-                  const etiqueta =
-                    estado === "aprobada"
-                      ? "Aprobada"
-                      : estado === "desbloqueada"
-                        ? "Disponible"
-                        : "Bloqueada";
-                  const colorEtiqueta =
-                    estado === "aprobada"
-                      ? "bg-status-success text-white"
-                      : estado === "desbloqueada"
-                        ? "bg-brand-pink text-white"
-                        : "bg-neutral-bg text-neutral-text";
-                  const Icono =
-                    estado === "aprobada" ? CheckCircle2 : estado === "desbloqueada" ? BookOpen : Lock;
-                  const colorIcono =
-                    estado === "aprobada"
-                      ? "text-status-success"
-                      : estado === "desbloqueada"
-                        ? "text-brand-pink"
-                        : "text-neutral-text opacity-40";
 
-                  const tarjeta = (
-                    <div
-                      className="session-card-in rounded-xl bg-white border border-neutral-bg p-6 flex items-center justify-between hover:shadow-md transition-shadow"
-                      style={{ animationDelay: `${indice * 80}ms` }}
-                    >
-                      <div className="flex items-center gap-3">
-                        <Icono size={20} className={colorIcono} />
-                        <p className="font-display font-semibold text-brand-blue">
-                          Sesion {numero}
-                        </p>
-                      </div>
-                      <span
-                        className={`text-xs font-medium px-3 py-1 rounded-full ${colorEtiqueta}`}
+              {!progreso.cursoCompletado && (
+                <div className="grid gap-4">
+                  {SESIONES.map((numero, indice) => {
+                    const estado = estadoSesion(numero, progreso);
+                    const etiqueta =
+                      estado === "aprobada"
+                        ? "Aprobada"
+                        : estado === "desbloqueada"
+                          ? "Disponible"
+                          : "Bloqueada";
+                    const colorEtiqueta =
+                      estado === "aprobada"
+                        ? "bg-status-success text-white"
+                        : estado === "desbloqueada"
+                          ? "bg-brand-pink text-white"
+                          : "bg-neutral-bg text-neutral-text";
+                    const Icono =
+                      estado === "aprobada" ? CheckCircle2 : estado === "desbloqueada" ? BookOpen : Lock;
+                    const colorIcono =
+                      estado === "aprobada"
+                        ? "text-status-success"
+                        : estado === "desbloqueada"
+                          ? "text-brand-pink"
+                          : "text-neutral-text opacity-40";
+
+                    const tarjeta = (
+                      <div
+                        className="session-card-in rounded-xl bg-white border border-neutral-bg p-6 flex items-center justify-between hover:shadow-md transition-shadow"
+                        style={{ animationDelay: `${indice * 80}ms` }}
                       >
-                        {etiqueta}
-                      </span>
-                    </div>
-                  );
+                        <div className="flex items-center gap-3">
+                          <Icono size={20} className={colorIcono} />
+                          <p className="font-display font-semibold text-brand-blue">
+                            Sesion {numero}
+                          </p>
+                        </div>
+                        <span
+                          className={`text-xs font-medium px-3 py-1 rounded-full ${colorEtiqueta}`}
+                        >
+                          {etiqueta}
+                        </span>
+                      </div>
+                    );
 
-                  return estado === "bloqueada" ? (
-                    <div key={numero}>{tarjeta}</div>
-                  ) : (
-                    <Link key={numero} href={`/aula-virtual/${numero}`}>
-                      {tarjeta}
-                    </Link>
-                  );
-                })}
+                    return estado === "bloqueada" ? (
+                      <div key={numero}>{tarjeta}</div>
+                    ) : (
+                      <Link key={numero} href={`/aula-virtual/${numero}`}>
+                        {tarjeta}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
 
-                {progreso.cursoCompletado && (
-                  <Link
-                    href="/diploma"
-                    className="session-card-in rounded-xl bg-brand-blue text-white p-6 text-center font-display font-semibold hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
-                    style={{ animationDelay: `${SESIONES.length * 80}ms` }}
-                  >
-                    <Trophy size={20} />
-                    Ver mi diploma
-                  </Link>
-                )}
-              </div>
+              {progreso.cursoCompletado && diplomaListo && (
+                <Link
+                  href="/diploma"
+                  className="session-card-in rounded-xl bg-brand-blue text-white p-6 text-center font-display font-semibold hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                >
+                  <Trophy size={20} />
+                  Ver mi diploma
+                </Link>
+              )}
+
+              {progreso.cursoCompletado && !diplomaListo && progreso.practicaAprobada && (
+                <PantallaPracticaAprobada />
+              )}
+
+              {progreso.cursoCompletado && !progreso.practicaAprobada && (
+                <PantallaListaParaPractica />
+              )}
             </>
           )}
       </div>

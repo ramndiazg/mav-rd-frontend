@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 
-type Rol = "estudiante" | "coordinadora" | "admin";
+type Rol = "estudiante" | "coordinadora" | "admin" | "conductor";
 
 export default function RutaProtegida({
   rolesPermitidos,
