@@ -25,8 +25,8 @@ type Inscripcion = {
 type Instructor = {
   _id: string;
   diasDisponibles: { dia: string; horario: string }[];
-  userId: { nombre: string; apellido: string; telefono: string; email: string };
-};
+  userId: { nombre: string; apellido: string; telefono: string; email: string; provincia: string };
+}
 
 const SESIONES = [1, 2, 3, 4];
 
@@ -154,9 +154,13 @@ function PantallaListaParaPractica() {
         ¡Felicidades, terminaste toda la teoría!
       </p>
       <p className="text-sm text-neutral-text mb-6">
-        Ahora falta la parte práctica en carretera. Contacta a uno de
+        Ahora falta la parte práctica en el vehiculo. Contacta a uno de
         nuestros instructores para coordinar día y hora — cuando confirme
         tu práctica, tu diploma quedará disponible.
+      </p>
+      <p className="text-xs text-neutral-text mb-6">
+        Cada clase presencial tiene un costo de RD$500, que se paga en
+        efectivo directo al instructor.
       </p>
 
       {cargando && <p className="text-sm text-neutral-text">Cargando instructores...</p>}
@@ -182,9 +186,14 @@ function PantallaListaParaPractica() {
               key={instructor._id}
               className="rounded-lg border border-neutral-bg p-4"
             >
-              <p className="font-display font-semibold text-brand-blue mb-2">
-                {instructor.userId.nombre} {instructor.userId.apellido}
-              </p>
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <p className="font-display font-semibold text-brand-blue">
+                  {instructor.userId.nombre} {instructor.userId.apellido}
+                </p>
+                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-brand-pinkLight text-brand-pink shrink-0">
+                  {instructor.userId.provincia}
+                </span>
+              </div>
               <div className="flex flex-col gap-1 text-sm text-neutral-text">
                 <span className="flex items-center gap-2">
                   <Phone size={14} className="text-brand-pink shrink-0" />
