@@ -17,7 +17,8 @@ type Diploma = {
 // celular a WhatsApp Status / Instagram Stories.
 const ANCHO_IMAGEN = 1080;
 const ALTO_IMAGEN = 1920;
-const URL_INICIO = "https://muvo-rd.vercel.app";
+const URL_INICIO = "https://www.muvordvial.com";
+const DOMINIO_VISIBLE = URL_INICIO.replace(/^https?:\/\//, "");
 
 function DiplomaContenido() {
   const { token, usuario } = useAuth();
@@ -224,7 +225,7 @@ function DiplomaContenido() {
     ctx.fillText("Escanea o entra a", textoX, bloqueY + 150);
     ctx.font = "700 30px Poppins, sans-serif";
     ctx.fillStyle = "#D6336C";
-    ctx.fillText("muvo-rd.vercel.app", textoX, bloqueY + 190);
+    ctx.fillText(DOMINIO_VISIBLE, textoX, bloqueY + 190);
 
     return new Promise((resolve) => {
       canvas.toBlob((blob) => resolve(blob), "image/png", 1);
