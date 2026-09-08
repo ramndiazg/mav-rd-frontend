@@ -44,38 +44,19 @@ const testimonios = [
   },
 ];
 
-// El curso teórico es el mismo para todas — la diferencia real entre
-// planes está solo en la práctica de manejo (ver detalle de cada uno).
-const planes = [
-  {
-    id: "normal" as const,
-    nombre: "Normal",
-    destacado: false,
-    detalle:
-      "Práctica de manejo en grupo, con el acompañamiento de nuestros instructores en cada sesión.",
-    caracteristicas: [
-      "4 sesiones de teoría",
-      "Práctica de manejo en grupo",
-      "Preparación para el examen del INTRANT",
-      "Diploma al completar el curso",
-    ],
-  },
-  {
-    id: "vip" as const,
-    nombre: "VIP",
-    destacado: true,
-    detalle:
-      "Práctica de manejo más personalizada, con más tiempo uno a uno junto a tu instructor.",
-    caracteristicas: [
-      "4 sesiones de teoría",
-      "Práctica personalizada, más tiempo con tu instructor",
-      "Preparación para el examen del INTRANT",
-      "Diploma al completar el curso",
-    ],
-  },
-];
-
-type Precios = { precio_plan_normal: number; precio_plan_vip: number };
+// --- Planes (migración 06/09/2026) ---
+// Antes había 2 planes hardcodeados aquí mismo (normal/vip), con el precio
+// como único dato que venía del backend (Configuracion). Ahora los 3 planes
+// —incluyendo nombre, frase destacada y destacado/no destacado— vienen
+// completos de GET /api/planes, para no tener que tocar este archivo cada
+// vez que cambie un precio o se agregue/edite un plan.
+type Plan = {
+  codigo: "fundacion" | "normal" | "vip";
+  nombre: string;
+  precio: number;
+  fraseDestacada: string;
+  orden: number;
+};
 
 function formatearMonto(valor: number) {
   return `RD$${valor.toLocaleString("es-DO")}`;
@@ -83,21 +64,20 @@ function formatearMonto(valor: number) {
 
 // Se pide en cada visita (no se cachea): el precio puede cambiar sin que
 // haya un nuevo despliegue del frontend, ya que vive en la base de datos.
-async function obtenerPrecios(): Promise<Precios | null> {
+async function obtenerPlanes(): Promise<Plan[]> {
   try {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/configuracion`,
-      { cache: "no-store" },
-    );
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/planes`, {
+      cache: "no-store",
+    });
     const json = await res.json();
-    return json.success ? json.data : null;
+    return json.success ? json.data : [];
   } catch {
-    return null;
+    return [];
   }
 }
 
 export default async function Home() {
-  const precios = await obtenerPrecios();
+  const planes = await obtenerPlanes();
 
   return (
     <>
@@ -160,9 +140,7 @@ export default async function Home() {
           <h2 className="font-display text-3xl font-bold text-brand-blue">
             Un curso completo, en sesiones, en orden.
           </h2>
-          <p className="mt-3 text-neutral-text/80">
-
-          </p>
+          <p className="mt-3 text-neutral-text/80"></p>
         </div>
 
         <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -194,7 +172,9 @@ export default async function Home() {
 
       <div className="road-divider" />
 
-      {/* NUEVO: Planes y precios */}
+      {/* Planes y precios — resumen. El detalle completo (sesiones de
+          práctica, costo de combustible por sesión, características de
+          VIP) vive en /inscripcion, no aquí. */}
       <section className="mx-auto max-w-6xl px-4 py-16">
         <div className="max-w-2xl">
           <h2 className="font-display text-3xl font-bold text-brand-blue">
@@ -204,55 +184,44 @@ export default async function Home() {
             La teoría más completa y detallada, los mejores instructores
             certificados — hacemos la diferencia con nuestra atención
             personalizada en la práctica de manejo. Elige el plan que se
-            ajuste a tu ritmo.
+            ajuste a tu ritmo y presupuesto.
           </p>
         </div>
 
-        <div className="mt-10 grid gap-6 sm:grid-cols-2">
+        <div className="mt-10 grid gap-6 sm:grid-cols-3">
           {planes.map((plan) => {
-            const precio =
-              plan.id === "normal"
-                ? precios?.precio_plan_normal
-                : precios?.precio_plan_vip;
+            const destacado = plan.codigo === "vip";
 
             return (
               <div
-                key={plan.id}
-                className="rounded-xl border-2 border-brand-pink bg-white p-6 shadow-sm transition hover:shadow-md"
+                key={plan.codigo}
+                className={`rounded-xl border-2 bg-white p-6 shadow-sm transition hover:shadow-md ${destacado ? "border-brand-pink" : "border-brand-blue/10"
+                  }`}
               >
-                <div className="flex items-baseline justify-between">
+                <div className="flex items-baseline justify-between gap-2">
                   <h3 className="font-display text-xl font-bold text-brand-blue">
-                    Plan {plan.nombre}
+                    {plan.nombre}
                   </h3>
-                  {plan.destacado && (
-                    <span className="rounded-full bg-brand-yellow px-3 py-1 text-xs font-semibold text-brand-blue">
-                      Más personalizado
+                  {destacado && (
+                    <span className="shrink-0 rounded-full bg-brand-yellow px-3 py-1 text-xs font-semibold text-brand-blue">
+                      Más completo
                     </span>
                   )}
                 </div>
 
                 <p className="mt-3 font-display text-3xl font-bold text-brand-blue">
-                  {precio ? formatearMonto(precio) : "Consultar"}
+                  {formatearMonto(plan.precio)}
                 </p>
 
                 <p className="mt-2 text-sm text-neutral-text/75">
-                  {plan.detalle}
+                  {plan.fraseDestacada}
                 </p>
 
-                <ul className="mt-5 space-y-2 text-sm text-neutral-text/85">
-                  {plan.caracteristicas.map((c) => (
-                    <li key={c} className="flex items-start gap-2">
-                      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-pink" />
-                      {c}
-                    </li>
-                  ))}
-                </ul>
-
                 <Link
-                  href="/registro"
+                  href="/inscripcion"
                   className="mt-6 inline-block rounded-full bg-brand-blue px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-blue/90"
                 >
-                  Empezar con este plan
+                  Ver detalles del plan
                 </Link>
               </div>
             );
@@ -262,9 +231,9 @@ export default async function Home() {
 
       <div className="road-divider" />
 
-      {/* NUEVO: Promoción del libro de la fundadora — colocado después de
-          Planes (refuerza autoridad justo cuando se evalúa el curso) y
-          antes de Testimonios, sin competir con el CTA de inscripción. */}
+      {/* Promoción del libro de la fundadora — colocado después de Planes
+          (refuerza autoridad justo cuando se evalúa el curso) y antes de
+          Testimonios, sin competir con el CTA de inscripción. */}
       <section className="mx-auto max-w-6xl px-4 py-16">
         <div className="grid gap-8 rounded-2xl border-2 border-brand-pink bg-white p-6 sm:grid-cols-[auto_1fr] sm:items-center sm:p-10">
           {/* Portada — reemplazar /libro-maria-diaz.jpg por la portada real
@@ -355,7 +324,7 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* NUEVO: Banner hacia el programa empresarial */}
+      {/* Banner hacia el programa empresarial */}
       <section className="bg-brand-blue">
         <div className="mx-auto flex max-w-6xl flex-col items-start gap-4 px-4 py-12 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -381,9 +350,7 @@ export default async function Home() {
         <h2 className="font-display text-3xl font-bold text-brand-blue">
           ¿Todo listo para empezar?
         </h2>
-        <p className="mx-auto mt-3 max-w-xl text-neutral-text/80">
-
-        </p>
+        <p className="mx-auto mt-3 max-w-xl text-neutral-text/80"></p>
         <Link
           href="/registro"
           className="mt-6 inline-block rounded-full bg-brand-blue px-8 py-3 text-sm font-semibold text-white transition hover:bg-brand-blue/90"

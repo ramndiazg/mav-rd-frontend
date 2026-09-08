@@ -6,13 +6,26 @@ import { CheckCircle2, UploadCloud, Clock, GraduationCap, Copy, Check } from "lu
 import RutaProtegida from "@/components/auth/RutaProtegida";
 import { useAuth } from "@/contexts/AuthContext";
 
-type Precios = { precio_plan_normal: number; precio_plan_vip: number };
+// Migración de planes (06/09/2026): antes solo llegaba el precio desde
+// Configuracion; ahora GET /api/planes trae el plan completo, incluida la
+// lista de características que se muestra aquí en el detalle.
+type Plan = {
+  codigo: "fundacion" | "normal" | "vip";
+  nombre: string;
+  precio: number;
+  modalidadPractica: "grupal" | "individual";
+  cantidadSesionesPractica: number | null;
+  duracionSesionMinutos: number;
+  costoPorSesion: number;
+  caracteristicas: string[];
+  orden: number;
+};
 
 type EstadoPago = "pendiente" | "pendiente_verificacion" | "pagado" | "rechazado";
 
 type Inscripcion = {
   _id: string;
-  tipoPlan: "normal" | "vip";
+  tipoPlan: "fundacion" | "normal" | "vip";
   estadoPago: EstadoPago;
   notaRechazo?: string | null;
 };
@@ -39,13 +52,16 @@ function formatearMonto(valor: number) {
 function InscripcionContenido() {
   const { usuario, token } = useAuth();
 
-  const [precios, setPrecios] = useState<Precios | null>(null);
+  const [planes, setPlanes] = useState<Plan[]>([]);
   const [inscripcion, setInscripcion] = useState<Inscripcion | null>(null);
   const [cargando, setCargando] = useState(true);
   const [cuentaCopiada, setCuentaCopiada] = useState<number | null>(null);
 
   // --- Formulario ---
-  const [tipoPlan, setTipoPlan] = useState<"normal" | "vip">("normal");
+  // Empieza vacío y se fija al primer plan (Fundación, orden 1) en cuanto
+  // llegan los planes — así no queda seleccionado un plan que no exista si
+  // el backend cambia el orden en el futuro.
+  const [tipoPlan, setTipoPlan] = useState<Plan["codigo"] | "">("");
   const [bancoEmisor, setBancoEmisor] = useState("");
   const [numeroReferencia, setNumeroReferencia] = useState("");
   const [fechaDeposito, setFechaDeposito] = useState("");
@@ -61,18 +77,23 @@ function InscripcionContenido() {
 
     (async () => {
       try {
-        const [resPrecios, resInscripcion] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/configuracion`),
+        const [resPlanes, resInscripcion] = await Promise.all([
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/planes`),
           fetch(`${process.env.NEXT_PUBLIC_API_URL}/inscripciones/me`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
         ]);
-        const jsonPrecios = await resPrecios.json();
+        const jsonPlanes = await resPlanes.json();
         const jsonInscripcion = await resInscripcion.json();
 
         if (cancelado) return;
 
-        if (jsonPrecios.success) setPrecios(jsonPrecios.data);
+        if (jsonPlanes.success) {
+          setPlanes(jsonPlanes.data);
+          if (jsonPlanes.data.length > 0) {
+            setTipoPlan((actual) => actual || jsonPlanes.data[0].codigo);
+          }
+        }
         if (jsonInscripcion.success) setInscripcion(jsonInscripcion.data);
       } catch {
         // si falla, el formulario simplemente no se prellena — no es bloqueante
@@ -231,90 +252,61 @@ function InscripcionContenido() {
       </section>
 
       {/* --- Comparación de planes --- */}
-      <section className="max-w-4xl mx-auto px-6 py-12">
+      <section className="max-w-5xl mx-auto px-6 py-12">
         <h2 className="font-display text-xl font-bold text-brand-blue mb-2 text-center">
           Elige tu plan
         </h2>
         <p className="text-sm text-neutral-text text-center mb-8">
-          La parte teórica es la misma en ambos planes — la diferencia está en
-          la práctica.
+          La parte teórica es la misma en los 3 planes — la diferencia está
+          en la práctica de manejo.
         </p>
 
-        <div className="grid md:grid-cols-2 gap-6">
-          {/* Plan Normal */}
-          <div className="rounded-xl bg-white border border-neutral-bg overflow-hidden">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/inscripcion/practica-normal-ilustracion.jpg"
-              alt="Práctica en grupo del plan Normal"
-              className="w-full h-48 object-cover"
-            />
-            <div className="p-6">
-              <h3 className="font-display font-bold text-brand-blue text-lg mb-1">
-                Plan Normal
-              </h3>
-              <p className="text-2xl font-display font-bold text-brand-blue mb-4">
-                {precios ? formatearMonto(precios.precio_plan_normal) : "..."}
-              </p>
-              <ul className="grid gap-2 text-sm text-neutral-text">
-                <li className="flex gap-2">
-                  <CheckCircle2 size={18} className="text-brand-blueLight shrink-0" />
-                  Clases teóricas completas
-                </li>
-                <li className="flex gap-2">
-                  <CheckCircle2 size={18} className="text-brand-blueLight shrink-0" />
-                  Práctica en grupo — conduces por turnos junto a tus
-                  compañeros de curso
-                </li>
-                <li className="flex gap-2">
-                  <CheckCircle2 size={18} className="text-brand-blueLight shrink-0" />
-                  Examen y diploma incluidos
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          {/* Plan VIP */}
-          <div className="rounded-xl bg-white border border-brand-pink overflow-hidden">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/inscripcion/practica-vip.jpg"
-              alt="Práctica individual del plan VIP"
-              className="w-full h-48 object-cover"
-            />
-            <div className="p-6">
-              <div className="flex items-center gap-2 mb-1">
-                <h3 className="font-display font-bold text-brand-blue text-lg">
-                  Plan VIP
-                </h3>
-                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-brand-pink text-white">
-                  Más personalizado
-                </span>
+        <div className="grid md:grid-cols-3 gap-6">
+          {planes.map((plan) => {
+            const destacado = plan.codigo === "vip";
+            return (
+              <div
+                key={plan.codigo}
+                className={`rounded-xl bg-white overflow-hidden border ${destacado ? "border-brand-pink" : "border-neutral-bg"
+                  }`}
+              >
+                <div className="p-6">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="font-display font-bold text-brand-blue text-lg">
+                      {plan.nombre}
+                    </h3>
+                    {destacado && (
+                      <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-brand-pink text-white">
+                        Más completo
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-2xl font-display font-bold text-brand-blue mb-1">
+                    {formatearMonto(plan.precio)}
+                  </p>
+                  <p className="text-xs text-neutral-text mb-4">
+                    {plan.modalidadPractica === "grupal"
+                      ? `Práctica en grupo, sesiones de ${plan.duracionSesionMinutos} min por estudiante`
+                      : `${plan.cantidadSesionesPractica} sesiones de práctica de ${plan.duracionSesionMinutos} min, individuales`}
+                    {" · "}
+                    RD${plan.costoPorSesion}/sesión de combustible (se paga
+                    en el lugar de la práctica)
+                  </p>
+                  <ul className="grid gap-2 text-sm text-neutral-text">
+                    {plan.caracteristicas.map((caracteristica) => (
+                      <li key={caracteristica} className="flex gap-2">
+                        <CheckCircle2
+                          size={18}
+                          className={`shrink-0 ${destacado ? "text-brand-pink" : "text-brand-blueLight"}`}
+                        />
+                        {caracteristica}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
-              <p className="text-2xl font-display font-bold text-brand-blue mb-4">
-                {precios ? formatearMonto(precios.precio_plan_vip) : "..."}
-              </p>
-              <ul className="grid gap-2 text-sm text-neutral-text">
-                <li className="flex gap-2">
-                  <CheckCircle2 size={18} className="text-brand-pink shrink-0" />
-                  Clases teóricas completas
-                </li>
-                <li className="flex gap-2">
-                  <CheckCircle2 size={18} className="text-brand-pink shrink-0" />
-                  Práctica 1 a 1 — solo tú y quien te instruye, sin esperar
-                  turno
-                </li>
-                <li className="flex gap-2">
-                  <CheckCircle2 size={18} className="text-brand-pink shrink-0" />
-                  Más horas de práctica al volante y trato personalizado
-                </li>
-                <li className="flex gap-2">
-                  <CheckCircle2 size={18} className="text-brand-pink shrink-0" />
-                  Examen y diploma incluidos
-                </li>
-              </ul>
-            </div>
-          </div>
+            );
+          })}
         </div>
       </section>
 
@@ -331,7 +323,8 @@ function InscripcionContenido() {
             <div>
               <p className="font-medium text-brand-blue mb-1">Elige tu plan</p>
               <p className="text-sm text-neutral-text">
-                Normal o VIP, según lo que necesites en la parte práctica.
+                Fundación, Normal o VIP, según lo que necesites en la parte
+                práctica.
               </p>
             </div>
           </div>
@@ -506,15 +499,17 @@ function InscripcionContenido() {
                   Plan
                   <select
                     value={tipoPlan}
-                    onChange={(e) => setTipoPlan(e.target.value as "normal" | "vip")}
+                    onChange={(e) =>
+                      setTipoPlan(e.target.value as Plan["codigo"])
+                    }
+                    required
                     className="mt-1 w-full rounded-lg border border-neutral-bg px-3 py-2 text-sm"
                   >
-                    <option value="normal">
-                      Normal {precios && `— ${formatearMonto(precios.precio_plan_normal)}`}
-                    </option>
-                    <option value="vip">
-                      VIP {precios && `— ${formatearMonto(precios.precio_plan_vip)}`}
-                    </option>
+                    {planes.map((plan) => (
+                      <option key={plan.codigo} value={plan.codigo}>
+                        {plan.nombre} — {formatearMonto(plan.precio)}
+                      </option>
+                    ))}
                   </select>
                 </label>
 
