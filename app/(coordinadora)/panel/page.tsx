@@ -19,6 +19,7 @@ import {
   Car,
   Send,
   DollarSign,
+  Building2,
   type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -37,6 +38,8 @@ const MODULOS_CURSO: Tarjeta[] = [
   { href: "/panel/examenes", titulo: "Exámenes", descripcion: "Bancos de preguntas", Icono: ClipboardCheck },
   { href: "/panel/diplomas", titulo: "Diplomas", descripcion: "Generar y verificar diplomas", Icono: Award },
   { href: "/panel/test-psicologico", titulo: "Perfil conductual", descripcion: "Cuestionario previo al curso", Icono: ClipboardList },
+  // NUEVO (09/09/2026)
+  { href: "/panel/grupos", titulo: "Grupos", descripcion: "Colegios y empresas inscritos en bloque", Icono: Building2 },
 ];
 
 const MODULOS_CONTENIDO: Tarjeta[] = [
