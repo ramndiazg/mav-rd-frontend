@@ -18,6 +18,17 @@ type Usuario = {
   rol: Rol;
   activo: boolean;
   emailVerificado: boolean;
+  // NUEVO (08/09/2026): presente solo para estudiantes inscritas en bloque
+  // por un colegio/empresa (ver models/Grupo.js). null para el flujo de
+  // autoregistro normal. Determina si a la estudiante le aplica el gate
+  // de práctica de manejo (ver ProgresoCarretera y dashboard).
+  grupoId: string | null;
+  // NUEVO (08/09/2026): "colegio" | "empresa" | null — lo calcula el
+  // backend (ver authController.js: conGrupoTipo) para que el frontend
+  // no tenga que hacer un segundo fetch a /grupos/:id. Determina qué
+  // cuestionario de perfil le toca (TestPsicologico vs
+  // InformacionComplementariaEscolar).
+  grupoTipo: "colegio" | "empresa" | null;
 };
 
 type DatosRegistro = {

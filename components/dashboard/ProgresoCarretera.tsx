@@ -7,22 +7,55 @@ type Progreso = {
   practicaAprobada: boolean; // NUEVO (05/09/2026)
 };
 
-const X = { inicio: 39, s1: 138, s2: 236, s3: 335, s4: 433, practica: 532, diploma: 630 };
+// Posiciones con las 7 paradas (flujo estándar, con práctica)
+const X_CON_PRACTICA = {
+  inicio: 39,
+  s1: 138,
+  s2: 236,
+  s3: 335,
+  s4: 433,
+  practica: 532,
+  diploma: 630,
+};
+
+// NUEVO (08/09/2026): posiciones con 6 paradas (Escolar/Empresarial, sin
+// práctica) — mismo rango total (39 a 630), espaciado recalculado para que
+// la pista se vea completa y pareja, en vez de dejar un hueco donde iría
+// la guía de práctica.
+const X_SIN_PRACTICA = {
+  inicio: 39,
+  s1: 157,
+  s2: 276,
+  s3: 394,
+  s4: 512,
+  diploma: 630,
+};
 
 const COLOR_APROBADA = "#4A7FC9";
 const COLOR_PENDIENTE = "#9CA3AF";
 const COLOR_CHECK = "#2F9E44";
 const COLOR_CARRO = "#D6336C";
 
-function mensajeMotivacional(progreso: Progreso, diplomaListo: boolean) {
+function mensajeMotivacional(
+  progreso: Progreso,
+  diplomaListo: boolean,
+  requierePractica: boolean,
+) {
   const aprobadas = progreso.sesionesAprobadas.length;
   if (diplomaListo) return "¡Completaste el curso! Tu diploma ya está listo.";
-  // NUEVO (05/09/2026): distingue "esperando que la contacten" de
-  // "ya aprobado, diploma en camino" dentro de la etapa de práctica.
-  if (progreso.cursoCompletado && progreso.practicaAprobada) {
-    return "Tu instructor aprobó tu práctica — tu diploma está en camino.";
-  }
+
   if (progreso.cursoCompletado) {
+    // NUEVO (08/09/2026): estudiantes sin práctica (Escolar/Empresarial)
+    // nunca dependen de practicaAprobada — su diploma es un paso
+    // administrativo directo tras completar la teoría.
+    if (!requierePractica) {
+      return "¡Completaste toda la teoría! Tu diploma está en camino.";
+    }
+    // NUEVO (05/09/2026): distingue "esperando que la contacten" de
+    // "ya aprobado, diploma en camino" dentro de la etapa de práctica.
+    if (progreso.practicaAprobada) {
+      return "Tu instructor aprobó tu práctica — tu diploma está en camino.";
+    }
     return "Teoría completa — contacta a tu instructor para la práctica en carretera.";
   }
   if (aprobadas === 0) return "La Sesión 1 ya te está esperando.";
@@ -67,16 +100,29 @@ function Libro({ x, aprobada }: { x: number; aprobada: boolean }) {
 export default function ProgresoCarretera({
   progreso,
   diplomaListo = false,
+  requierePractica = true, // NUEVO (08/09/2026): false para estudiantes de Grupo (Escolar/Empresarial)
 }: {
   progreso: Progreso;
   diplomaListo?: boolean;
+  requierePractica?: boolean;
 }) {
   const aprobadas = progreso.sesionesAprobadas.length;
+  const X = requierePractica ? X_CON_PRACTICA : X_SIN_PRACTICA;
+
+  // Puntos intermedios de la carretera para el carrito: con práctica hay 5
+  // paradas antes del diploma (inicio + 4 sesiones + práctica); sin
+  // práctica solo 4 (inicio + 4 sesiones), y el carro pasa directo al
+  // diploma en cuanto cursoCompletado es true.
+  const puntosCarro = requierePractica
+    ? [X.inicio, X.s1, X.s2, X.s3, X.s4, (X as typeof X_CON_PRACTICA).practica]
+    : [X.inicio, X.s1, X.s2, X.s3, X.s4];
+
   const carroX = diplomaListo
     ? X.diploma
-    : [X.inicio, X.s1, X.s2, X.s3, X.practica][Math.min(aprobadas, 4)];
+    : puntosCarro[Math.min(aprobadas, puntosCarro.length - 1)];
+
   const colorBandera = diplomaListo ? COLOR_APROBADA : COLOR_PENDIENTE;
-  const mensaje = mensajeMotivacional(progreso, diplomaListo);
+  const mensaje = mensajeMotivacional(progreso, diplomaListo, requierePractica);
 
   return (
     <div className="mb-8">
@@ -144,37 +190,43 @@ export default function ProgresoCarretera({
         <Libro x={X.s3} aprobada={progreso.sesionesAprobadas.includes(3)} />
         <Libro x={X.s4} aprobada={progreso.sesionesAprobadas.includes(4)} />
 
-        {/* Guía (práctica) — se pone del color de "aprobada" en cuanto el
-            instructor confirma, igual que un libro más */}
-        <g transform={`translate(${X.practica},70)`} filter="url(#sombraSuave)">
-          <circle
-            cx="0"
-            cy="-16"
-            r="6"
-            fill={progreso.practicaAprobada ? COLOR_APROBADA : COLOR_PENDIENTE}
-            stroke="#1a1a1a"
-            strokeWidth="1.5"
-          />
-          <path
-            d="M-9,10 C-9,-2 9,-2 9,10 Z"
-            fill={progreso.practicaAprobada ? COLOR_APROBADA : COLOR_PENDIENTE}
-            stroke="#1a1a1a"
-            strokeWidth="1.5"
-          />
-          {progreso.practicaAprobada && (
-            <g className="check-pop" style={{ transformOrigin: "14px -14px" }}>
-              <circle cx="14" cy="-14" r="8" fill={COLOR_CHECK} />
-              <path
-                d="M9,-14 L13,-10 L20,-19"
-                fill="none"
-                stroke="#ffffff"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </g>
-          )}
-        </g>
+        {/* Guía (práctica) — NUEVO (08/09/2026): se omite por completo para
+            estudiantes sin práctica (Escolar/Empresarial), en vez de
+            mostrarse vacía/pendiente para siempre */}
+        {requierePractica && (
+          <g
+            transform={`translate(${(X as typeof X_CON_PRACTICA).practica},70)`}
+            filter="url(#sombraSuave)"
+          >
+            <circle
+              cx="0"
+              cy="-16"
+              r="6"
+              fill={progreso.practicaAprobada ? COLOR_APROBADA : COLOR_PENDIENTE}
+              stroke="#1a1a1a"
+              strokeWidth="1.5"
+            />
+            <path
+              d="M-9,10 C-9,-2 9,-2 9,10 Z"
+              fill={progreso.practicaAprobada ? COLOR_APROBADA : COLOR_PENDIENTE}
+              stroke="#1a1a1a"
+              strokeWidth="1.5"
+            />
+            {progreso.practicaAprobada && (
+              <g className="check-pop" style={{ transformOrigin: "14px -14px" }}>
+                <circle cx="14" cy="-14" r="8" fill={COLOR_CHECK} />
+                <path
+                  d="M9,-14 L13,-10 L20,-19"
+                  fill="none"
+                  stroke="#ffffff"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </g>
+            )}
+          </g>
+        )}
 
         <g transform={`translate(${X.diploma},58)`}>
           <line x1="0" y1="0" x2="0" y2="53" stroke="#5f5e5a" strokeWidth="2" />
@@ -187,7 +239,7 @@ export default function ProgresoCarretera({
             <rect x="14" y="6" width="7" height="6" fill={colorBandera} />
             <rect x="0" y="12" width="7" height="6" fill="#5f5e5a" />
             <rect x="7" y="12" width="7" height="6" fill={colorBandera} />
-            <rect x="14" y="12" width="7" height="6" fill="#5f5e5a" />
+            <rect x="14" y="12" width="7" height="6" fill={colorBandera} />
           </g>
           {diplomaListo && (
             <>
@@ -253,7 +305,7 @@ export default function ProgresoCarretera({
         <span>Sesión 2</span>
         <span>Sesión 3</span>
         <span>Sesión 4</span>
-        <span>Práctica</span>
+        {requierePractica && <span>Práctica</span>}
         <span>Diploma</span>
       </div>
     </div>

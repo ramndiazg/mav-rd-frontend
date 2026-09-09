@@ -91,7 +91,11 @@ function AvisoEmailSinVerificar() {
   );
 }
 
-function AvisoTestPendiente() {
+// ACTUALIZADO (08/09/2026): href dinámico — apunta al formulario correcto
+// según si a la estudiante le toca TestPsicologico o
+// InformacionComplementariaEscolar (ver DashboardContenido, cálculo de
+// esEscolar). El texto se deja genérico a propósito, sirve para ambos.
+function AvisoTestPendiente({ href }: { href: string }) {
   return (
     <div className="rounded-xl bg-white border border-neutral-bg p-8 text-center">
       <ClipboardList className="mx-auto mb-3 text-brand-blue" size={32} />
@@ -103,7 +107,7 @@ function AvisoTestPendiente() {
         experiencia previa antes de tu primera sesión.
       </p>
       <Link
-        href="/test-psicologico"
+        href={href}
         className="inline-block rounded-full bg-brand-pink text-white px-6 py-3 font-medium hover:opacity-90"
       >
         Completar cuestionario
@@ -115,6 +119,8 @@ function AvisoTestPendiente() {
 // NUEVO (05/09/2026): terminó toda la teoría, todavía no la aprueba un
 // instructor. En vez de las tarjetas de sesión, felicitación + lista de
 // choferes activos para que la estudiante misma los contacte.
+// Solo aplica al flujo estándar (requierePractica true) — ver
+// PantallaTeoriaCompletadaGrupo para Escolar/Empresarial.
 function PantallaListaParaPractica() {
   const { token } = useAuth();
   const [instructores, setInstructores] = useState<Instructor[]>([]);
@@ -223,7 +229,8 @@ function PantallaListaParaPractica() {
 }
 
 // NUEVO (05/09/2026): terminó teoría Y el instructor ya aprobó la práctica —
-// solo falta que la coordinadora genere el diploma.
+// solo falta que la coordinadora genere el diploma. Solo aplica al flujo
+// estándar (requierePractica true).
 function PantallaPracticaAprobada() {
   return (
     <div className="rounded-xl bg-white border border-neutral-bg p-8 text-center">
@@ -239,6 +246,26 @@ function PantallaPracticaAprobada() {
   );
 }
 
+// NUEVO (08/09/2026): terminó toda la teoría y para esta estudiante (Grupo
+// Escolar/Empresarial) eso es TODO el curso — no hay práctica que
+// coordinar. Solo falta que la coordinadora genere el diploma. Texto
+// propio: nunca menciona instructores, práctica, ni el costo de RD$500 de
+// las clases presenciales, porque nada de eso le aplica.
+function PantallaTeoriaCompletadaGrupo() {
+  return (
+    <div className="rounded-xl bg-white border border-neutral-bg p-8 text-center">
+      <Trophy className="mx-auto mb-3 text-status-success" size={36} />
+      <p className="font-display font-semibold text-brand-blue text-xl mb-2">
+        ¡Felicidades, completaste el curso!
+      </p>
+      <p className="text-sm text-neutral-text">
+        Terminaste las 4 sesiones y todos tus exámenes. Tu diploma está
+        siendo preparado — te avisaremos por correo en cuanto esté listo.
+      </p>
+    </div>
+  );
+}
+
 function DashboardContenido() {
   const { usuario, token } = useAuth();
   const [inscripcion, setInscripcion] = useState<Inscripcion | null>(null);
@@ -247,6 +274,18 @@ function DashboardContenido() {
   const [diplomaListo, setDiplomaListo] = useState(false);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(false);
+
+  // NUEVO (08/09/2026): estudiantes de un Grupo (Escolar/Empresarial) no
+  // cursan práctica de manejo — su diploma depende únicamente de
+  // cursoCompletado. El resto (grupoId null, flujo estándar) sigue
+  // exigiendo practicaAprobada, igual que antes del 08/09/2026.
+  const requierePractica = !usuario?.grupoId;
+
+  // NUEVO (08/09/2026): decide qué cuestionario de perfil le toca a esta
+  // estudiante — mismo criterio que sesionController.js en el backend
+  // (grupoTipo === "colegio"). Empresarial sigue usando TestPsicologico,
+  // igual que el flujo estándar.
+  const esEscolar = usuario?.grupoTipo === "colegio";
 
   useEffect(() => {
     let cancelado = false;
@@ -270,12 +309,20 @@ function DashboardContenido() {
         setInscripcion(inscripcionActual);
 
         if (inscripcionActual?.estadoPago === "pagado") {
+          // NUEVO (08/09/2026): el endpoint de "¿ya completé mi
+          // cuestionario?" depende de esEscolar — mismo shape de
+          // respuesta en los dos casos ({ success, completado }), así que
+          // el resto de la lógica no cambia.
+          const endpointCuestionario = esEscolar
+            ? "informacion-complementaria-escolar/mi-respuesta"
+            : "test-psicologico/mi-respuesta";
+
           const [resProgreso, resTest] = await Promise.all([
             fetch(`${process.env.NEXT_PUBLIC_API_URL}/progreso/me`, {
               headers: { Authorization: `Bearer ${token}` },
             }),
             fetch(
-              `${process.env.NEXT_PUBLIC_API_URL}/test-psicologico/mi-respuesta`,
+              `${process.env.NEXT_PUBLIC_API_URL}/${endpointCuestionario}`,
               { headers: { Authorization: `Bearer ${token}` } },
             ),
           ]);
@@ -287,14 +334,16 @@ function DashboardContenido() {
           if (jsonProgreso.success) setProgreso(jsonProgreso.data);
           if (jsonTest.success) setTestCompletado(jsonTest.completado);
 
-          // Ahora solo tiene sentido preguntar por el diploma si, además de
-          // completar la teoría, ya tiene la práctica aprobada — antes de
-          // eso GET /diplomas/me siempre respondería 404.
-          if (
+          // NUEVO (08/09/2026): para un estudiante de Grupo (sin
+          // requierePractica), cursoCompletado por sí solo ya vuelve
+          // elegible el diploma — no depende de practicaAprobada, que
+          // para estas estudiantes nunca se vuelve true.
+          const elegibleParaDiploma =
             jsonProgreso.success &&
             jsonProgreso.data.cursoCompletado &&
-            jsonProgreso.data.practicaAprobada
-          ) {
+            (!requierePractica || jsonProgreso.data.practicaAprobada);
+
+          if (elegibleParaDiploma) {
             const resDiploma = await fetch(
               `${process.env.NEXT_PUBLIC_API_URL}/diplomas/me`,
               { headers: { Authorization: `Bearer ${token}` } },
@@ -313,7 +362,7 @@ function DashboardContenido() {
     return () => {
       cancelado = true;
     };
-  }, [token]);
+  }, [token, requierePractica, esEscolar]);
 
   return (
     <main className="bg-neutral-bg min-h-screen px-6 py-16">
@@ -402,7 +451,11 @@ function DashboardContenido() {
           !error &&
           inscripcion?.estadoPago === "pagado" &&
           progreso &&
-          testCompletado === false && <AvisoTestPendiente />}
+          testCompletado === false && (
+            <AvisoTestPendiente
+              href={esEscolar ? "/informacion-complementaria-escolar" : "/test-psicologico"}
+            />
+          )}
 
         {!cargando &&
           !error &&
@@ -410,7 +463,11 @@ function DashboardContenido() {
           progreso &&
           testCompletado === true && (
             <>
-              <ProgresoCarretera progreso={progreso} diplomaListo={diplomaListo} />
+              <ProgresoCarretera
+                progreso={progreso}
+                diplomaListo={diplomaListo}
+                requierePractica={requierePractica}
+              />
 
               {!progreso.cursoCompletado && (
                 <div className="grid gap-4">
@@ -477,13 +534,22 @@ function DashboardContenido() {
                 </Link>
               )}
 
-              {progreso.cursoCompletado && !diplomaListo && progreso.practicaAprobada && (
-                <PantallaPracticaAprobada />
+              {/* NUEVO (08/09/2026): estudiantes de Grupo van directo de
+                  "curso completado" a "esperando diploma" — nunca pasan
+                  por PantallaListaParaPractica ni PantallaPracticaAprobada,
+                  que hablan de instructores y práctica en vehículo. */}
+              {progreso.cursoCompletado && !diplomaListo && !requierePractica && (
+                <PantallaTeoriaCompletadaGrupo />
               )}
 
-              {progreso.cursoCompletado && !progreso.practicaAprobada && (
-                <PantallaListaParaPractica />
-              )}
+              {progreso.cursoCompletado &&
+                !diplomaListo &&
+                requierePractica &&
+                progreso.practicaAprobada && <PantallaPracticaAprobada />}
+
+              {progreso.cursoCompletado &&
+                requierePractica &&
+                !progreso.practicaAprobada && <PantallaListaParaPractica />}
             </>
           )}
       </div>
