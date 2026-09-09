@@ -257,8 +257,7 @@ function InscripcionContenido() {
           Elige tu plan
         </h2>
         <p className="text-sm text-neutral-text text-center mb-8">
-          La parte teórica es la misma en los 3 planes — la diferencia está
-          en la práctica de manejo.
+
         </p>
 
         <div className="grid md:grid-cols-3 gap-6">
@@ -284,14 +283,14 @@ function InscripcionContenido() {
                   <p className="text-2xl font-display font-bold text-brand-blue mb-1">
                     {formatearMonto(plan.precio)}
                   </p>
-                  <p className="text-xs text-neutral-text mb-4">
+                  {/* <p className="text-xs text-neutral-text mb-4">
                     {plan.modalidadPractica === "grupal"
                       ? `Práctica en grupo, sesiones de ${plan.duracionSesionMinutos} min por estudiante`
                       : `${plan.cantidadSesionesPractica} sesiones de práctica de ${plan.duracionSesionMinutos} min, individuales`}
                     {" · "}
                     RD${plan.costoPorSesion}/sesión de combustible (se paga
                     en el lugar de la práctica)
-                  </p>
+                  </p> */}
                   <ul className="grid gap-2 text-sm text-neutral-text">
                     {plan.caracteristicas.map((caracteristica) => (
                       <li key={caracteristica} className="flex gap-2">
