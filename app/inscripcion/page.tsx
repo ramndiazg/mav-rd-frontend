@@ -291,7 +291,7 @@ function InscripcionContenido() {
                     RD${plan.costoPorSesion}/sesión de combustible (se paga
                     en el lugar de la práctica)
                   </p> */}
-                  <ul className="grid gap-2 text-sm text-neutral-text">
+                  <ul className="grid gap-2 text-sm text-neutral-text mt-4 mb-4">
                     {plan.caracteristicas.map((caracteristica) => (
                       <li key={caracteristica} className="flex gap-2">
                         <CheckCircle2
