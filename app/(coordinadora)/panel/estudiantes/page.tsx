@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import Paginacion from "@/components/ui/Paginacion";
 
+type Grupo = { _id: string; nombreInstitucion: string; tipo: "colegio" | "empresa" };
+
 type Estudiante = {
   _id: string;
   nombre: string;
@@ -11,6 +13,9 @@ type Estudiante = {
   cedula: string;
   email: string;
   activo: boolean;
+  // NUEVO (09/09/2026): populado por el backend cuando la estudiante
+  // pertenece a un Grupo (Escolar/Empresarial). null para autoregistro.
+  grupoId: Grupo | null;
 };
 
 type EstadoPago = "pendiente" | "pendiente_verificacion" | "pagado" | "rechazado";
@@ -57,6 +62,13 @@ export default function PanelEstudiantesPage() {
 
   const [mensaje, setMensaje] = useState<{ tipo: "ok" | "error"; texto: string } | null>(null);
 
+  // NUEVO (09/09/2026): filtro por grupo (institución) — para ver solo el
+  // roster de un colegio/empresa en particular, es la forma más simple de
+  // "agrupar" visualmente sin romper la paginación por fecha que ya
+  // tenía esta pantalla.
+  const [grupos, setGrupos] = useState<Grupo[]>([]);
+  const [filtroGrupo, setFiltroGrupo] = useState(""); // "" = todos
+
   function queryParaPestana(p: Pestana) {
     if (p === "activas") return "activo=true&conDiploma=false";
     if (p === "graduadas") return "activo=true&conDiploma=true";
@@ -64,12 +76,18 @@ export default function PanelEstudiantesPage() {
   }
 
   const cargarLista = useCallback(
-    async (termino: string, paginaBuscada: number, pestanaActual: Pestana) => {
+    async (
+      termino: string,
+      paginaBuscada: number,
+      pestanaActual: Pestana,
+      grupoIdFiltro: string,
+    ) => {
       setCargando(true);
       try {
+        const filtroGrupoQuery = grupoIdFiltro ? `&grupoId=${grupoIdFiltro}` : "";
         const [resUsuarios, resInscripciones] = await Promise.all([
           fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/usuarios?rol=estudiante&${queryParaPestana(pestanaActual)}&search=${encodeURIComponent(termino)}&page=${paginaBuscada}&limit=${POR_PAGINA}`,
+            `${process.env.NEXT_PUBLIC_API_URL}/usuarios?rol=estudiante&${queryParaPestana(pestanaActual)}&search=${encodeURIComponent(termino)}&page=${paginaBuscada}&limit=${POR_PAGINA}${filtroGrupoQuery}`,
             { headers: { Authorization: `Bearer ${token}` } },
           ),
           fetch(`${process.env.NEXT_PUBLIC_API_URL}/inscripciones`, {
@@ -106,8 +124,25 @@ export default function PanelEstudiantesPage() {
 
   useEffect(() => {
     if (!token) return;
-    queueMicrotask(() => cargarLista("", 1, pestana));
-  }, [token, pestana, cargarLista]);
+    queueMicrotask(() => cargarLista("", 1, pestana, filtroGrupo));
+  }, [token, pestana, filtroGrupo, cargarLista]);
+
+  // Lista de grupos para el filtro — se carga una sola vez, no depende
+  // de pestaña/búsqueda/paginación.
+  useEffect(() => {
+    if (!token) return;
+    queueMicrotask(async () => {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/grupos`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const json = await res.json();
+        if (json.success) setGrupos(json.data);
+      } catch {
+        // silencioso — el filtro simplemente no aparece, no es crítico
+      }
+    });
+  }, [token]);
 
   function cambiarPestana(nueva: Pestana) {
     if (nueva === pestana) return;
@@ -117,15 +152,21 @@ export default function PanelEstudiantesPage() {
     setPestana(nueva);
   }
 
+  function cambiarFiltroGrupo(nuevoGrupoId: string) {
+    setSeleccionada(null);
+    setPagina(1);
+    setFiltroGrupo(nuevoGrupoId);
+  }
+
   function buscar(e: React.FormEvent) {
     e.preventDefault();
     setPagina(1);
-    cargarLista(busqueda, 1, pestana);
+    cargarLista(busqueda, 1, pestana, filtroGrupo);
   }
 
   function irAPagina(nuevaPagina: number) {
     setPagina(nuevaPagina);
-    cargarLista(busqueda, nuevaPagina, pestana);
+    cargarLista(busqueda, nuevaPagina, pestana, filtroGrupo);
   }
 
   async function seleccionar(est: Estudiante) {
@@ -182,7 +223,7 @@ export default function PanelEstudiantesPage() {
         });
         // La estudiante probablemente ya no pertenece a esta pestaña —
         // recargamos la lista de fondo para que quede consistente al volver.
-        cargarLista(busqueda, pagina, pestana);
+        cargarLista(busqueda, pagina, pestana, filtroGrupo);
       } else {
         setMensaje({ tipo: "error", texto: json.error || "No se pudo actualizar el estado." });
       }
@@ -236,7 +277,7 @@ export default function PanelEstudiantesPage() {
             ))}
           </div>
 
-          <form onSubmit={buscar} className="flex gap-2 mb-6">
+          <form onSubmit={buscar} className="flex gap-2 mb-3">
             <input
               type="text"
               value={busqueda}
@@ -251,6 +292,29 @@ export default function PanelEstudiantesPage() {
               Buscar
             </button>
           </form>
+
+          {/* NUEVO (09/09/2026): filtrar por grupo — la forma más simple
+              de ver "quiénes son compañeras del mismo colegio/empresa"
+              sin romper la paginación por fecha de la lista general. */}
+          {grupos.length > 0 && (
+            <div className="mb-6">
+              <label className="text-xs text-neutral-text">
+                Filtrar por grupo
+                <select
+                  value={filtroGrupo}
+                  onChange={(e) => cambiarFiltroGrupo(e.target.value)}
+                  className="block w-full mt-1 rounded-lg border border-neutral-bg px-3 py-2 text-sm"
+                >
+                  <option value="">Todos (individuales y de grupo)</option>
+                  {grupos.map((g) => (
+                    <option key={g._id} value={g._id}>
+                      {g.nombreInstitucion} ({g.tipo === "colegio" ? "Escolar" : "Empresarial"})
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          )}
 
           {cargando && <p className="text-sm text-neutral-text">Cargando...</p>}
 
@@ -277,6 +341,18 @@ export default function PanelEstudiantesPage() {
                     </p>
                     <p className="text-xs text-neutral-text">
                       {est.cedula} · {est.email}
+                    </p>
+                    {/* NUEVO (09/09/2026): de qué institución es, si aplica —
+                        antes no había forma de distinguir individual vs.
+                        grupo en esta pantalla. */}
+                    <p className="text-xs mt-0.5">
+                      {est.grupoId ? (
+                        <span className="inline-flex items-center gap-1 text-brand-blue font-medium">
+                          {est.grupoId.tipo === "colegio" ? "🏫" : "🏢"} {est.grupoId.nombreInstitucion}
+                        </span>
+                      ) : (
+                        <span className="text-neutral-text/60">Plan individual</span>
+                      )}
                     </p>
                   </div>
                   <div className="flex gap-2 shrink-0 ml-3">
