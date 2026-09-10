@@ -41,8 +41,8 @@ const BANCOS = [
 ];
 
 const CUENTAS_BANCARIAS = [
-  { banco: "Banco Popular Dominicano", numero: "765431978" },
-  { banco: "Banco De Reservas", numero: "3370011963" },
+  { banco: "Banco Popular Dominicano", numero: "no disponible" },
+  { banco: "Banco De Reservas", numero: "no disponible" },
 ];
 
 function formatearMonto(valor: number) {
