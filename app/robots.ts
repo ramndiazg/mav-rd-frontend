@@ -11,6 +11,11 @@ export default function robots(): MetadataRoute.Robots {
         // Nada de contenido privado (paneles, dashboard, exámenes) debe
         // indexarse — no aporta a SEO y no tiene sentido que aparezca en
         // resultados de búsqueda para alguien que no ha iniciado sesión.
+        // NUEVO (10/09/2026): /registro se agregó aquí después de un
+        // ataque de registro masivo de bots — ver ARQUITECTURA_BACKEND.md.
+        // Ya no tiene sentido que Google la indexe activamente; queda
+        // accesible por URL directa para quien la necesite, solo se le
+        // pide a los buscadores que no la promuevan ni la rastreen.
         disallow: [
           "/dashboard",
           "/panel",
@@ -18,6 +23,7 @@ export default function robots(): MetadataRoute.Robots {
           "/aula-virtual",
           "/examen",
           "/perfil",
+          "/registro",
         ],
       },
     ],

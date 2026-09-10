@@ -21,7 +21,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { ruta: "/testimonios", prioridad: 0.6, frecuencia: "weekly" },
     { ruta: "/noticias", prioridad: 0.6, frecuencia: "weekly" },
     { ruta: "/faq", prioridad: 0.5, frecuencia: "monthly" },
-    { ruta: "/registro", prioridad: 0.8, frecuencia: "yearly" },
+    // NUEVO (10/09/2026): /registro se quitó del sitemap a propósito —
+    // ver ARQUITECTURA_BACKEND.md, sección "Seguridad — ataque de
+    // registro masivo". No tiene sentido invitar activamente a Google a
+    // indexar la página que un bot usó para crear cuentas falsas en
+    // masa. /login se queda (no crea nada, no dispara correos).
     { ruta: "/login", prioridad: 0.3, frecuencia: "yearly" },
     { ruta: "/verificar-diploma", prioridad: 0.3, frecuencia: "yearly" },
   ];

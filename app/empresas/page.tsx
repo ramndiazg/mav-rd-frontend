@@ -67,6 +67,10 @@ type Form = {
   email: string;
   cantidadEstudiantes: string;
   mensaje: string;
+  // NUEVO (10/09/2026): honeypot anti-bot — ver ARQUITECTURA_BACKEND.md,
+  // sección "Seguridad — ataque de registro masivo". Oculto por CSS, una
+  // persona real nunca lo llena; un bot simple que no ejecuta CSS sí.
+  sitioWeb: string;
 };
 
 const formVacio: Form = {
@@ -77,6 +81,7 @@ const formVacio: Form = {
   email: "",
   cantidadEstudiantes: "",
   mensaje: "",
+  sitioWeb: "",
 };
 
 export default function EmpresasPage() {
@@ -302,6 +307,27 @@ export default function EmpresasPage() {
                     value={form.mensaje}
                     onChange={(e) => actualizar("mensaje", e.target.value)}
                     className="mt-1 w-full rounded-lg border border-neutral-bg px-3 py-2 text-sm"
+                  />
+                </label>
+
+                {/* NUEVO (10/09/2026): honeypot — invisible para una
+                    persona (posicionado fuera de pantalla, no display:none
+                    para que algunos bots más "listos" tampoco lo detecten
+                    fácil por CSS). tabIndex -1 y autoComplete off para que
+                    ni el teclado ni el autocompletado del navegador lo
+                    toquen por accidente. */}
+                <label
+                  className="absolute -left-[9999px]"
+                  aria-hidden="true"
+                >
+                  Sitio web
+                  <input
+                    type="text"
+                    name="sitioWeb"
+                    tabIndex={-1}
+                    autoComplete="off"
+                    value={form.sitioWeb}
+                    onChange={(e) => actualizar("sitioWeb", e.target.value)}
                   />
                 </label>
 

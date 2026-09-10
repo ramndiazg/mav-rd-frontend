@@ -40,6 +40,10 @@ type DatosRegistro = {
   password: string;
   provincia: string;
   fechaNacimiento: string;
+  // NUEVO (10/09/2026): protecciones anti-bot, ver ARQUITECTURA_BACKEND.md
+  // sección "Seguridad — ataque de registro masivo".
+  captchaToken?: string;
+  sitioWeb?: string; // honeypot — siempre debe llegar vacío
 };
 
 type ResultadoAuth = {

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Script from "next/script";
 import { useAuth } from "@/contexts/AuthContext";
 
 const PROVINCIAS = [
@@ -49,6 +50,8 @@ type FormularioRegistro = {
   password: string;
   provincia: string;
   fechaNacimiento: string;
+  // NUEVO (10/09/2026): honeypot — ver ARQUITECTURA_BACKEND.md.
+  sitioWeb: string;
 };
 
 const FORM_INICIAL: FormularioRegistro = {
@@ -60,7 +63,15 @@ const FORM_INICIAL: FormularioRegistro = {
   password: "",
   provincia: "",
   fechaNacimiento: "",
+  sitioWeb: "",
 };
+
+// NUEVO (10/09/2026): si no hay site key configurada (ej. desarrollo
+// local), el widget de Turnstile simplemente no se renderiza y el
+// registro sigue funcionando sin captchaToken — el backend hace lo mismo
+// (verificarCaptcha deja pasar si TURNSTILE_SECRET_KEY no está puesta).
+// En producción (Render/Vercel) esta variable SIEMPRE debe estar puesta.
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
 export default function RegistroPage() {
   const { registro } = useAuth();
@@ -69,6 +80,20 @@ export default function RegistroPage() {
   const [form, setForm] = useState<FormularioRegistro>(FORM_INICIAL);
   const [error, setError] = useState("");
   const [enviando, setEnviando] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState("");
+
+  // El widget de Turnstile llama a esta función global cuando la persona
+  // resuelve el challenge (data-callback="onTurnstileSuccess" en el div
+  // de abajo) — así el token entra al estado de React sin necesitar una
+  // librería aparte solo para esto.
+  useEffect(() => {
+    (window as unknown as { onTurnstileSuccess?: (t: string) => void }).onTurnstileSuccess =
+      (token: string) => setCaptchaToken(token);
+    return () => {
+      delete (window as unknown as { onTurnstileSuccess?: (t: string) => void })
+        .onTurnstileSuccess;
+    };
+  }, []);
 
   function actualizar(campo: keyof FormularioRegistro, valor: string) {
     setForm((prev) => ({ ...prev, [campo]: valor }));
@@ -79,7 +104,7 @@ export default function RegistroPage() {
     setError("");
     setEnviando(true);
 
-    const resultado = await registro(form);
+    const resultado = await registro({ ...form, captchaToken });
 
     setEnviando(false);
 
@@ -218,11 +243,39 @@ export default function RegistroPage() {
             />
           </div>
 
+          {/* NUEVO (10/09/2026): honeypot — invisible para una persona
+              real, un bot simple que no ejecuta CSS lo rellena igual. */}
+          <label className="absolute -left-[9999px]" aria-hidden="true">
+            Sitio web
+            <input
+              type="text"
+              name="sitioWeb"
+              tabIndex={-1}
+              autoComplete="off"
+              value={form.sitioWeb}
+              onChange={(e) => actualizar("sitioWeb", e.target.value)}
+            />
+          </label>
+
           {error && <p className="text-sm text-brand-pink">{error}</p>}
+
+          {TURNSTILE_SITE_KEY && (
+            <>
+              <Script
+                src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+                strategy="afterInteractive"
+              />
+              <div
+                className="cf-turnstile"
+                data-sitekey={TURNSTILE_SITE_KEY}
+                data-callback="onTurnstileSuccess"
+              />
+            </>
+          )}
 
           <button
             type="submit"
-            disabled={enviando}
+            disabled={enviando || (!!TURNSTILE_SITE_KEY && !captchaToken)}
             className="mt-2 bg-brand-pink text-white py-2.5 rounded-full font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
           >
             {enviando ? "Creando cuenta..." : "Crear cuenta"}
