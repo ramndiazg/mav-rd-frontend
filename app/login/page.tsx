@@ -29,7 +29,11 @@ export default function LoginPage() {
     }
 
     if (resultado.rol === "coordinadora" || resultado.rol === "admin") {
-      router.push("/panel/pagos");
+      // CAMBIO (10/09/2026): antes caía directo en /panel/pagos. La
+      // notificación de "pago nuevo" ya avisa cuando hace falta revisar
+      // pagos — no tiene sentido forzar esa pantalla en cada login si la
+      // admin va a hacer otra cosa. Ahora entra al dashboard del panel.
+      router.push("/panel");
     } else if (resultado.rol === "conductor") {
       // NUEVO (05/09/2026): el conductor tiene su propio dashboard de práctica.
       router.push("/practica");

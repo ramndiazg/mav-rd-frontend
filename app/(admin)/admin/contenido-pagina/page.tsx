@@ -21,7 +21,7 @@ const AREAS: { id: string; titulo: string; campos: DefinicionCampo[] }[] = [
     campos: [
       { clave: "inicio_hero_titulo", etiqueta: "Título principal", tipo: "texto" },
       { clave: "inicio_hero_texto", etiqueta: "Texto debajo del título", tipo: "html" },
-      { clave: "inicio_desde_texto", etiqueta: "Texto de la tarjeta \"Desde 2017\"", tipo: "html" },
+      { clave: "inicio_desde_texto", etiqueta: "Texto de la tarjeta \"Así empezamos\"", tipo: "html" },
     ],
   },
   {

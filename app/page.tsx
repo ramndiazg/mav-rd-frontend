@@ -1,6 +1,36 @@
 import Image from "next/image";
 import Link from "next/link";
 
+// NUEVO (10/09/2026): el hero y la tarjeta de la derecha ya se podían
+// editar desde /admin/contenido-pagina (claves inicio_hero_titulo,
+// inicio_hero_texto, inicio_desde_texto — se ven guardadas en Mongo si
+// se revisa la colección ContenidoPagina), pero esta página nunca las
+// leía: el texto de abajo estaba puesto directo en el JSX como
+// placeholder, así que cualquier cambio guardado en el dashboard nunca
+// se reflejaba aquí. Mismo bug que ya se había resuelto en
+// acerca-de-nosotros/page.tsx (que sí lee /api/contenido) — se replica
+// exactamente ese patrón: fetch sin caché, con el texto de siempre como
+// fallback si el backend no responde o la clave no existe todavía.
+type BloqueContenido = { clave: string; valor: string };
+
+async function obtenerContenidoInicio() {
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/contenido`, {
+      cache: "no-store",
+    });
+    const json = await res.json();
+    if (!json.success) return {};
+
+    const mapa: Record<string, string> = {};
+    json.data.forEach((b: BloqueContenido) => {
+      mapa[b.clave] = b.valor;
+    });
+    return mapa;
+  } catch {
+    return {};
+  }
+}
+
 // Las 4 sesiones/módulos reales del curso (actualizado 16/08/2026 — antes
 // tenía 3 tarjetas con títulos viejos que ya no correspondían a los 4
 // módulos de contenido reales que se cargaron en la plataforma).
@@ -77,7 +107,22 @@ async function obtenerPlanes(): Promise<Plan[]> {
 }
 
 export default async function Home() {
-  const planes = await obtenerPlanes();
+  const [planes, contenido] = await Promise.all([
+    obtenerPlanes(),
+    obtenerContenidoInicio(),
+  ]);
+
+  const heroTitulo =
+    contenido.inicio_hero_titulo ||
+    "Todos merecen la oportunidad de aprender a manejar con confianza.";
+
+  const heroTexto =
+    contenido.inicio_hero_texto ||
+    "Muvo RD Vial es una fundación dominicana que enseña a mujeres y jóvenes a conducir con confianza, desde la teoría hasta el examen del INTRANT — presencial, en grupo, y sin prisa.";
+
+  const desdeTexto =
+    contenido.inicio_desde_texto ||
+    "Fundada por María Díaz en Santo Domingo, con una idea simple: nadie debería quedarse sin aprender a manejar por falta de un espacio seguro y accesible para hacerlo.";
 
   return (
     <>
@@ -95,13 +140,11 @@ export default async function Home() {
                 className="shrink-0"
               />
               <h1 className="font-display text-4xl font-bold leading-tight sm:text-5xl">
-                Todos merecen la oportunidad de aprender a manejar con confianza.
+                {heroTitulo}
               </h1>
             </div>
             <p className="mt-5 max-w-lg text-white/85">
-              Muvo RD Vial es una fundación dominicana que enseña a mujeres y
-              jóvenes a conducir con confianza, desde la teoría hasta el
-              examen del INTRANT — presencial, en grupo, y sin prisa.
+              {heroTexto}
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
@@ -121,12 +164,17 @@ export default async function Home() {
 
           <div className="rounded-2xl bg-white/10 p-6 backdrop-blur-sm sm:p-8">
             <p className="font-display text-sm font-semibold uppercase tracking-wide text-brand-pink-light">
-              Desde 2017
+              {/* CAMBIO (10/09/2026): decía "Desde 2017", que sin más
+                  contexto no se entendía ni en la página ni en el
+                  dashboard de contenido (¿desde 2017 qué?). Es la
+                  etiqueta fija de la tarjeta, no viene de /api/contenido
+                  (solo el párrafo de abajo es editable) — mismo patrón
+                  que los títulos fijos "Misión"/"Visión"/"Valores" en
+                  acerca-de-nosotros/page.tsx. */}
+              Así empezamos
             </p>
             <p className="mt-3 text-lg leading-relaxed text-white">
-              Fundada por María Díaz en Santo Domingo, con una idea simple:
-              nadie debería quedarse sin aprender a manejar por falta de un
-              espacio seguro y accesible para hacerlo.
+              {desdeTexto}
             </p>
           </div>
         </div>

@@ -23,8 +23,9 @@ export default function Navbar() {
 
   // Coordinadora y admin ya tienen su panel construido (Pagos, Aula Virtual,
   // Exámenes) — antes esto mandaba a "/" porque esas rutas no existían todavía.
-  const destinoPanel =
-    usuario?.rol === "estudiante" ? "/dashboard" : "/panel/pagos";
+  // CAMBIO (10/09/2026): apuntaba a /panel/pagos — mismo ajuste que el
+  // login, ahora entra al dashboard del panel (/panel).
+  const destinoPanel = usuario?.rol === "estudiante" ? "/dashboard" : "/panel";
 
   return (
     <header className="sticky top-0 z-50 bg-brand-blue text-white">
