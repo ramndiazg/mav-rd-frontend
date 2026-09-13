@@ -8,7 +8,7 @@
 //
 // El índice de cada pregunta en PREGUNTAS_ESCALA corresponde exactamente
 // a la posición esperada en `respuestas` por el backend (ver
-// models/InformacionComplementariaEscolar.js). 4+3+3+2 = 12.
+// models/CuestionarioEscolar.js). 4+3+3+2 = 12.
 
 export const ESCALA_LIKERT = [
   { valor: 1, etiqueta: "Nunca" },

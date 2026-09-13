@@ -20,6 +20,7 @@ import {
   Send,
   DollarSign,
   Building2,
+  School,
   type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -38,6 +39,10 @@ const MODULOS_CURSO: Tarjeta[] = [
   { href: "/panel/examenes", titulo: "Exámenes", descripcion: "Bancos de preguntas", Icono: ClipboardCheck },
   { href: "/panel/diplomas", titulo: "Diplomas", descripcion: "Generar y verificar diplomas", Icono: Award },
   { href: "/panel/test-psicologico", titulo: "Perfil conductual", descripcion: "Cuestionario previo al curso", Icono: ClipboardList },
+  // NUEVO (11/09/2026) — antes no existía ninguna pantalla para ver estas
+  // respuestas, aunque el backend ya las guardaba correctamente (ver
+  // HISTORIAL_MODIFICACIONES.md).
+  { href: "/panel/cuestionario-escolar", titulo: "Cuestionario Escolar", descripcion: "Respuestas de estudiantes de colegios", Icono: School },
   // NUEVO (09/09/2026)
   { href: "/panel/grupos", titulo: "Grupos", descripcion: "Colegios y empresas inscritos en bloque", Icono: Building2 },
 ];

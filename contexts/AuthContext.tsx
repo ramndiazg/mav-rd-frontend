@@ -27,7 +27,7 @@ type Usuario = {
   // backend (ver authController.js: conGrupoTipo) para que el frontend
   // no tenga que hacer un segundo fetch a /grupos/:id. Determina qué
   // cuestionario de perfil le toca (TestPsicologico vs
-  // InformacionComplementariaEscolar).
+  // CuestionarioEscolar).
   grupoTipo: "colegio" | "empresa" | null;
 };
 

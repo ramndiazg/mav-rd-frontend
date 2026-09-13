@@ -93,7 +93,7 @@ function AvisoEmailSinVerificar() {
 
 // ACTUALIZADO (08/09/2026): href dinámico — apunta al formulario correcto
 // según si a la estudiante le toca TestPsicologico o
-// InformacionComplementariaEscolar (ver DashboardContenido, cálculo de
+// CuestionarioEscolar (ver DashboardContenido, cálculo de
 // esEscolar). El texto se deja genérico a propósito, sirve para ambos.
 function AvisoTestPendiente({ href }: { href: string }) {
   return (
@@ -314,7 +314,7 @@ function DashboardContenido() {
           // respuesta en los dos casos ({ success, completado }), así que
           // el resto de la lógica no cambia.
           const endpointCuestionario = esEscolar
-            ? "informacion-complementaria-escolar/mi-respuesta"
+            ? "cuestionario-escolar/mi-respuesta"
             : "test-psicologico/mi-respuesta";
 
           const [resProgreso, resTest] = await Promise.all([
@@ -453,7 +453,7 @@ function DashboardContenido() {
           progreso &&
           testCompletado === false && (
             <AvisoTestPendiente
-              href={esEscolar ? "/informacion-complementaria-escolar" : "/test-psicologico"}
+              href={esEscolar ? "/cuestionario-escolar" : "/test-psicologico"}
             />
           )}
 
