@@ -12,15 +12,25 @@ type Progreso = {
   sesionesAprobadas: number[];
   cursoCompletado: boolean;
   practicaAprobada: boolean; // NUEVO (05/09/2026)
+  // NUEVO (13/09/2026): espejo de Inscripcion.programa (ver
+  // models/ProgresoEstudiante.js) — decide, junto con grupoId, si a la
+  // estudiante le aplica la práctica de manejo (Motorizados/Pesados no
+  // la tienen, igual que Escolar/Empresarial).
+  programa?: "estandar" | "motorizados" | "pesados";
 };
 
 type Inscripcion = {
   _id: string;
-  tipoPlan: "normal" | "vip";
+  tipoPlan: "normal" | "vip" | "teorico";
   monto: number;
   estadoPago: "pendiente" | "pendiente_verificacion" | "pagado" | "rechazado";
   notaRechazo?: string | null;
 };
+
+// NUEVO (13/09/2026): mismo criterio que utils/elegibilidadPractica.js en
+// el backend — Motorizados y Pesados tampoco cursan práctica de manejo,
+// igual que Escolar/Empresarial (ver ANALISIS_MOTORISTA_PESADOS.md).
+const PROGRAMAS_SIN_PRACTICA = ["motorizados", "pesados"];
 
 type Instructor = {
   _id: string;
@@ -279,7 +289,13 @@ function DashboardContenido() {
   // cursan práctica de manejo — su diploma depende únicamente de
   // cursoCompletado. El resto (grupoId null, flujo estándar) sigue
   // exigiendo practicaAprobada, igual que antes del 08/09/2026.
-  const requierePractica = !usuario?.grupoId;
+  // ACTUALIZADO (13/09/2026): Motorizados y Pesados tampoco cursan
+  // práctica — ese dato vive en `progreso.programa` (llega recién con el
+  // fetch de abajo), no en `usuario`, así que este cálculo se recalcula
+  // cuando `progreso` cambia.
+  const requierePractica =
+    !usuario?.grupoId &&
+    !(progreso?.programa && PROGRAMAS_SIN_PRACTICA.includes(progreso.programa));
 
   // NUEVO (08/09/2026): decide qué cuestionario de perfil le toca a esta
   // estudiante — mismo criterio que sesionController.js en el backend

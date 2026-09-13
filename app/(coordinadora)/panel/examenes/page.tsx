@@ -3,7 +3,23 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 
-type Sesion = { _id: string; numero: number; titulo: string };
+// ACTUALIZADO (13/09/2026): incluye programaContenido — ver
+// panel/aula-virtual/page.tsx, mismo motivo (numero repetido entre
+// programas desde que existen Motorizados/Pesados).
+type Sesion = {
+  _id: string;
+  numero: number;
+  titulo: string;
+  programaContenido: "estandar" | "motorizados" | "pesados";
+};
+
+type Programa = "estandar" | "motorizados" | "pesados";
+
+const PROGRAMAS: { valor: Programa; etiqueta: string }[] = [
+  { valor: "estandar", etiqueta: "Escolares" },
+  { valor: "motorizados", etiqueta: "Motorizados" },
+  { valor: "pesados", etiqueta: "Pesados" },
+];
 
 type Pregunta = {
   texto: string;
@@ -36,6 +52,14 @@ export default function PanelExamenesPage() {
 
   const [sesiones, setSesiones] = useState<Sesion[]>([]);
   const [sesionId, setSesionId] = useState<string | null>(null);
+
+  // NUEVO (13/09/2026): pestaña de programa — decide qué sesiones se
+  // muestran en el selector de abajo.
+  const [programaSeleccionado, setProgramaSeleccionado] =
+    useState<Programa>("estandar");
+  const sesionesDelPrograma = sesiones.filter(
+    (s) => s.programaContenido === programaSeleccionado,
+  );
 
   const [versiones, setVersiones] = useState<Examen[]>([]);
   const [cargandoVersiones, setCargandoVersiones] = useState(true);
@@ -240,9 +264,38 @@ export default function PanelExamenesPage() {
         una al azar cuando se desbloquea. Edítalas aquí si cambia la Ley 63-17.
       </p>
 
+      {/* NUEVO (13/09/2026): selector de programa */}
+      <div className="flex gap-2 mb-3">
+        {PROGRAMAS.map((p) => (
+          <button
+            key={p.valor}
+            onClick={() => {
+              setProgramaSeleccionado(p.valor);
+              setEditandoId(null);
+              const primera = sesiones.find(
+                (s) => s.programaContenido === p.valor,
+              );
+              if (primera) {
+                setCargandoVersiones(true);
+                setSesionId(primera._id);
+              } else {
+                setSesionId(null);
+                setVersiones([]);
+              }
+            }}
+            className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${programaSeleccionado === p.valor
+              ? "bg-brand-pink text-white"
+              : "bg-white border border-neutral-bg text-neutral-text"
+              }`}
+          >
+            {p.etiqueta}
+          </button>
+        ))}
+      </div>
+
       {/* Selector de sesión */}
       <div className="flex gap-2 mb-6">
-        {sesiones.map((s) => (
+        {sesionesDelPrograma.map((s) => (
           <button
             key={s._id}
             onClick={() => {

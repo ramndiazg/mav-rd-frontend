@@ -15,9 +15,29 @@ type Progreso = {
   sesionActualDesbloqueada: number;
   sesionesAprobadas: number[];
   cursoCompletado: boolean;
+  // NUEVO (13/09/2026): decide qué Sesion (de qué programa) desbloquear —
+  // ver models/ProgresoEstudiante.js.
+  programa?: Programa;
 };
 
-type Sesion = { _id: string; numero: number; titulo: string };
+// ACTUALIZADO (13/09/2026): incluye programaContenido — con Motorizados/
+// Pesados ya sembrados, `numero` se repite entre programas (ver
+// models/Sesion.js), así que la UI necesita saber a qué programa
+// pertenece cada Sesion para poder filtrar/agrupar.
+type Sesion = {
+  _id: string;
+  numero: number;
+  titulo: string;
+  programaContenido: "estandar" | "motorizados" | "pesados";
+};
+
+type Programa = "estandar" | "motorizados" | "pesados";
+
+const PROGRAMAS: { valor: Programa; etiqueta: string }[] = [
+  { valor: "estandar", etiqueta: "Escolares" },
+  { valor: "motorizados", etiqueta: "Motorizados" },
+  { valor: "pesados", etiqueta: "Pesados" },
+];
 
 type TipoContenido = "video" | "pdf" | "enlace" | "texto";
 type ContenidoItem = {
@@ -49,6 +69,12 @@ export default function PanelAulaVirtualPage() {
   const { token } = useAuth();
 
   const [vista, setVista] = useState<"desbloquear" | "contenido">("desbloquear");
+
+  // NUEVO (13/09/2026): pestaña de programa, solo relevante para la vista
+  // "contenido" (en "desbloquear" el programa lo determina la estudiante
+  // seleccionada, vía `progreso.programa` — ver más abajo).
+  const [programaSeleccionado, setProgramaSeleccionado] =
+    useState<Programa>("estandar");
 
   const [elegibles, setElegibles] = useState<Estudiante[]>([]);
   const [cargandoElegibles, setCargandoElegibles] = useState(true);
@@ -394,6 +420,19 @@ export default function PanelAulaVirtualPage() {
     }
   }
 
+  // NUEVO (13/09/2026): sesiones a mostrar en cada vista, filtradas por
+  // programa — en "contenido" según la pestaña de programa elegida
+  // arriba; en "desbloquear" según el programa real de la estudiante
+  // seleccionada (progreso.programa, default "estandar" por si el dato es
+  // viejo y no lo tiene). Sin este filtro, con `numero` repetido entre
+  // programas, se mostrarían sesiones duplicadas/ambiguas ("Sesión 1" x3).
+  const sesionesContenido = sesiones.filter(
+    (s) => s.programaContenido === programaSeleccionado,
+  );
+  const sesionesDesbloquear = sesiones.filter(
+    (s) => s.programaContenido === (progreso?.programa || "estandar"),
+  );
+
   return (
     <div className="max-w-3xl mx-auto">
       <div className="flex gap-2 mb-6">
@@ -428,8 +467,29 @@ export default function PanelAulaVirtualPage() {
             ya no hace falta desbloquearlo manualmente en el flujo normal.
           </p>
 
+          {/* NUEVO (13/09/2026): selector de programa — decide de qué
+              programa son las sesiones que aparecen debajo. */}
+          <div className="flex gap-2 mb-3">
+            {PROGRAMAS.map((p) => (
+              <button
+                key={p.valor}
+                onClick={() => {
+                  setProgramaSeleccionado(p.valor);
+                  setSesionContenidoId(null);
+                  setEditandoContenidoId(null);
+                }}
+                className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${programaSeleccionado === p.valor
+                  ? "bg-brand-pink text-white"
+                  : "bg-white border border-neutral-bg text-neutral-text"
+                  }`}
+              >
+                {p.etiqueta}
+              </button>
+            ))}
+          </div>
+
           <div className="flex gap-2 mb-6">
-            {sesiones.map((s) => (
+            {sesionesContenido.map((s) => (
               <button
                 key={s._id}
                 onClick={() => elegirSesionContenido(s._id)}
@@ -759,7 +819,7 @@ export default function PanelAulaVirtualPage() {
 
               {!cargandoProgreso && progreso && (
                 <div className="grid gap-3">
-                  {sesiones.map((sesion) => {
+                  {sesionesDesbloquear.map((sesion) => {
                     const aprobada = progreso.sesionesAprobadas.includes(
                       sesion.numero,
                     );

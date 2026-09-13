@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { CheckCircle2, UploadCloud, Clock, GraduationCap, Copy, Check } from "lucide-react";
 import RutaProtegida from "@/components/auth/RutaProtegida";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,23 +10,56 @@ import { useAuth } from "@/contexts/AuthContext";
 // Migración de planes (06/09/2026): antes solo llegaba el precio desde
 // Configuracion; ahora GET /api/planes trae el plan completo, incluida la
 // lista de características que se muestra aquí en el detalle.
+// ACTUALIZADO (13/09/2026): "teorico" es el código del plan único de
+// Motorizados/Pesados — sin niveles, sin práctica de manejo, así que
+// modalidadPractica/duracionSesionMinutos/costoPorSesion quedan opcionales
+// (ver models/Plan.js).
 type Plan = {
-  codigo: "fundacion" | "normal" | "vip";
+  codigo: "fundacion" | "normal" | "vip" | "teorico";
   nombre: string;
   precio: number;
-  modalidadPractica: "grupal" | "individual";
-  cantidadSesionesPractica: number | null;
-  duracionSesionMinutos: number;
-  costoPorSesion: number;
+  modalidadPractica?: "grupal" | "individual";
+  cantidadSesionesPractica?: number | null;
+  duracionSesionMinutos?: number;
+  costoPorSesion?: number;
   caracteristicas: string[];
   orden: number;
 };
+
+type Programa = "estandar" | "motorizados" | "pesados";
+
+const PROGRAMAS: {
+  valor: Programa;
+  nombre: string;
+  foco: string;
+  imagen: string;
+}[] = [
+  {
+    valor: "estandar",
+    nombre: "Escolares",
+    foco: "Curso completo (teoría + práctica) para sacar tu licencia de vehículo liviano.",
+    imagen: "/inscripcion/teoria-1.jpg",
+  },
+  {
+    valor: "motorizados",
+    nombre: "Motorizados",
+    foco: "Para conductores de motocicleta — solo teoría, organizada en 4 sesiones.",
+    imagen: "/inscripcion/teoria-2.jpg",
+  },
+  {
+    valor: "pesados",
+    nombre: "Pesados",
+    foco: "Para conductores de camiones y trailers — solo teoría, organizada en 4 sesiones.",
+    imagen: "/inscripcion/teoria-3.jpg",
+  },
+];
 
 type EstadoPago = "pendiente" | "pendiente_verificacion" | "pagado" | "rechazado";
 
 type Inscripcion = {
   _id: string;
-  tipoPlan: "fundacion" | "normal" | "vip";
+  tipoPlan: "fundacion" | "normal" | "vip" | "teorico";
+  programa?: Programa;
   estadoPago: EstadoPago;
   notaRechazo?: string | null;
 };
@@ -51,10 +85,23 @@ function formatearMonto(valor: number) {
 
 function InscripcionContenido() {
   const { usuario, token } = useAuth();
+  const searchParams = useSearchParams();
+
+  // NUEVO (13/09/2026): selector de programa — primer paso, antes de
+  // elegir plan (ver ANALISIS_MOTORISTA_PESADOS.md, sección 5). Admite
+  // preselección vía ?programa=motorizados (para cuando exista un botón
+  // "Inscríbete" desde una página de marketing propia de cada programa).
+  const programaInicial = searchParams.get("programa");
+  const [programa, setPrograma] = useState<Programa | null>(
+    PROGRAMAS.some((p) => p.valor === programaInicial)
+      ? (programaInicial as Programa)
+      : null,
+  );
 
   const [planes, setPlanes] = useState<Plan[]>([]);
   const [inscripcion, setInscripcion] = useState<Inscripcion | null>(null);
   const [cargando, setCargando] = useState(true);
+  const [cargandoPlanes, setCargandoPlanes] = useState(false);
   const [cuentaCopiada, setCuentaCopiada] = useState<number | null>(null);
 
   // --- Formulario ---
@@ -72,29 +119,22 @@ function InscripcionContenido() {
   );
   const [enviado, setEnviado] = useState(false);
 
+  // Trae la inscripción actual una sola vez (no depende del programa
+  // elegido — si ya tiene una activa, se le avisa sin importar cuál
+  // programa esté mirando).
   useEffect(() => {
     let cancelado = false;
 
     (async () => {
       try {
-        const [resPlanes, resInscripcion] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/planes`),
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/inscripciones/me`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-        ]);
-        const jsonPlanes = await resPlanes.json();
+        const resInscripcion = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/inscripciones/me`,
+          { headers: { Authorization: `Bearer ${token}` } },
+        );
         const jsonInscripcion = await resInscripcion.json();
-
-        if (cancelado) return;
-
-        if (jsonPlanes.success) {
-          setPlanes(jsonPlanes.data);
-          if (jsonPlanes.data.length > 0) {
-            setTipoPlan((actual) => actual || jsonPlanes.data[0].codigo);
-          }
+        if (!cancelado && jsonInscripcion.success) {
+          setInscripcion(jsonInscripcion.data);
         }
-        if (jsonInscripcion.success) setInscripcion(jsonInscripcion.data);
       } catch {
         // si falla, el formulario simplemente no se prellena — no es bloqueante
       } finally {
@@ -106,6 +146,38 @@ function InscripcionContenido() {
       cancelado = true;
     };
   }, [token]);
+
+  // Trae los planes del programa elegido — se repite cada vez que cambia
+  // `programa` (empieza en null, así que no dispara hasta que la
+  // estudiante elige uno de los 3).
+  useEffect(() => {
+    if (!programa) return;
+    let cancelado = false;
+    setCargandoPlanes(true);
+    setTipoPlan("");
+
+    (async () => {
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/planes?programa=${programa}`,
+        );
+        const json = await res.json();
+        if (cancelado) return;
+        if (json.success) {
+          setPlanes(json.data);
+          if (json.data.length > 0) setTipoPlan(json.data[0].codigo);
+        }
+      } catch {
+        // si falla, el formulario simplemente no se prellena — no es bloqueante
+      } finally {
+        if (!cancelado) setCargandoPlanes(false);
+      }
+    })();
+
+    return () => {
+      cancelado = true;
+    };
+  }, [programa]);
 
   async function copiarCuenta(numero: string, indice: number) {
     try {
@@ -157,6 +229,7 @@ function InscripcionContenido() {
         },
         body: JSON.stringify({
           tipoPlan,
+          programa,
           bancoEmisor,
           numeroReferencia,
           fechaDeposito,
@@ -251,13 +324,45 @@ function InscripcionContenido() {
         </div>
       </section>
 
+      {/* --- Selector de programa (NUEVO 13/09/2026) --- */}
+      <section className="max-w-5xl mx-auto px-6 py-12">
+        <h2 className="font-display text-xl font-bold text-brand-blue mb-2 text-center">
+          Elige tu curso
+        </h2>
+        <p className="text-sm text-neutral-text text-center mb-8">
+          Cada programa tiene su propio contenido y precio.
+        </p>
+
+        <div className="grid md:grid-cols-3 gap-6">
+          {PROGRAMAS.map((p) => (
+            <button
+              key={p.valor}
+              type="button"
+              onClick={() => setPrograma(p.valor)}
+              className={`text-left rounded-xl bg-white overflow-hidden border transition-colors ${programa === p.valor ? "border-brand-pink ring-2 ring-brand-pink" : "border-neutral-bg hover:border-brand-blueLight"
+                }`}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={p.imagen} alt={p.nombre} className="w-full h-32 object-cover" />
+              <div className="p-5">
+                <h3 className="font-display font-bold text-brand-blue text-lg mb-1">
+                  {p.nombre}
+                </h3>
+                <p className="text-sm text-neutral-text">{p.foco}</p>
+              </div>
+            </button>
+          ))}
+        </div>
+      </section>
+
       {/* --- Comparación de planes --- */}
+      {programa && (
       <section className="max-w-5xl mx-auto px-6 py-12">
         <h2 className="font-display text-xl font-bold text-brand-blue mb-2 text-center">
           Elige tu plan
         </h2>
         <p className="text-sm text-neutral-text text-center mb-8">
-
+          {cargandoPlanes && "Cargando planes..."}
         </p>
 
         <div className="grid md:grid-cols-3 gap-6">
@@ -308,6 +413,7 @@ function InscripcionContenido() {
           })}
         </div>
       </section>
+      )}
 
       {/* --- Cómo inscribirte --- */}
       <section className="max-w-3xl mx-auto px-6 py-12">
@@ -320,10 +426,10 @@ function InscripcionContenido() {
               1
             </div>
             <div>
-              <p className="font-medium text-brand-blue mb-1">Elige tu plan</p>
+              <p className="font-medium text-brand-blue mb-1">Elige tu curso y tu plan</p>
               <p className="text-sm text-neutral-text">
-                Fundación, Normal o VIP, según lo que necesites en la parte
-                práctica.
+                Escolares, Motorizados o Pesados — cada uno con el plan que
+                mejor se ajuste a lo que necesitas.
               </p>
             </div>
           </div>
@@ -479,7 +585,13 @@ function InscripcionContenido() {
             </div>
           )}
 
-          {!cargando && !enviado && usuario?.emailVerificado && !yaTieneInscripcionActiva && (
+          {!cargando && !enviado && usuario?.emailVerificado && !yaTieneInscripcionActiva && !programa && (
+            <p className="text-sm text-neutral-text text-center">
+              Elige uno de los 3 cursos arriba para ver sus planes y continuar.
+            </p>
+          )}
+
+          {!cargando && !enviado && usuario?.emailVerificado && !yaTieneInscripcionActiva && programa && (
             <>
               <h3 className="font-display font-semibold text-brand-blue text-lg mb-1">
                 Formulario de inscripción
@@ -575,7 +687,7 @@ function InscripcionContenido() {
 
                 <button
                   type="submit"
-                  disabled={enviando}
+                  disabled={enviando || cargandoPlanes || planes.length === 0}
                   className="rounded-xl bg-brand-pink text-white p-4 font-display font-semibold hover:opacity-90 disabled:opacity-60"
                 >
                   {enviando ? "Enviando..." : "Enviar comprobante"}
@@ -592,7 +704,10 @@ function InscripcionContenido() {
 export default function InscripcionPage() {
   return (
     <RutaProtegida rolesPermitidos={["estudiante"]}>
-      <InscripcionContenido />
+      {/* Suspense requerido por useSearchParams (?programa=) en Next.js */}
+      <Suspense fallback={null}>
+        <InscripcionContenido />
+      </Suspense>
     </RutaProtegida>
   );
 }
