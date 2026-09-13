@@ -61,6 +61,48 @@ const sesiones = [
   },
 ];
 
+// Categorías/programas — NUEVO (13/09/2026): antes el home solo hablaba
+// del curso estándar (carro). Ahora también existen Motorizados
+// (Categoría 01) y Pesados (Categoría 03/04), cada uno con su propio
+// plan "teorico" ya sembrado en Mongo y ya soportado en /inscripcion vía
+// ?programa= (ver PROGRAMAS en inscripcion/page.tsx — mismas imágenes,
+// para que la transición entre el home y esa página se sienta como el
+// mismo producto). "estandar" no lleva a una página propia: apunta al
+// ancla #curso-estandar, porque todo el contenido de ese curso (sesiones,
+// planes, testimonios) ya vive más abajo en esta misma página.
+const categorias = [
+  {
+    valor: "estandar",
+    etiqueta: "Categoría 02 — Teoría + práctica",
+    nombre: "Vehículos Livianos",
+    detalle:
+      "El curso completo de Muvo: teoría, práctica de manejo con instructor y diploma. Para quienes manejan carro por primera vez.",
+    imagen: "/inscripcion/teoria-1.jpg",
+    href: "#curso-estandar",
+    cta: "Ver este curso",
+  },
+  {
+    valor: "motorizados",
+    etiqueta: "Categoría 01 — Solo teoría",
+    nombre: "Motocicletas",
+    detalle:
+      "La teoría completa de la Ley 63-17 para conductores de motocicleta, en 4 sesiones con exámenes y diploma.",
+    imagen: "/inscripcion/teoria-2.jpg",
+    href: "/inscripcion?programa=motorizados",
+    cta: "Empezar este curso",
+  },
+  {
+    valor: "pesados",
+    etiqueta: "Categoría 03/04 — Solo teoría",
+    nombre: "Vehículos Pesados",
+    detalle:
+      "Para conductores de camiones y trailers — la misma teoría que exige el INTRANT, en 4 sesiones con exámenes y diploma.",
+    imagen: "/inscripcion/teoria-3.jpg",
+    href: "/inscripcion?programa=pesados",
+    cta: "Empezar este curso",
+  },
+];
+
 const testimonios = [
   {
     nombre: "Rosa M.",
@@ -182,8 +224,61 @@ export default async function Home() {
 
       <div className="road-divider" />
 
-      {/* Las sesiones del curso — sí es una secuencia real, por eso se numera */}
+      {/* Elige tu categoría — puerta de entrada a los 3 programas, con la
+          misma jerarquía visual que el curso original (ver categorias
+          arriba). Va antes de las sesiones porque primero se elige QUÉ
+          curso, y solo el de carro sigue contándose en detalle debajo. */}
       <section className="mx-auto max-w-6xl px-4 py-16">
+        <div className="max-w-2xl">
+          <h2 className="font-display text-3xl font-bold text-brand-blue">
+            ¿Qué licencia necesitas sacar?
+          </h2>
+          <p className="mt-3 text-neutral-text/80">
+            Elige tu categoría. Cada curso tiene su propio contenido,
+            exámenes y diploma — ajustado a lo que en verdad vas a manejar.
+          </p>
+        </div>
+
+        <div className="mt-10 grid gap-6 sm:grid-cols-3">
+          {categorias.map((categoria) => (
+            <div
+              key={categoria.valor}
+              className="overflow-hidden rounded-xl border border-brand-blue/10 bg-white shadow-sm transition hover:shadow-md"
+            >
+              <div className="relative h-40 w-full">
+                <Image
+                  src={categoria.imagen}
+                  alt={categoria.nombre}
+                  fill
+                  className="object-cover"
+                />
+              </div>
+              <div className="p-6">
+                <p className="font-display text-xs font-semibold uppercase tracking-wide text-brand-pink">
+                  {categoria.etiqueta}
+                </p>
+                <h3 className="mt-1 font-display text-lg font-bold text-brand-blue">
+                  {categoria.nombre}
+                </h3>
+                <p className="mt-2 text-sm text-neutral-text/75">
+                  {categoria.detalle}
+                </p>
+                <Link
+                  href={categoria.href}
+                  className="mt-5 inline-block rounded-full bg-brand-blue px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-blue/90"
+                >
+                  {categoria.cta}
+                </Link>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <div className="road-divider" />
+
+      {/* Las sesiones del curso — sí es una secuencia real, por eso se numera */}
+      <section id="curso-estandar" className="mx-auto max-w-6xl px-4 py-16">
         <div className="max-w-2xl">
           <h2 className="font-display text-3xl font-bold text-brand-blue">
             Un curso completo, en sesiones, en orden.

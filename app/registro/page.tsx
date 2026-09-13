@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Script from "next/script";
 import { useAuth } from "@/contexts/AuthContext";
@@ -73,9 +73,19 @@ const FORM_INICIAL: FormularioRegistro = {
 // En producción (Render/Vercel) esta variable SIEMPRE debe estar puesta.
 const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
-export default function RegistroPage() {
+function RegistroContenido() {
   const { registro } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // NUEVO (13/09/2026): mismo propósito que en /login — si alguien llegó
+  // aquí desde una ruta protegida (ej. /inscripcion?programa=motorizados
+  // vía RutaProtegida → /login → "Registrate" → aquí), no perder ese
+  // destino tras crear la cuenta. Se valida que empiece con "/" para no
+  // abrir un redirect a un dominio externo.
+  const redirectParam = searchParams.get("redirect");
+  const redirectSeguro =
+    redirectParam && redirectParam.startsWith("/") ? redirectParam : null;
 
   const [form, setForm] = useState<FormularioRegistro>(FORM_INICIAL);
   const [error, setError] = useState("");
@@ -114,9 +124,13 @@ export default function RegistroPage() {
     }
 
     if (resultado.autoLogueado) {
-      router.push("/dashboard");
+      router.push(redirectSeguro || "/dashboard");
     } else {
-      router.push("/login");
+      router.push(
+        redirectSeguro
+          ? `/login?redirect=${encodeURIComponent(redirectSeguro)}`
+          : "/login",
+      );
     }
   }
 
@@ -284,11 +298,26 @@ export default function RegistroPage() {
 
         <p className="text-sm text-neutral-text text-center mt-6">
           Ya tienes cuenta?{" "}
-          <Link href="/login" className="text-brand-pink underline">
+          <Link
+            href={
+              redirectSeguro
+                ? `/login?redirect=${encodeURIComponent(redirectSeguro)}`
+                : "/login"
+            }
+            className="text-brand-pink underline"
+          >
             Inicia sesion
           </Link>
         </p>
       </div>
     </main>
+  );
+}
+
+export default function RegistroPage() {
+  return (
+    <Suspense fallback={null}>
+      <RegistroContenido />
+    </Suspense>
   );
 }

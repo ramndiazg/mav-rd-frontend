@@ -1,13 +1,25 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 
-export default function LoginPage() {
+function LoginContenido() {
   const { login } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // NUEVO (13/09/2026): ?redirect= viene de RutaProtegida cuando alguien
+  // sin sesión intenta entrar a una ruta protegida (ej. /inscripcion
+  // ?programa=motorizados desde las tarjetas de categoría del home).
+  // Solo se respeta para estudiante — coordinadora/admin/conductor siguen
+  // yendo a su panel de siempre, porque un redirect pensado para
+  // estudiante no tendría sentido ahí. Se valida que empiece con "/" para
+  // no abrir un redirect a un dominio externo.
+  const redirectParam = searchParams.get("redirect");
+  const redirectSeguro =
+    redirectParam && redirectParam.startsWith("/") ? redirectParam : null;
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -38,7 +50,7 @@ export default function LoginPage() {
       // NUEVO (05/09/2026): el conductor tiene su propio dashboard de práctica.
       router.push("/practica");
     } else {
-      router.push("/dashboard");
+      router.push(redirectSeguro || "/dashboard");
     }
   }
 
@@ -100,11 +112,26 @@ export default function LoginPage() {
 
         <p className="text-sm text-neutral-text text-center mt-6">
           No tienes cuenta?{" "}
-          <Link href="/registro" className="text-brand-pink underline">
+          <Link
+            href={
+              redirectSeguro
+                ? `/registro?redirect=${encodeURIComponent(redirectSeguro)}`
+                : "/registro"
+            }
+            className="text-brand-pink underline"
+          >
             Registrate
           </Link>
         </p>
       </div>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginContenido />
+    </Suspense>
   );
 }
