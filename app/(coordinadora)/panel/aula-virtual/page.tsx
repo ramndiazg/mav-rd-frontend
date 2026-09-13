@@ -34,9 +34,9 @@ type Sesion = {
 type Programa = "estandar" | "motorizados" | "pesados";
 
 const PROGRAMAS: { valor: Programa; etiqueta: string }[] = [
-  { valor: "estandar", etiqueta: "Escolares" },
-  { valor: "motorizados", etiqueta: "Motorizados" },
-  { valor: "pesados", etiqueta: "Pesados" },
+  { valor: "estandar", etiqueta: "Categoría 02 — Livianos" },
+  { valor: "motorizados", etiqueta: "Categoría 01 — Motocicletas" },
+  { valor: "pesados", etiqueta: "Categoría 03/04 — Pesados" },
 ];
 
 type TipoContenido = "video" | "pdf" | "enlace" | "texto";

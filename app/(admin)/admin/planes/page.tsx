@@ -348,9 +348,9 @@ function PantallaPlanes() {
       <div className="flex gap-2 mb-6">
         {(
           [
-            { valor: "estandar", etiqueta: "Escolares" },
-            { valor: "motorizados", etiqueta: "Motorizados" },
-            { valor: "pesados", etiqueta: "Pesados" },
+            { valor: "estandar", etiqueta: "Categoría 02 — Livianos" },
+            { valor: "motorizados", etiqueta: "Categoría 01 — Motocicletas" },
+            { valor: "pesados", etiqueta: "Categoría 03/04 — Pesados" },
           ] as const
         ).map((p) => (
           <button

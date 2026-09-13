@@ -36,19 +36,19 @@ const PROGRAMAS: {
 }[] = [
   {
     valor: "estandar",
-    nombre: "Escolares",
+    nombre: "Categoría 02 — Vehículos Livianos",
     foco: "Curso completo (teoría + práctica) para sacar tu licencia de vehículo liviano.",
     imagen: "/inscripcion/teoria-1.jpg",
   },
   {
     valor: "motorizados",
-    nombre: "Motorizados",
+    nombre: "Categoría 01 — Motocicletas",
     foco: "Para conductores de motocicleta — solo teoría, organizada en 4 sesiones.",
     imagen: "/inscripcion/teoria-2.jpg",
   },
   {
     valor: "pesados",
-    nombre: "Pesados",
+    nombre: "Categoría 03/04 — Vehículos Pesados",
     foco: "Para conductores de camiones y trailers — solo teoría, organizada en 4 sesiones.",
     imagen: "/inscripcion/teoria-3.jpg",
   },
@@ -428,8 +428,9 @@ function InscripcionContenido() {
             <div>
               <p className="font-medium text-brand-blue mb-1">Elige tu curso y tu plan</p>
               <p className="text-sm text-neutral-text">
-                Escolares, Motorizados o Pesados — cada uno con el plan que
-                mejor se ajuste a lo que necesitas.
+                Categoría 01 (Motocicletas), 02 (Vehículos Livianos) o 03/04
+                (Vehículos Pesados) — cada uno con el plan que mejor se
+                ajuste a lo que necesitas.
               </p>
             </div>
           </div>
