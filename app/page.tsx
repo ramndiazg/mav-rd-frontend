@@ -76,7 +76,7 @@ const categorias = [
     etiqueta: "Categoría 02 — Teoría + práctica",
     nombre: "Vehículos Livianos",
     detalle:
-      "El curso completo de Muvo: teoría, práctica de manejo con instructor y diploma. Para quienes manejan carro por primera vez.",
+      "El curso completo de Muvo: teoría, práctica de manejo con instructor y diploma. Para quienes manejan un vehiculo por primera vez.",
     imagen: "/inscripcion/teoria-1.jpg",
     href: "#curso-estandar",
     cta: "Ver este curso",
@@ -122,8 +122,15 @@ const testimonios = [
 // —incluyendo nombre, frase destacada y destacado/no destacado— vienen
 // completos de GET /api/planes, para no tener que tocar este archivo cada
 // vez que cambie un precio o se agregue/edite un plan.
+//
+// AMPLIADO (13/09/2026): codigo ya no es solo fundacion/normal/vip — el
+// plan "teorico" de Motorizados/Pesados usa el mismo shape, así que el
+// tipo se abre a string. Se agrega `programa` (ya viene en la respuesta
+// del backend, solo no se leía) para poder armar el link de "Ver
+// detalles del plan" de cada uno sin hardcodear el programa por tarjeta.
 type Plan = {
-  codigo: "fundacion" | "normal" | "vip";
+  codigo: string;
+  programa: "estandar" | "motorizados" | "pesados";
   nombre: string;
   precio: number;
   fraseDestacada: string;
@@ -136,11 +143,12 @@ function formatearMonto(valor: number) {
 
 // Se pide en cada visita (no se cachea): el precio puede cambiar sin que
 // haya un nuevo despliegue del frontend, ya que vive en la base de datos.
-async function obtenerPlanes(): Promise<Plan[]> {
+async function obtenerPlanes(programa: string = "estandar"): Promise<Plan[]> {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/planes`, {
-      cache: "no-store",
-    });
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/planes?programa=${programa}`,
+      { cache: "no-store" },
+    );
     const json = await res.json();
     return json.success ? json.data : [];
   } catch {
@@ -149,10 +157,18 @@ async function obtenerPlanes(): Promise<Plan[]> {
 }
 
 export default async function Home() {
-  const [planes, contenido] = await Promise.all([
-    obtenerPlanes(),
-    obtenerContenidoInicio(),
-  ]);
+  const [planes, planesMotorizados, planesPesados, contenido] =
+    await Promise.all([
+      obtenerPlanes("estandar"),
+      obtenerPlanes("motorizados"),
+      obtenerPlanes("pesados"),
+      obtenerContenidoInicio(),
+    ]);
+
+  // Un solo arreglo para pintar las tarjetas de Motorizados/Pesados con
+  // el mismo map — cada plan ya trae su propio `programa`, así el link
+  // "Ver detalles del plan" no necesita distinguirlos a mano.
+  const planesOtrosProgramas = [...planesMotorizados, ...planesPesados];
 
   const heroTitulo =
     contenido.inicio_hero_titulo ||
@@ -231,7 +247,7 @@ export default async function Home() {
       <section className="mx-auto max-w-6xl px-4 py-16">
         <div className="max-w-2xl">
           <h2 className="font-display text-3xl font-bold text-brand-blue">
-            ¿Qué licencia necesitas sacar?
+            ¿Qué licencia de conducir necesitas?
           </h2>
           <p className="mt-3 text-neutral-text/80">
             Elige tu categoría. Cada curso tiene su propio contenido,
@@ -370,6 +386,50 @@ export default async function Home() {
             );
           })}
         </div>
+
+        {/* NUEVO (13/09/2026): Motorizados y Pesados no tienen niveles
+            (un solo plan "teorico" cada uno), así que en vez de forzarlos
+            en la misma grilla de 3 columnas de estándar —que asume
+            fundación/normal/vip— van en un bloque propio debajo, con la
+            misma tarjeta pero un título que los distingue como "también
+            disponible". Si algún día alguno queda sin plan activo (ej.
+            se desactiva desde el panel), esa mitad del bloque
+            simplemente no se pinta. */}
+        {planesOtrosProgramas.length > 0 && (
+          <div className="mt-10 border-t border-brand-blue/10 pt-10">
+            <p className="font-display text-sm font-semibold uppercase tracking-wide text-brand-pink">
+              ¿Manejas moto o vehículo pesado? También tenemos tu curso
+            </p>
+
+            <div className="mt-4 grid gap-6 sm:grid-cols-2">
+              {planesOtrosProgramas.map((plan) => (
+                <div
+                  key={`${plan.programa}-${plan.codigo}`}
+                  className="rounded-xl border-2 border-brand-blue/10 bg-white p-6 shadow-sm transition hover:shadow-md"
+                >
+                  <h3 className="font-display text-xl font-bold text-brand-blue">
+                    {plan.nombre}
+                  </h3>
+
+                  <p className="mt-3 font-display text-3xl font-bold text-brand-blue">
+                    {formatearMonto(plan.precio)}
+                  </p>
+
+                  <p className="mt-2 text-sm text-neutral-text/75">
+                    {plan.fraseDestacada}
+                  </p>
+
+                  <Link
+                    href={`/inscripcion?programa=${plan.programa}`}
+                    className="mt-6 inline-block rounded-full bg-brand-blue px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-blue/90"
+                  >
+                    Ver detalles del plan
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </section>
 
       <div className="road-divider" />
