@@ -1,12 +1,12 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 
 function LoginContenido() {
-  const { login } = useAuth();
+  const { login, usuario } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -26,6 +26,34 @@ function LoginContenido() {
   const [error, setError] = useState("");
   const [enviando, setEnviando] = useState(false);
 
+  // CORREGIDO (13/09/2026): antes se navegaba (router.push) justo dentro
+  // de manejarSubmit, en el mismo instante en que login() acababa de
+  // llamar a setUsuario. Como esa actualización de contexto es
+  // asíncrona, había una carrera: la navegación a /dashboard podía
+  // completarse antes de que el nuevo valor de `usuario` quedara
+  // confirmado, así que RutaProtegida (que lee ese mismo contexto)
+  // llegaba a ver `usuario: null` por un instante y rebotaba de vuelta a
+  // /login — el navbar sí mostraba el nombre (se actualiza un poco
+  // después), pero la página se quedaba en el formulario. Ahora la
+  // navegación reacciona al `usuario` ya confirmado del contexto, no al
+  // resultado inmediato de login().
+  useEffect(() => {
+    if (!usuario) return;
+
+    if (usuario.rol === "coordinadora" || usuario.rol === "admin") {
+      // CAMBIO (10/09/2026): antes caía directo en /panel/pagos. La
+      // notificación de "pago nuevo" ya avisa cuando hace falta revisar
+      // pagos — no tiene sentido forzar esa pantalla en cada login si la
+      // admin va a hacer otra cosa. Ahora entra al dashboard del panel.
+      router.push("/panel");
+    } else if (usuario.rol === "conductor") {
+      // NUEVO (05/09/2026): el conductor tiene su propio dashboard de práctica.
+      router.push("/practica");
+    } else {
+      router.push(redirectSeguro || "/dashboard");
+    }
+  }, [usuario, redirectSeguro, router]);
+
   async function manejarSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -37,21 +65,10 @@ function LoginContenido() {
 
     if (!resultado.ok) {
       setError(resultado.error || "No se pudo iniciar sesion.");
-      return;
     }
-
-    if (resultado.rol === "coordinadora" || resultado.rol === "admin") {
-      // CAMBIO (10/09/2026): antes caía directo en /panel/pagos. La
-      // notificación de "pago nuevo" ya avisa cuando hace falta revisar
-      // pagos — no tiene sentido forzar esa pantalla en cada login si la
-      // admin va a hacer otra cosa. Ahora entra al dashboard del panel.
-      router.push("/panel");
-    } else if (resultado.rol === "conductor") {
-      // NUEVO (05/09/2026): el conductor tiene su propio dashboard de práctica.
-      router.push("/practica");
-    } else {
-      router.push(redirectSeguro || "/dashboard");
-    }
+    // Si resultado.ok es true, no hace falta hacer nada más aquí: el
+    // useEffect de arriba se dispara solo en cuanto `usuario` (contexto)
+    // se actualice, y navega desde ahí.
   }
 
   return (

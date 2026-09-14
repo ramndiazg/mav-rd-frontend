@@ -74,7 +74,7 @@ const FORM_INICIAL: FormularioRegistro = {
 const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
 function RegistroContenido() {
-  const { registro } = useAuth();
+  const { registro, usuario } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -91,6 +91,13 @@ function RegistroContenido() {
   const [error, setError] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [captchaToken, setCaptchaToken] = useState("");
+  // NUEVO (13/09/2026): ver el mismo campo en /login — cuando el registro
+  // deja a la persona auto-logueada, no navegamos justo después de
+  // registro() (esa actualización de `usuario` en el contexto es
+  // asíncrona); esperamos a que este flag confirme que sí fue
+  // autoLogueado y dejamos que el useEffect de abajo navegue una vez
+  // `usuario` ya esté confirmado.
+  const [autoLogueado, setAutoLogueado] = useState(false);
 
   // El widget de Turnstile llama a esta función global cuando la persona
   // resuelve el challenge (data-callback="onTurnstileSuccess" en el div
@@ -104,6 +111,17 @@ function RegistroContenido() {
         .onTurnstileSuccess;
     };
   }, []);
+
+  // CORREGIDO (13/09/2026): misma carrera que en /login — navegar justo
+  // dentro de manejarSubmit, en el mismo instante en que registro()
+  // acababa de llamar a setUsuario, podía hacer que RutaProtegida en
+  // /dashboard viera `usuario: null` por un instante y rebotara de
+  // vuelta. Ahora se espera a que `usuario` del contexto quede
+  // confirmado antes de navegar.
+  useEffect(() => {
+    if (!autoLogueado || !usuario) return;
+    router.push(redirectSeguro || "/dashboard");
+  }, [autoLogueado, usuario, redirectSeguro, router]);
 
   function actualizar(campo: keyof FormularioRegistro, valor: string) {
     setForm((prev) => ({ ...prev, [campo]: valor }));
@@ -124,7 +142,7 @@ function RegistroContenido() {
     }
 
     if (resultado.autoLogueado) {
-      router.push(redirectSeguro || "/dashboard");
+      setAutoLogueado(true);
     } else {
       router.push(
         redirectSeguro
