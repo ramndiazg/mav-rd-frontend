@@ -15,7 +15,7 @@ const beneficios = [
     icono: School,
     titulo: "Educación vial desde el aula",
     detalle:
-      "Llevamos el curso de teoría y práctica de manejo a tu colegio, para que tus estudiantes salgan preparadas antes de tomar el volante.",
+      "Llevamos el curso de teoría de educación vial a tu colegio, para que tus estudiantes salgan preparadas antes de tomar el volante.",
   },
   {
     icono: ShieldCheck,
@@ -33,7 +33,7 @@ const beneficios = [
     icono: GraduationCap,
     titulo: "Curso completo, no un taller suelto",
     detalle:
-      "Teoría y práctica de manejo con el mismo programa que ya formó a cientos de estudiantes, adaptado a tu colegio.",
+      "El mismo programa de teoría de educación vial que ya formó a cientos de estudiantes, adaptado a tu colegio.",
   },
 ];
 
@@ -54,7 +54,7 @@ const pasos = [
     numero: "03",
     titulo: "Coordinamos las sesiones",
     detalle:
-      "Programamos la teoría y la práctica de manejo en las fechas que mejor le funcionen a tu colegio.",
+      "Programamos las sesiones de teoría en las fechas que mejor le funcionen a tu colegio.",
   },
 ];
 
@@ -130,7 +130,7 @@ export default function EscolarPage() {
             Educación vial para tu colegio
           </h1>
           <p className="mx-auto mt-5 max-w-2xl text-white/85">
-            Llevamos el mismo curso de teoría y práctica que ya formó a
+            Llevamos el mismo curso de teoría que ya formó a
             cientos de estudiantes, adaptado para capacitar a tus
             estudiantes — con un precio que se ajusta a la cantidad de
             personas.
