@@ -112,7 +112,7 @@ const testimonios = [
   {
     nombre: "Yolanda P.",
     texto:
-      "Las clases son entre mujeres, a nuestro ritmo. Eso cambió todo — pude preguntar lo que en otro lado me daba pena preguntar.",
+      "Las clases son dinamicas, a nuestro ritmo. Eso cambió todo — pude preguntar lo que en otro lado me daba pena preguntar.",
   },
 ];
 

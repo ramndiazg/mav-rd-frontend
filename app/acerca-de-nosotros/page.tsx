@@ -25,7 +25,7 @@ export default async function AcercaDeNosotrosPage() {
 
   const historia =
     contenido.acerca_de_historia ||
-    "Mujeres al Volante RD nació el 25 de noviembre de 2017 en Santo Domingo, de la mano de María Díaz, con la meta de cerrar una brecha muy concreta: muchas mujeres dominicanas llegaban a la adultez sin haber aprendido a conducir, no por falta de interés, sino por falta de un espacio pensado para ellas — a su ritmo, sin presión, y entre mujeres.";
+    "Mujeres al Volante RD nació el 25 de noviembre de 2017 en Santo Domingo, de la mano de María Díaz, con la meta de cerrar una brecha muy concreta: muchas mujeres dominicanas llegaban a la adultez sin haber aprendido a conducir, no por falta de interés, sino por falta de un espacio bien pensado — a su ritmo y sin presión.";
 
   const historiaImagen = contenido.acerca_de_historia_imagen;
 
