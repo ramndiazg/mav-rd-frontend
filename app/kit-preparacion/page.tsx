@@ -34,12 +34,13 @@ export default function KitPreparacionPage() {
       <section className="bg-brand-blue text-white px-6 py-16 md:py-20">
         <div className="max-w-3xl mx-auto text-center">
           <h1 className="font-display text-3xl md:text-4xl font-bold mb-4">
-            Kit de Preparacion INTRANT
+            Kit de Preparacion para tu permiso de aprendizaje en INTRANT
           </h1>
           <p className="font-body text-brand-blueLight text-lg leading-relaxed">
-            Antes de tu clase presencial, mira los modulos en video y practica
-            con el simulador oficial. Cuando termines, ya tendras lo necesario
-            para aprobar el examen teorico y sacar tu carnet de aprendizaje.
+            Esta seccion ha sido diseñada para acompañarte en el proceso de
+            formacion previo a la optencion de tu permiso de aprendizaje ante el
+            INTRANT, materiales de estudio, ejercicios practicos y orientacion para
+            fortalecer tus conocimientos.
           </p>
         </div>
       </section>
