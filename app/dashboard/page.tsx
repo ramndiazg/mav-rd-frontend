@@ -17,6 +17,11 @@ type Progreso = {
   // estudiante le aplica la práctica de manejo (Motorizados/Pesados no
   // la tienen, igual que Escolar/Empresarial).
   programa?: "estandar" | "motorizados" | "pesados";
+  // NUEVO (13/09/2026): espejo de Inscripcion.tipoPlan — tercer criterio,
+  // ver ANALISIS_COBERTURA_PRACTICA.md. Dentro de "estandar" ahora
+  // conviven planes con y sin práctica (municipio sin cobertura ⇒ solo
+  // "teorico"), así que ya no basta con mirar el programa.
+  tipoPlan?: "fundacion" | "normal" | "vip" | "teorico" | "grupo" | null;
 };
 
 type Inscripcion = {
@@ -293,9 +298,15 @@ function DashboardContenido() {
   // práctica — ese dato vive en `progreso.programa` (llega recién con el
   // fetch de abajo), no en `usuario`, así que este cálculo se recalcula
   // cuando `progreso` cambia.
+  // ACTUALIZADO (13/09/2026): tercer criterio — un plan "teorico" dentro
+  // de "estandar" (municipio sin cobertura de práctica presencial)
+  // tampoco cursa práctica. Espejo exacto de
+  // utils/elegibilidadPractica.js en el backend — ver
+  // ANALISIS_COBERTURA_PRACTICA.md.
   const requierePractica =
     !usuario?.grupoId &&
-    !(progreso?.programa && PROGRAMAS_SIN_PRACTICA.includes(progreso.programa));
+    !(progreso?.programa && PROGRAMAS_SIN_PRACTICA.includes(progreso.programa)) &&
+    progreso?.tipoPlan !== "teorico";
 
   // NUEVO (08/09/2026): decide qué cuestionario de perfil le toca a esta
   // estudiante — mismo criterio que sesionController.js en el backend

@@ -49,6 +49,10 @@ type FormularioRegistro = {
   email: string;
   password: string;
   provincia: string;
+  // NUEVO (13/09/2026): ver ANALISIS_COBERTURA_PRACTICA.md — determina
+  // más adelante si a la estudiante le aplica la práctica de manejo
+  // presencial en /inscripcion.
+  municipio: string;
   fechaNacimiento: string;
   // NUEVO (10/09/2026): honeypot — ver ARQUITECTURA_BACKEND.md.
   sitioWeb: string;
@@ -62,9 +66,16 @@ const FORM_INICIAL: FormularioRegistro = {
   email: "",
   password: "",
   provincia: "",
+  municipio: "",
   fechaNacimiento: "",
   sitioWeb: "",
 };
+
+// NUEVO (13/09/2026): dato de referencia provincia→municipios, para el
+// <select> encadenado de abajo — ver ANALISIS_COBERTURA_PRACTICA.md,
+// "Diseño de datos", punto 1. Se trae del backend (fuente única,
+// src/data/municipiosRD.js) en vez de duplicarlo aquí.
+type ProvinciaConMunicipios = { provincia: string; municipios: string[] };
 
 // NUEVO (10/09/2026): si no hay site key configurada (ej. desarrollo
 // local), el widget de Turnstile simplemente no se renderiza y el
@@ -91,6 +102,36 @@ function RegistroContenido() {
   const [error, setError] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [captchaToken, setCaptchaToken] = useState("");
+
+  // NUEVO (13/09/2026): provincia→municipios para el <select> en cascada.
+  const [provinciasConMunicipios, setProvinciasConMunicipios] = useState<
+    ProvinciaConMunicipios[]
+  >([]);
+
+  useEffect(() => {
+    let cancelado = false;
+    (async () => {
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/ubicaciones/provincias-municipios`,
+        );
+        const json = await res.json();
+        if (!cancelado && json.success) {
+          setProvinciasConMunicipios(json.data);
+        }
+      } catch {
+        // si falla, el <select> de municipio simplemente queda vacío — la
+        // persona puede recargar la página para reintentar.
+      }
+    })();
+    return () => {
+      cancelado = true;
+    };
+  }, []);
+
+  const municipiosDeProvincia =
+    provinciasConMunicipios.find((p) => p.provincia === form.provincia)
+      ?.municipios ?? [];
   // NUEVO (13/09/2026): ver el mismo campo en /login — cuando el registro
   // deja a la persona auto-logueada, no navegamos justo después de
   // registro() (esa actualización de `usuario` en el contexto es
@@ -248,7 +289,16 @@ function RegistroContenido() {
             <select
               required
               value={form.provincia}
-              onChange={(e) => actualizar("provincia", e.target.value)}
+              onChange={(e) => {
+                // NUEVO (13/09/2026): al cambiar de provincia, el
+                // municipio elegido antes ya no aplica — se limpia para
+                // no dejar guardado un municipio de otra provincia.
+                setForm((prev) => ({
+                  ...prev,
+                  provincia: e.target.value,
+                  municipio: "",
+                }));
+              }}
               className="w-full rounded-lg border border-neutral-bg px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue"
             >
               <option value="" disabled>
@@ -257,6 +307,30 @@ function RegistroContenido() {
               {PROVINCIAS.map((p) => (
                 <option key={p} value={p}>
                   {p}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm text-neutral-text mb-1">
+              Municipio
+            </label>
+            <select
+              required
+              disabled={!form.provincia}
+              value={form.municipio}
+              onChange={(e) => actualizar("municipio", e.target.value)}
+              className="w-full rounded-lg border border-neutral-bg px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue disabled:opacity-60"
+            >
+              <option value="" disabled>
+                {form.provincia
+                  ? "Selecciona tu municipio"
+                  : "Primero elige tu provincia"}
+              </option>
+              {municipiosDeProvincia.map((m) => (
+                <option key={m} value={m}>
+                  {m}
                 </option>
               ))}
             </select>

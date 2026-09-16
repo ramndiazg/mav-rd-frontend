@@ -34,25 +34,25 @@ const PROGRAMAS: {
   foco: string;
   imagen: string;
 }[] = [
-  {
-    valor: "estandar",
-    nombre: "Categoría 02 — Vehículos Livianos",
-    foco: "Curso completo (teoría + práctica) para sacar tu licencia de vehículo liviano.",
-    imagen: "/inscripcion/teoria-1.jpg",
-  },
-  {
-    valor: "motorizados",
-    nombre: "Categoría 01 — Motocicletas",
-    foco: "Para conductores de motocicleta — solo teoría, organizada en 4 sesiones.",
-    imagen: "/inscripcion/teoria-2.jpg",
-  },
-  {
-    valor: "pesados",
-    nombre: "Categoría 03/04 — Vehículos Pesados",
-    foco: "Para conductores de camiones y trailers — solo teoría, organizada en 4 sesiones.",
-    imagen: "/inscripcion/teoria-3.jpg",
-  },
-];
+    {
+      valor: "estandar",
+      nombre: "Categoría 02 — Vehículos Livianos",
+      foco: "Curso completo (teoría + práctica) para sacar tu licencia de vehículo liviano.",
+      imagen: "/inscripcion/teoria-1.jpg",
+    },
+    {
+      valor: "motorizados",
+      nombre: "Categoría 01 — Motocicletas",
+      foco: "Para conductores de motocicleta — solo teoría, organizada en 4 sesiones.",
+      imagen: "/inscripcion/teoria-2.jpg",
+    },
+    {
+      valor: "pesados",
+      nombre: "Categoría 03/04 — Vehículos Pesados",
+      foco: "Para conductores de camiones y trailers — solo teoría, organizada en 4 sesiones.",
+      imagen: "/inscripcion/teoria-3.jpg",
+    },
+  ];
 
 type EstadoPago = "pendiente" | "pendiente_verificacion" | "pagado" | "rechazado";
 
@@ -101,13 +101,28 @@ function InscripcionContenido() {
   const [planes, setPlanes] = useState<Plan[]>([]);
   const [inscripcion, setInscripcion] = useState<Inscripcion | null>(null);
   const [cargando, setCargando] = useState(true);
-  const [cargandoPlanes, setCargandoPlanes] = useState(false);
+  // ACTUALIZADO (13/09/2026): antes había un `cargandoPlanes` que se
+  // prendía con setState al inicio del efecto — eso dispara el lint
+  // react-hooks/set-state-in-effect y provoca un render extra en cascada.
+  // Ahora se guarda de QUÉ programa son los planes que hay en memoria y
+  // el "cargando" se deriva: si el programa elegido no coincide con el
+  // que ya está cargado, es que viene uno en camino.
+  const [planesDe, setPlanesDe] = useState<Programa | null>(null);
   const [cuentaCopiada, setCuentaCopiada] = useState<number | null>(null);
 
+  const cargandoPlanes = Boolean(programa) && planesDe !== programa;
+
+  // Planes del programa que está mirando AHORA — si `planesDe` quedó
+  // atrás, los que hay en memoria son del programa anterior y no deben
+  // mostrarse ni un frame.
+  const planesActuales = planesDe === programa ? planes : [];
+
   // --- Formulario ---
-  // Empieza vacío y se fija al primer plan (Fundación, orden 1) en cuanto
-  // llegan los planes — así no queda seleccionado un plan que no exista si
-  // el backend cambia el orden en el futuro.
+  // Guarda SOLO la elección explícita de la estudiante; empieza vacío. El
+  // plan realmente seleccionado se deriva más abajo en `tipoPlanEfectivo`
+  // (si no eligió nada, o si lo que eligió dejó de estar disponible, cae
+  // al primero de la lista). Antes esto se sincronizaba con setState
+  // dentro de un efecto — ver nota en `planesDe`.
   const [tipoPlan, setTipoPlan] = useState<Plan["codigo"] | "">("");
   const [bancoEmisor, setBancoEmisor] = useState("");
   const [numeroReferencia, setNumeroReferencia] = useState("");
@@ -153,8 +168,6 @@ function InscripcionContenido() {
   useEffect(() => {
     if (!programa) return;
     let cancelado = false;
-    setCargandoPlanes(true);
-    setTipoPlan("");
 
     (async () => {
       try {
@@ -163,14 +176,15 @@ function InscripcionContenido() {
         );
         const json = await res.json();
         if (cancelado) return;
-        if (json.success) {
-          setPlanes(json.data);
-          if (json.data.length > 0) setTipoPlan(json.data[0].codigo);
-        }
+        if (json.success) setPlanes(json.data);
       } catch {
         // si falla, el formulario simplemente no se prellena — no es bloqueante
       } finally {
-        if (!cancelado) setCargandoPlanes(false);
+        // Marca que lo que hay en memoria corresponde a ESTE programa —
+        // es lo que apaga el "Cargando planes..." derivado. Va también en
+        // el catch a propósito: si falló, se muestra la lista vacía en vez
+        // de dejar el spinner colgado para siempre.
+        if (!cancelado) setPlanesDe(programa);
       }
     })();
 
@@ -178,6 +192,74 @@ function InscripcionContenido() {
       cancelado = true;
     };
   }, [programa]);
+
+  // NUEVO (13/09/2026): cobertura de la práctica de manejo en el municipio
+  // de la estudiante — ver ANALISIS_COBERTURA_PRACTICA.md. Solo importa
+  // para "estandar" (Motorizados/Pesados son 100% teóricos en todo el
+  // país).
+  //
+  // `coberturaApi` guarda únicamente lo que respondió el backend. El valor
+  // que usa la pantalla es `cobertura`, derivado: una cuenta vieja sin
+  // municipio (ver models/User.js) es "no cubierta" sin necesidad de
+  // consultar nada, así que eso se resuelve aquí en vez de con un
+  // setState dentro del efecto (lint react-hooks/set-state-in-effect).
+  // null = todavía no se sabe; el filtrado de planes espera a que se
+  // resuelva para no mostrar por un instante planes que luego desaparecen.
+  const [coberturaApi, setCoberturaApi] = useState<boolean | null>(null);
+
+  const municipioConocido = Boolean(usuario?.municipio && usuario?.provincia);
+  const cobertura: boolean | null = !usuario
+    ? null
+    : !municipioConocido
+      ? false
+      : coberturaApi;
+
+  useEffect(() => {
+    // Mismo criterio que el backend en inscripcionController.js: sin
+    // municipio no se consulta la API, ya se resolvió arriba como false.
+    if (!usuario || !usuario.municipio || !usuario.provincia) return;
+
+    const { provincia, municipio } = usuario;
+    let cancelado = false;
+
+    (async () => {
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/municipios-practica/cobertura?provincia=${encodeURIComponent(provincia)}&municipio=${encodeURIComponent(municipio)}`,
+        );
+        const json = await res.json();
+        if (!cancelado && json.success) setCoberturaApi(json.data.cubierto);
+      } catch {
+        // si falla, se asume "no cubierto": es el lado seguro — como
+        // mucho le ofrecemos solo el teórico y el backend la rechazaría
+        // igual si intentara un plan con práctica sin cobertura.
+        if (!cancelado) setCoberturaApi(false);
+      }
+    })();
+
+    return () => {
+      cancelado = true;
+    };
+  }, [usuario]);
+
+  // Planes que de verdad puede elegir esta estudiante. En "estandar" sin
+  // cobertura, solo queda "teorico"; con cobertura (o en cualquier otro
+  // programa) se muestran todos los del programa.
+  const planesDisponibles =
+    programa === "estandar" && cobertura === false
+      ? planesActuales.filter((p) => p.codigo === "teorico")
+      : planesActuales;
+
+  // Plan realmente seleccionado. Si la estudiante todavía no eligió, o si
+  // lo que eligió dejó de estar disponible (cambió de programa, o resolvió
+  // que su municipio no tiene cobertura y su plan tenía práctica), cae al
+  // primero de la lista. Derivado a propósito: antes esto era un efecto
+  // con setTipoPlan, que disparaba un render en cascada por cada cambio.
+  const tipoPlanEfectivo: Plan["codigo"] | "" = planesDisponibles.some(
+    (p) => p.codigo === tipoPlan,
+  )
+    ? tipoPlan
+    : (planesDisponibles[0]?.codigo ?? "");
 
   async function copiarCuenta(numero: string, indice: number) {
     try {
@@ -228,7 +310,7 @@ function InscripcionContenido() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          tipoPlan,
+          tipoPlan: tipoPlanEfectivo,
           programa,
           bancoEmisor,
           numeroReferencia,
@@ -357,38 +439,65 @@ function InscripcionContenido() {
 
       {/* --- Comparación de planes --- */}
       {programa && (
-      <section className="max-w-5xl mx-auto px-6 py-12">
-        <h2 className="font-display text-xl font-bold text-brand-blue mb-2 text-center">
-          Elige tu plan
-        </h2>
-        <p className="text-sm text-neutral-text text-center mb-8">
-          {cargandoPlanes && "Cargando planes..."}
-        </p>
+        <section className="max-w-5xl mx-auto px-6 py-12">
+          <h2 className="font-display text-xl font-bold text-brand-blue mb-2 text-center">
+            Elige tu plan
+          </h2>
+          <p className="text-sm text-neutral-text text-center mb-8">
+            {cargandoPlanes && "Cargando planes..."}
+          </p>
 
-        <div className="grid md:grid-cols-3 gap-6">
-          {planes.map((plan) => {
-            const destacado = plan.codigo === "vip";
-            return (
-              <div
-                key={plan.codigo}
-                className={`rounded-xl bg-white overflow-hidden border ${destacado ? "border-brand-pink" : "border-neutral-bg"
-                  }`}
-              >
-                <div className="p-6">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-display font-bold text-brand-blue text-lg">
-                      {plan.nombre}
-                    </h3>
-                    {destacado && (
-                      <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-brand-pink text-white">
-                        Más completo
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-2xl font-display font-bold text-brand-blue mb-1">
-                    {formatearMonto(plan.precio)}
-                  </p>
-                  {/* <p className="text-xs text-neutral-text mb-4">
+          {/* NUEVO (13/09/2026): aviso de cobertura de práctica — ver
+            ANALISIS_COBERTURA_PRACTICA.md, sección 6. Solo aplica a
+            "estandar"; Motorizados y Pesados son teóricos en todo el país,
+            así que ahí el aviso sobraría. */}
+          {programa === "estandar" && cobertura === false && (
+            <div className="mb-8 rounded-xl border border-brand-blueLight bg-brand-blueLight/10 px-5 py-4">
+              <p className="text-sm text-neutral-text">
+                {usuario?.municipio ? (
+                  <>
+                    Por ahora la práctica de manejo presencial no está
+                    disponible en <strong>{usuario.municipio}</strong>. Puedes
+                    inscribirte en la modalidad <strong>Solo Teórico</strong> y
+                    completar el curso completo en línea. Estamos trabajando
+                    para llegar a más municipios.
+                  </>
+                ) : (
+                  <>
+                    No tenemos registrado tu municipio, así que por ahora solo
+                    podemos ofrecerte la modalidad{" "}
+                    <strong>Solo Teórico</strong>. Si quieres la práctica de
+                    manejo, contáctanos para actualizar tus datos.
+                  </>
+                )}
+              </p>
+            </div>
+          )}
+
+          <div className="grid md:grid-cols-3 gap-6">
+            {planesDisponibles.map((plan) => {
+              const destacado = plan.codigo === "vip";
+              return (
+                <div
+                  key={plan.codigo}
+                  className={`rounded-xl bg-white overflow-hidden border ${destacado ? "border-brand-pink" : "border-neutral-bg"
+                    }`}
+                >
+                  <div className="p-6">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-display font-bold text-brand-blue text-lg">
+                        {plan.nombre}
+                      </h3>
+                      {destacado && (
+                        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-brand-pink text-white">
+                          Más completo
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-2xl font-display font-bold text-brand-blue mb-1">
+                      {formatearMonto(plan.precio)}
+                    </p>
+                    {/* <p className="text-xs text-neutral-text mb-4">
                     {plan.modalidadPractica === "grupal"
                       ? `Práctica en grupo, sesiones de ${plan.duracionSesionMinutos} min por estudiante`
                       : `${plan.cantidadSesionesPractica} sesiones de práctica de ${plan.duracionSesionMinutos} min, individuales`}
@@ -396,23 +505,23 @@ function InscripcionContenido() {
                     RD${plan.costoPorSesion}/sesión de combustible (se paga
                     en el lugar de la práctica)
                   </p> */}
-                  <ul className="grid gap-2 text-sm text-neutral-text mt-4 mb-4">
-                    {plan.caracteristicas.map((caracteristica) => (
-                      <li key={caracteristica} className="flex gap-2">
-                        <CheckCircle2
-                          size={18}
-                          className={`shrink-0 ${destacado ? "text-brand-pink" : "text-brand-blueLight"}`}
-                        />
-                        {caracteristica}
-                      </li>
-                    ))}
-                  </ul>
+                    <ul className="grid gap-2 text-sm text-neutral-text mt-4 mb-4">
+                      {plan.caracteristicas.map((caracteristica) => (
+                        <li key={caracteristica} className="flex gap-2">
+                          <CheckCircle2
+                            size={18}
+                            className={`shrink-0 ${destacado ? "text-brand-pink" : "text-brand-blueLight"}`}
+                          />
+                          {caracteristica}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
+              );
+            })}
+          </div>
+        </section>
       )}
 
       {/* --- Cómo inscribirte --- */}
@@ -610,14 +719,14 @@ function InscripcionContenido() {
                 <label className="text-sm text-neutral-text">
                   Plan
                   <select
-                    value={tipoPlan}
+                    value={tipoPlanEfectivo}
                     onChange={(e) =>
                       setTipoPlan(e.target.value as Plan["codigo"])
                     }
                     required
                     className="mt-1 w-full rounded-lg border border-neutral-bg px-3 py-2 text-sm"
                   >
-                    {planes.map((plan) => (
+                    {planesDisponibles.map((plan) => (
                       <option key={plan.codigo} value={plan.codigo}>
                         {plan.nombre} — {formatearMonto(plan.precio)}
                       </option>
@@ -688,7 +797,12 @@ function InscripcionContenido() {
 
                 <button
                   type="submit"
-                  disabled={enviando || cargandoPlanes || planes.length === 0}
+                  disabled={
+                    enviando ||
+                    cargandoPlanes ||
+                    planesDisponibles.length === 0 ||
+                    !tipoPlanEfectivo
+                  }
                   className="rounded-xl bg-brand-pink text-white p-4 font-display font-semibold hover:opacity-90 disabled:opacity-60"
                 >
                   {enviando ? "Enviando..." : "Enviar comprobante"}

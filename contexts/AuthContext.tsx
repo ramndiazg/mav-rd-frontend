@@ -18,6 +18,13 @@ type Usuario = {
   rol: Rol;
   activo: boolean;
   emailVerificado: boolean;
+  // NUEVO (13/09/2026): ver ANALISIS_COBERTURA_PRACTICA.md — decide, junto
+  // con MunicipioPractica, si a la estudiante le aplica la práctica de
+  // manejo presencial en el programa "estandar". `municipio` es null para
+  // cuentas creadas antes de este campo (ver models/User.js en el
+  // backend).
+  provincia?: string;
+  municipio?: string | null;
   // NUEVO (08/09/2026): presente solo para estudiantes inscritas en bloque
   // por un colegio/empresa (ver models/Grupo.js). null para el flujo de
   // autoregistro normal. Determina si a la estudiante le aplica el gate
@@ -39,6 +46,8 @@ type DatosRegistro = {
   email: string;
   password: string;
   provincia: string;
+  // NUEVO (13/09/2026): ver ANALISIS_COBERTURA_PRACTICA.md.
+  municipio: string;
   fechaNacimiento: string;
   // NUEVO (10/09/2026): protecciones anti-bot, ver ARQUITECTURA_BACKEND.md
   // sección "Seguridad — ataque de registro masivo".

@@ -21,6 +21,7 @@ import {
   DollarSign,
   Building2,
   School,
+  MapPin,
   type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -62,6 +63,8 @@ const MODULOS_ADMIN: Tarjeta[] = [
   { href: "/admin/asistente", titulo: "Asistente", descripcion: "Pregúntale por cifras reales de la app", Icono: Bot },
   // NUEVO (07/09/2026)
   { href: "/admin/planes", titulo: "Planes y precios", descripcion: "Editar precios, nombres y detalles de cada plan", Icono: DollarSign },
+  // NUEVO (13/09/2026) — ver ANALISIS_COBERTURA_PRACTICA.md
+  { href: "/admin/cobertura-practica", titulo: "Cobertura de práctica", descripcion: "Municipios donde ofrecemos práctica de manejo presencial", Icono: MapPin },
 ];
 
 function GrupoTarjetas({
