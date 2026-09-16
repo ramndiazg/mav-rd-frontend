@@ -1,16 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
 
-// NUEVO (10/09/2026): el hero y la tarjeta de la derecha ya se podían
-// editar desde /admin/contenido-pagina (claves inicio_hero_titulo,
-// inicio_hero_texto, inicio_desde_texto — se ven guardadas en Mongo si
-// se revisa la colección ContenidoPagina), pero esta página nunca las
-// leía: el texto de abajo estaba puesto directo en el JSX como
-// placeholder, así que cualquier cambio guardado en el dashboard nunca
-// se reflejaba aquí. Mismo bug que ya se había resuelto en
-// acerca-de-nosotros/page.tsx (que sí lee /api/contenido) — se replica
-// exactamente ese patrón: fetch sin caché, con el texto de siempre como
-// fallback si el backend no responde o la clave no existe todavía.
 type BloqueContenido = { clave: string; valor: string };
 
 async function obtenerContenidoInicio() {
@@ -31,9 +21,6 @@ async function obtenerContenidoInicio() {
   }
 }
 
-// Las 4 sesiones/módulos reales del curso (actualizado 16/08/2026 — antes
-// tenía 3 tarjetas con títulos viejos que ya no correspondían a los 4
-// módulos de contenido reales que se cargaron en la plataforma).
 const sesiones = [
   {
     numero: "01",
@@ -61,15 +48,6 @@ const sesiones = [
   },
 ];
 
-// Categorías/programas — NUEVO (13/09/2026): antes el home solo hablaba
-// del curso estándar (carro). Ahora también existen Motorizados
-// (Categoría 01) y Pesados (Categoría 03/04), cada uno con su propio
-// plan "teorico" ya sembrado en Mongo y ya soportado en /inscripcion vía
-// ?programa= (ver PROGRAMAS en inscripcion/page.tsx — mismas imágenes,
-// para que la transición entre el home y esa página se sienta como el
-// mismo producto). "estandar" no lleva a una página propia: apunta al
-// ancla #curso-estandar, porque todo el contenido de ese curso (sesiones,
-// planes, testimonios) ya vive más abajo en esta misma página.
 const categorias = [
   {
     valor: "estandar",
@@ -116,18 +94,6 @@ const testimonios = [
   },
 ];
 
-// --- Planes (migración 06/09/2026) ---
-// Antes había 2 planes hardcodeados aquí mismo (normal/vip), con el precio
-// como único dato que venía del backend (Configuracion). Ahora los 3 planes
-// —incluyendo nombre, frase destacada y destacado/no destacado— vienen
-// completos de GET /api/planes, para no tener que tocar este archivo cada
-// vez que cambie un precio o se agregue/edite un plan.
-//
-// AMPLIADO (13/09/2026): codigo ya no es solo fundacion/normal/vip — el
-// plan "teorico" de Motorizados/Pesados usa el mismo shape, así que el
-// tipo se abre a string. Se agrega `programa` (ya viene en la respuesta
-// del backend, solo no se leía) para poder armar el link de "Ver
-// detalles del plan" de cada uno sin hardcodear el programa por tarjeta.
 type Plan = {
   codigo: string;
   programa: "estandar" | "motorizados" | "pesados";
@@ -222,13 +188,6 @@ export default async function Home() {
 
           <div className="rounded-2xl bg-white/10 p-6 backdrop-blur-sm sm:p-8">
             <p className="font-display text-sm font-semibold uppercase tracking-wide text-brand-pink-light">
-              {/* CAMBIO (10/09/2026): decía "Desde 2017", que sin más
-                  contexto no se entendía ni en la página ni en el
-                  dashboard de contenido (¿desde 2017 qué?). Es la
-                  etiqueta fija de la tarjeta, no viene de /api/contenido
-                  (solo el párrafo de abajo es editable) — mismo patrón
-                  que los títulos fijos "Misión"/"Visión"/"Valores" en
-                  acerca-de-nosotros/page.tsx. */}
               Así empezamos
             </p>
             <p className="mt-3 text-lg leading-relaxed text-white">
@@ -240,10 +199,6 @@ export default async function Home() {
 
       <div className="road-divider" />
 
-      {/* Elige tu categoría — puerta de entrada a los 3 programas, con la
-          misma jerarquía visual que el curso original (ver categorias
-          arriba). Va antes de las sesiones porque primero se elige QUÉ
-          curso, y solo el de carro sigue contándose en detalle debajo. */}
       <section className="mx-auto max-w-6xl px-4 py-16">
         <div className="max-w-2xl">
           <h2 className="font-display text-3xl font-bold text-brand-blue">
@@ -331,9 +286,6 @@ export default async function Home() {
 
       <div className="road-divider" />
 
-      {/* Planes y precios — resumen. El detalle completo (sesiones de
-          práctica, costo de combustible por sesión, características de
-          VIP) vive en /inscripcion, no aquí. */}
       <section className="mx-auto max-w-6xl px-4 py-16">
         <div className="max-w-2xl">
           <h2 className="font-display text-3xl font-bold text-brand-blue">
@@ -387,18 +339,10 @@ export default async function Home() {
           })}
         </div>
 
-        {/* NUEVO (13/09/2026): Motorizados y Pesados no tienen niveles
-            (un solo plan "teorico" cada uno), así que en vez de forzarlos
-            en la misma grilla de 3 columnas de estándar —que asume
-            fundación/normal/vip— van en un bloque propio debajo, con la
-            misma tarjeta pero un título que los distingue como "también
-            disponible". Si algún día alguno queda sin plan activo (ej.
-            se desactiva desde el panel), esa mitad del bloque
-            simplemente no se pinta. */}
         {planesOtrosProgramas.length > 0 && (
           <div className="mt-10 border-t border-brand-blue/10 pt-10">
             <p className="font-display text-sm font-semibold uppercase tracking-wide text-brand-pink">
-              ¿Manejas moto o vehículo pesado? También tenemos tu curso
+              ¿Deseas manejar moto o vehículo pesado? También tenemos tu curso
             </p>
 
             <div className="mt-4 grid gap-6 sm:grid-cols-2">
@@ -434,14 +378,8 @@ export default async function Home() {
 
       <div className="road-divider" />
 
-      {/* Promoción del libro de la fundadora — colocado después de Planes
-          (refuerza autoridad justo cuando se evalúa el curso) y antes de
-          Testimonios, sin competir con el CTA de inscripción. */}
       <section className="mx-auto max-w-6xl px-4 py-16">
         <div className="grid gap-8 rounded-2xl border-2 border-brand-pink bg-white p-6 sm:grid-cols-[auto_1fr] sm:items-center sm:p-10">
-          {/* Portada — reemplazar /libro-maria-diaz.jpg por la portada real
-              cuando la tengas (súbela a public/ con ese nombre, o cambia
-              la ruta aquí). Mientras tanto queda este marcador visual. */}
           <div className="mx-auto flex h-52 w-36 shrink-0 items-center justify-center rounded-lg bg-brand-blue text-center shadow-md sm:mx-0">
             <Image
               src="/libro-maria-diaz.jpg"
