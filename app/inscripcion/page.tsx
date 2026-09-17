@@ -98,6 +98,22 @@ function InscripcionContenido() {
       : null,
   );
 
+  // NUEVO (17/09/2026): ?plan= viene de "Ver detalles del plan" en la
+  // portada — antes ese botón mandaba siempre a /inscripcion sin
+  // parámetros para los planes de "estandar" (fundacion/normal/vip), así
+  // que la persona caía en el selector de programa en vez de en el plan
+  // que acababa de clickear. Con esto, además de preseleccionar el
+  // programa, se preselecciona el plan exacto — `tipoPlanEfectivo` más
+  // abajo ya sabe caer al primero disponible si este valor no calza (por
+  // ejemplo, si el municipio no tiene cobertura de práctica).
+  const planInicial = searchParams.get("plan");
+  const CODIGOS_PLAN: Plan["codigo"][] = [
+    "fundacion",
+    "normal",
+    "vip",
+    "teorico",
+  ];
+
   const [planes, setPlanes] = useState<Plan[]>([]);
   const [inscripcion, setInscripcion] = useState<Inscripcion | null>(null);
   const [cargando, setCargando] = useState(true);
@@ -123,7 +139,11 @@ function InscripcionContenido() {
   // (si no eligió nada, o si lo que eligió dejó de estar disponible, cae
   // al primero de la lista). Antes esto se sincronizaba con setState
   // dentro de un efecto — ver nota en `planesDe`.
-  const [tipoPlan, setTipoPlan] = useState<Plan["codigo"] | "">("");
+  const [tipoPlan, setTipoPlan] = useState<Plan["codigo"] | "">(
+    planInicial && CODIGOS_PLAN.includes(planInicial as Plan["codigo"])
+      ? (planInicial as Plan["codigo"])
+      : "",
+  );
   const [bancoEmisor, setBancoEmisor] = useState("");
   const [numeroReferencia, setNumeroReferencia] = useState("");
   const [fechaDeposito, setFechaDeposito] = useState("");

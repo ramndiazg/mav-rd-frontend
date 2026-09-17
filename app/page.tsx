@@ -103,10 +103,6 @@ type Plan = {
   orden: number;
 };
 
-function formatearMonto(valor: number) {
-  return `RD$${valor.toLocaleString("es-DO")}`;
-}
-
 // Se pide en cada visita (no se cachea): el precio puede cambiar sin que
 // haya un nuevo despliegue del frontend, ya que vive en la base de datos.
 async function obtenerPlanes(programa: string = "estandar"): Promise<Plan[]> {
@@ -167,9 +163,7 @@ export default async function Home() {
                 {heroTitulo}
               </h1>
             </div>
-            <p className="mt-5 max-w-lg text-white/85">
-              {heroTexto}
-            </p>
+            <p className="mt-5 max-w-lg text-white/85">{heroTexto}</p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
                 href="/registro"
@@ -205,8 +199,8 @@ export default async function Home() {
             ¿Qué licencia de conducir necesitas?
           </h2>
           <p className="mt-3 text-neutral-text/80">
-            Elige tu categoría. Cada curso tiene su propio contenido,
-            exámenes y diploma — ajustado a lo que en verdad vas a manejar.
+            Elige tu categoría. Cada curso tiene su propio contenido, exámenes
+            y diploma — ajustado a lo que en verdad vas a manejar.
           </p>
         </div>
 
@@ -266,7 +260,7 @@ export default async function Home() {
               {/* Franja tipo señal de tránsito — amarillo de advertencia
                   con el borde inferior en "mamey", el naranja que se usa
                   en las señales de precaución/trabajo en la vía. */}
-              <div className="bg-brand-yellow px-6 py-3 border-b-4 border-brand-mamey">
+              <div className="border-b-4 border-brand-mamey bg-brand-yellow px-6 py-3">
                 <span className="font-display text-2xl font-bold text-brand-blue">
                   {sesion.numero}
                 </span>
@@ -294,8 +288,8 @@ export default async function Home() {
           <p className="mt-3 text-neutral-text/80">
             La teoría más completa y detallada, los mejores instructores
             certificados — hacemos la diferencia con nuestra atención
-            personalizada en la práctica de manejo. Elige el plan que se
-            ajuste a tu ritmo y presupuesto.
+            personalizada en la práctica de manejo. Elige el plan que se ajuste
+            a tu ritmo y presupuesto.
           </p>
         </div>
 
@@ -310,7 +304,7 @@ export default async function Home() {
                   }`}
               >
                 <div className="flex items-baseline justify-between gap-2">
-                  <h3 className="font-display text-xl font-bold text-brand-blue">
+                  <h3 className="font-display text-2xl font-bold text-brand-blue">
                     {plan.nombre}
                   </h3>
                   {destacado && (
@@ -320,16 +314,16 @@ export default async function Home() {
                   )}
                 </div>
 
-                <p className="mt-3 font-display text-3xl font-bold text-brand-blue">
-                  {formatearMonto(plan.precio)}
-                </p>
-
-                <p className="mt-2 text-sm text-neutral-text/75">
+                {/* CORREGIDO (17/09/2026): antes se mostraba el precio aquí
+                    mismo — se quita a propósito: mostrarlo tan temprano, antes
+                    de que la persona conozca el plan, no es lo mejor. El
+                    precio real se ve en /inscripcion al elegir el plan. */}
+                <p className="mt-3 text-base font-medium text-neutral-text/80">
                   {plan.fraseDestacada}
                 </p>
 
                 <Link
-                  href="/inscripcion"
+                  href={`/inscripcion?programa=estandar&plan=${plan.codigo}`}
                   className="mt-6 inline-block rounded-full bg-brand-blue px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-blue/90"
                 >
                   Ver detalles del plan
@@ -351,20 +345,16 @@ export default async function Home() {
                   key={`${plan.programa}-${plan.codigo}`}
                   className="rounded-xl border-2 border-brand-blue/10 bg-white p-6 shadow-sm transition hover:shadow-md"
                 >
-                  <h3 className="font-display text-xl font-bold text-brand-blue">
+                  <h3 className="font-display text-2xl font-bold text-brand-blue">
                     {plan.nombre}
                   </h3>
 
-                  <p className="mt-3 font-display text-3xl font-bold text-brand-blue">
-                    {formatearMonto(plan.precio)}
-                  </p>
-
-                  <p className="mt-2 text-sm text-neutral-text/75">
+                  <p className="mt-3 text-base font-medium text-neutral-text/80">
                     {plan.fraseDestacada}
                   </p>
 
                   <Link
-                    href={`/inscripcion?programa=${plan.programa}`}
+                    href={`/inscripcion?programa=${plan.programa}&plan=${plan.codigo}`}
                     className="mt-6 inline-block rounded-full bg-brand-blue px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-blue/90"
                   >
                     Ver detalles del plan
@@ -378,6 +368,7 @@ export default async function Home() {
 
       <div className="road-divider" />
 
+      {/* Libro de la fundadora */}
       <section className="mx-auto max-w-6xl px-4 py-16">
         <div className="grid gap-8 rounded-2xl border-2 border-brand-pink bg-white p-6 sm:grid-cols-[auto_1fr] sm:items-center sm:p-10">
           <div className="mx-auto flex h-52 w-36 shrink-0 items-center justify-center rounded-lg bg-brand-blue text-center shadow-md sm:mx-0">
@@ -398,11 +389,11 @@ export default async function Home() {
               Cómo protegerte de un conductor temerario
             </h2>
             <p className="mt-3 text-neutral-text/80">
-              María Díaz —auditora y magíster en seguridad vial— convirtió
-              años de trabajo en la vía en una guía práctica sobre cómo
-              anticiparte al peligro y proteger tu vida y la de los demás.
-              El mismo enfoque de conducción preventiva que aprendes en
-              Muvo, ahora en un libro para profundizar a tu ritmo.
+              María Díaz —auditora y magíster en seguridad vial— convirtió años
+              de trabajo en la vía en una guía práctica sobre cómo anticiparte
+              al peligro y proteger tu vida y la de los demás. El mismo enfoque
+              de conducción preventiva que aprendes en Muvo, ahora en un libro
+              para profundizar a tu ritmo.
             </p>
             <p className="mt-3 border-l-4 border-brand-yellow pl-4 text-sm italic text-brand-blue">
               “Más que conductores somos vidas en movimiento, anticiparse y
@@ -418,6 +409,7 @@ export default async function Home() {
               >
                 Comprar en Amazon
               </a>
+
               <a
                 href="https://www.amazon.com/dp/B0H85CRBR9"
                 target="_blank"
@@ -462,6 +454,30 @@ export default async function Home() {
               Ver todos los testimonios →
             </Link>
           </div>
+        </div>
+      </section>
+
+      {/* Banner hacia el programa escolar (NUEVO 17/09/2026) — misma idea que
+          el banner empresarial de abajo, para que /escolar también tenga un
+          punto de entrada visible desde la portada. */}
+      <section className="bg-brand-pink">
+        <div className="mx-auto flex max-w-6xl flex-col items-start gap-4 px-4 py-12 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="font-display text-2xl font-bold text-white">
+              ¿Eres parte de un colegio?
+            </h2>
+            <p className="mt-2 max-w-xl text-white/85">
+              Llevamos el curso de teoría vial a tus estudiantes, organizados
+              por grado y sección, con un precio que se ajusta a la cantidad de
+              alumnos.
+            </p>
+          </div>
+          <Link
+            href="/escolar"
+            className="shrink-0 rounded-full bg-brand-yellow px-6 py-3 text-sm font-semibold text-brand-blue transition hover:bg-brand-yellow/90"
+          >
+            Conoce el programa escolar
+          </Link>
         </div>
       </section>
 
