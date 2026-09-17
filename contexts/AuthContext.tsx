@@ -99,11 +99,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (cancelado) return;
 
+        // CORREGIDO (17/09/2026): esta petición se dispara al montar la
+        // app para validar el token que ya estuviera en localStorage (de
+        // una sesión anterior en el mismo navegador). Si, mientras esta
+        // petición seguía en el aire, alguien hizo login() con OTRA
+        // cuenta en esa misma pestaña (típico probando varias estudiantes
+        // seguidas), login() ya actualizó localStorage y el contexto con
+        // la cuenta nueva — y sin este chequeo, la respuesta vieja
+        // llegaba después y pisaba el contexto con la cuenta equivocada.
+        // Eso hacía que RutaProtegida (que reacciona a cada cambio de
+        // `usuario`) rebotara entre rutas según el rol de la cuenta
+        // vieja, viéndose como la pantalla parpadeando entre dos vistas.
+        // Si el token en localStorage ya no es el mismo por el que
+        // preguntamos, esta respuesta quedó obsoleta — se descarta.
+        if (window.localStorage.getItem("token") !== tokenGuardado) {
+          return;
+        }
+
         if (json.success) {
           setToken(tokenGuardado);
           setUsuario(json.data.usuario);
         } else {
           window.localStorage.removeItem("token");
+          setToken(null);
+          setUsuario(null);
         }
       } catch {
         // Error de red: dejamos a la persona sin sesion por ahora, pero no
