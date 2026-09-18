@@ -85,6 +85,15 @@ export default function Navbar() {
                   >
                     Mi panel
                   </Link>
+                  {usuario.rol === "estudiante" && (
+                    <Link
+                      href="/soporte"
+                      onClick={() => setMenuUsuarioAbierto(false)}
+                      className="block px-4 py-2.5 text-brand-blue hover:bg-neutral-bg"
+                    >
+                      Soporte
+                    </Link>
+                  )}
                   <Link
                     href="/perfil/cambiar-password"
                     onClick={() => setMenuUsuarioAbierto(false)}
@@ -171,6 +180,15 @@ export default function Navbar() {
               >
                 Mi panel
               </Link>
+              {usuario.rol === "estudiante" && (
+                <Link
+                  href="/soporte"
+                  onClick={() => setMenuAbierto(false)}
+                  className="rounded-md px-2 py-2.5 text-center text-sm font-medium text-white/85 hover:bg-white/10"
+                >
+                  Soporte
+                </Link>
+              )}
               <Link
                 href="/perfil/cambiar-password"
                 onClick={() => setMenuAbierto(false)}

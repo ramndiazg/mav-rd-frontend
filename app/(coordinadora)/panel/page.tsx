@@ -22,6 +22,7 @@ import {
   Building2,
   School,
   MapPin,
+  LifeBuoy,
   type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -46,6 +47,8 @@ const MODULOS_CURSO: Tarjeta[] = [
   { href: "/panel/cuestionario-escolar", titulo: "Cuestionario Escolar", descripcion: "Respuestas de estudiantes de colegios", Icono: School },
   // NUEVO (09/09/2026)
   { href: "/panel/grupos", titulo: "Grupos", descripcion: "Colegios y empresas inscritos en bloque", Icono: Building2 },
+  // NUEVO: incidencias/errores/dudas reportadas por estudiantes
+  { href: "/panel/soporte", titulo: "Soporte", descripcion: "Incidencias y dudas reportadas por estudiantes", Icono: LifeBuoy },
 ];
 
 const MODULOS_CONTENIDO: Tarjeta[] = [
@@ -65,6 +68,8 @@ const MODULOS_ADMIN: Tarjeta[] = [
   { href: "/admin/planes", titulo: "Planes y precios", descripcion: "Editar precios, nombres y detalles de cada plan", Icono: DollarSign },
   // NUEVO (13/09/2026) — ver ANALISIS_COBERTURA_PRACTICA.md
   { href: "/admin/cobertura-practica", titulo: "Cobertura de práctica", descripcion: "Municipios donde ofrecemos práctica de manejo presencial", Icono: MapPin },
+  // NUEVO: por tipo de reporte, si se avisa por correo/Telegram al llegar uno nuevo
+  { href: "/admin/notificaciones-reportes", titulo: "Notif. de reportes", descripcion: "Qué tipos de reporte avisan por correo/Telegram", Icono: LifeBuoy },
 ];
 
 function GrupoTarjetas({
@@ -113,12 +118,13 @@ export default function PanelInicioPage() {
   const { usuario, token } = useAuth();
   const esAdmin = usuario?.rol === "admin";
   const [pendientesPago, setPendientesPago] = useState(0);
+  const [reportesAbiertos, setReportesAbiertos] = useState(0);
 
   useEffect(() => {
     if (!token) return;
     let cancelado = false;
 
-    (async () => {
+    queueMicrotask(async () => {
       try {
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/inscripciones?estadoPago=pendiente_verificacion`,
@@ -131,7 +137,31 @@ export default function PanelInicioPage() {
       } catch {
         // No es crítico para el resto de la pantalla de tarjetas.
       }
-    })();
+    });
+
+    return () => {
+      cancelado = true;
+    };
+  }, [token]);
+
+  useEffect(() => {
+    if (!token) return;
+    let cancelado = false;
+
+    queueMicrotask(async () => {
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/reportes?estado=abierto`,
+          { headers: { Authorization: `Bearer ${token}` } },
+        );
+        const json = await res.json();
+        if (!cancelado && json.success) {
+          setReportesAbiertos(json.data.length);
+        }
+      } catch {
+        // No es crítico para el resto de la pantalla de tarjetas.
+      }
+    });
 
     return () => {
       cancelado = true;
@@ -143,7 +173,7 @@ export default function PanelInicioPage() {
       <GrupoTarjetas
         titulo="Gestión del curso"
         tarjetas={MODULOS_CURSO}
-        badges={{ "/panel/pagos": pendientesPago }}
+        badges={{ "/panel/pagos": pendientesPago, "/panel/soporte": reportesAbiertos }}
       />
       <GrupoTarjetas titulo="Contenido público" tarjetas={MODULOS_CONTENIDO} />
       {esAdmin && (
