@@ -202,7 +202,7 @@ export default async function Home() {
               <p className="font-display text-lg font-semibold text-brand-yellow sm:text-xl">
                 Conduce con inteligencia, protege vidas
               </p>
-              <span className="mt-2 block h-1 w-16 rounded-full bg-brand-yellow" />
+              {/* <span className="mt-2 block h-1 w-16 rounded-full bg-brand-yellow" /> */}
             </div>
 
             <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
