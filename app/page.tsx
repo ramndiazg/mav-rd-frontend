@@ -565,7 +565,7 @@ export default async function Home() {
       {/* Banner hacia el programa escolar (NUEVO 17/09/2026) — misma idea que
           el banner empresarial de abajo, para que /escolar también tenga un
           punto de entrada visible desde la portada. */}
-      <section className="bg-brand-pink">
+      <section className="bg-brand-mamey">
         <div className="mx-auto flex max-w-6xl flex-col items-start gap-4 px-4 py-12 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="font-display text-2xl font-bold text-white">
