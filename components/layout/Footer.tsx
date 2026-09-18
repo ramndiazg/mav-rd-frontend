@@ -4,25 +4,32 @@ export default function Footer() {
   return (
     <footer className="bg-brand-blue text-white/80">
       <div className="road-divider" />
-      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:grid-cols-2 lg:grid-cols-4">
+        {/* CORREGIDO (17/09/2026): Muvo y la Fundación estaban mezcladas en
+            un solo párrafo, lo que hacía parecer que la fundación era dueña
+            de todo el sitio. Se separan en dos bloques propios: Muvo como
+            la escuela, la Fundación como entidad aparte que respalda un
+            plan específico. */}
         <div>
-          {/* CORREGIDO (17/09/2026): antes esta columna presentaba a "Mujeres
-              al Volante RD" (la fundación) como si fuera la entidad dueña de
-              todo el sitio. En realidad Muvo RD Vial es la escuela — la
-              fundación solo subsidia UN plan específico (Mujeres al
-              Volante), por eso ese plan cuesta menos (solo cubre gastos
-              mínimos). Mezclar ambas identidades podía generar problemas
-              legales/de representación. */}
           <p className="font-display text-base font-semibold text-white">
             Muvo RD Vial
           </p>
           <p className="mt-2 text-sm leading-relaxed">
             Escuela de formación vial en Santo Domingo, República Dominicana,
-            fundada por María Díaz el 25 de noviembre de 2017. El plan Mujeres
-            al Volante es subsidiado por la Fundación Mujeres al Volante RD
-            — una fundación sin fines de lucro que cubre parte del costo de
-            ese plan específico, por eso su tarifa cubre solo los gastos
-            mínimos.
+            fundada por María Díaz el 25 de noviembre de 2017. Formamos
+            conductoras y conductores seguros, con cursos teóricos y
+            prácticos alineados a la Ley 63-17 y al INTRANT.
+          </p>
+        </div>
+
+        <div>
+          <p className="font-display text-base font-semibold text-white">
+            Fundación Mujeres al Volante RD
+          </p>
+          <p className="mt-2 text-sm leading-relaxed">
+            Fundación sin fines de lucro, subsidiaria del plan Mujeres al
+            Volante — nuestro aporte a la comunidad para que aprender a
+            manejar nunca sea una barrera.
           </p>
         </div>
 
