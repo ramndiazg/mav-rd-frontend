@@ -32,6 +32,11 @@
      vía next/font. Aquí solo se mapean a los roles display/body. */
   --font-display: var(--font-poppins);
   --font-body: var(--font-inter);
+
+  /* NUEVO (17/09/2026): acento manuscrito — inspirado en el volante de la
+     fundadora. Se usa en una sola frase del home (cierre del CTA final),
+     nunca como tipografía de cuerpo ni de títulos. */
+  --font-script: var(--font-caveat);
 }
 
 body {

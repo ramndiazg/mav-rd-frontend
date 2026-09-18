@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Poppins, Inter } from "next/font/google";
+import { Poppins, Inter, Caveat } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -14,6 +14,16 @@ const poppins = Poppins({
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
+});
+
+// NUEVO (17/09/2026): acento tipográfico puntual, inspirado en el trazo
+// manuscrito del volante de la fundadora. Se usa en UNA sola frase del
+// home (cierre del CTA final) — nunca como tipografía de cuerpo o título,
+// ver globals.css (--font-script).
+const caveat = Caveat({
+  subsets: ["latin"],
+  weight: ["600"],
+  variable: "--font-caveat",
 });
 
 // CORREGIDO (13/08/2026): este dominio estaba mal — apuntaba a
@@ -133,7 +143,9 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD_ORGANIZACION) }}
         />
       </head>
-      <body className={`${poppins.variable} ${inter.variable} antialiased`}>
+      <body
+        className={`${poppins.variable} ${inter.variable} ${caveat.variable} antialiased`}
+      >
         <AuthProvider>
           <Navbar />
           {children}

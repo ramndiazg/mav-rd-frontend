@@ -1,5 +1,16 @@
 import Image from "next/image";
 import Link from "next/link";
+import {
+  Eye,
+  Brain,
+  ShieldCheck,
+  Gauge,
+  AlertTriangle,
+  Users,
+  Car,
+  Building2,
+  Flag,
+} from "lucide-react";
 
 type BloqueContenido = { clave: string; valor: string };
 
@@ -81,6 +92,40 @@ const categorias = [
   },
 ];
 
+// NUEVO (17/09/2026): los 5 pilares del manejo preventivo/defensivo, tal
+// como los usa la fundadora en su material de difusión (volante propio) —
+// se llevan al home para explicar "por qué Muvo" antes de que la persona
+// llegue a comparar planes.
+const pilaresPreventivos = [
+  { titulo: "Observa", detalle: "Tu entorno, siempre.", icono: Eye },
+  { titulo: "Anticipa", detalle: "Los riesgos antes de que ocurran.", icono: Brain },
+  {
+    titulo: "Mantén distancia",
+    detalle: "El espacio que te da tiempo de reaccionar.",
+    icono: ShieldCheck,
+  },
+  {
+    titulo: "Controla la velocidad",
+    detalle: "Ajustada a la vía, no al reloj.",
+    icono: Gauge,
+  },
+  {
+    titulo: "Prepárate",
+    detalle: "Para lo inesperado, sin pánico.",
+    icono: AlertTriangle,
+  },
+];
+
+// NUEVO (17/09/2026): misma fuente que pilaresPreventivos — el porqué
+// detrás del curso, no solo el qué.
+const impacto = [
+  { texto: "Conducción responsable", icono: ShieldCheck },
+  { texto: "Familias más seguras", icono: Users },
+  { texto: "Menos accidentes", icono: Car },
+  { texto: "Comunidades más seguras", icono: Building2 },
+  { texto: "Un mejor país", icono: Flag },
+];
+
 const testimonios = [
   {
     nombre: "Rosa M.",
@@ -150,6 +195,16 @@ export default async function Home() {
       <section className="bg-gradient-to-br from-brand-blue to-brand-blue-light text-white">
         <div className="mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:py-24 lg:grid-cols-2 lg:items-center">
           <div>
+            {/* NUEVO (17/09/2026): tagline fija de marca, tomada del
+                volante de la fundadora — no viene de /admin/contenido-pagina
+                a propósito, es identidad, no copy editable por campaña. */}
+            <div className="mb-5">
+              <p className="font-display text-lg font-semibold text-brand-yellow sm:text-xl">
+                Conduce con inteligencia, protege vidas
+              </p>
+              <span className="mt-2 block h-1 w-16 rounded-full bg-brand-yellow" />
+            </div>
+
             <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
               <Image
                 src="/logo-mav-rd.png"
@@ -187,6 +242,90 @@ export default async function Home() {
             <p className="mt-3 text-lg leading-relaxed text-white">
               {desdeTexto}
             </p>
+          </div>
+        </div>
+      </section>
+
+      <div className="road-divider" />
+
+      {/* NUEVO (17/09/2026): "por qué Muvo", antes de pedirle a nadie que
+          compare planes — inspirada en el volante de la fundadora. Único
+          bloque de fondo sólido/borde grueso de la página, a propósito:
+          es la sección que debe destacarse del resto. */}
+      <section className="border-y-8 border-brand-yellow bg-brand-blue py-16 text-white">
+        <div className="mx-auto max-w-6xl px-4">
+          <div className="max-w-2xl">
+            <h2 className="font-display text-3xl font-bold">
+              Manejo preventivo, manejo defensivo
+            </h2>
+            <p className="mt-3 text-white/80">
+              No enseñamos solo a manejar un vehículo — enseñamos a leer la
+              vía antes de que pase algo. Esa es la diferencia que buscamos
+              en cada sesión.
+            </p>
+          </div>
+
+          <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-5">
+            {pilaresPreventivos.map((pilar, indice) => {
+              const Icono = pilar.icono;
+              const fondoIcono =
+                indice % 2 === 0
+                  ? "bg-brand-yellow text-brand-blue"
+                  : "bg-white text-brand-blue";
+              return (
+                <div
+                  key={pilar.titulo}
+                  className="flex flex-col items-center text-center sm:items-start sm:text-left"
+                >
+                  <div
+                    className={`flex h-14 w-14 items-center justify-center rounded-full ${fondoIcono}`}
+                  >
+                    <Icono size={26} />
+                  </div>
+                  <p className="mt-4 font-display text-base font-semibold">
+                    {pilar.titulo}
+                  </p>
+                  <p className="mt-1 text-sm text-white/70">{pilar.detalle}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      <div className="road-divider" />
+
+      {/* Testimonios — MOVIDO (17/09/2026) desde el final de la página.
+          Prueba social antes de que la persona llegue a comparar planes,
+          no después. Versión corta aquí; la lista completa sigue en
+          /testimonios. */}
+      <section className="bg-brand-blue-light/10">
+        <div className="mx-auto max-w-6xl px-4 py-16">
+          <h2 className="font-display text-3xl font-bold text-brand-blue">
+            Lo que dicen quienes ya se sentaron al volante
+          </h2>
+
+          <div className="mt-10 grid gap-6 sm:grid-cols-2">
+            {testimonios.map((testimonio) => (
+              <blockquote
+                key={testimonio.nombre}
+                className="rounded-xl border-2 border-brand-pink bg-white p-6 shadow-sm"
+              >
+                <p className="text-neutral-text/85">“{testimonio.texto}”</p>
+                <footer className="mt-4 font-display text-sm font-semibold text-brand-blue">
+                  — {testimonio.nombre}
+                </footer>
+              </blockquote>
+            ))}
+          </div>
+
+          <div className="mt-8">
+            <Link
+              href="/testimonios"
+              className="text-sm font-semibold text-brand-blue hover:underline"
+            >
+              Ver todos los testimonios →
+            </Link>
           </div>
         </div>
       </section>
@@ -423,40 +562,6 @@ export default async function Home() {
         </div>
       </section>
 
-      <div className="road-divider" />
-
-      {/* Testimonios */}
-      <section className="bg-brand-blue-light/10">
-        <div className="mx-auto max-w-6xl px-4 py-16">
-          <h2 className="font-display text-3xl font-bold text-brand-blue">
-            Lo que dicen quienes ya se sentaron al volante
-          </h2>
-
-          <div className="mt-10 grid gap-6 sm:grid-cols-2">
-            {testimonios.map((testimonio) => (
-              <blockquote
-                key={testimonio.nombre}
-                className="rounded-xl border-2 border-brand-pink bg-white p-6 shadow-sm"
-              >
-                <p className="text-neutral-text/85">“{testimonio.texto}”</p>
-                <footer className="mt-4 font-display text-sm font-semibold text-brand-blue">
-                  — {testimonio.nombre}
-                </footer>
-              </blockquote>
-            ))}
-          </div>
-
-          <div className="mt-8">
-            <Link
-              href="/testimonios"
-              className="text-sm font-semibold text-brand-blue hover:underline"
-            >
-              Ver todos los testimonios →
-            </Link>
-          </div>
-        </div>
-      </section>
-
       {/* Banner hacia el programa escolar (NUEVO 17/09/2026) — misma idea que
           el banner empresarial de abajo, para que /escolar también tenga un
           punto de entrada visible desde la portada. */}
@@ -502,12 +607,58 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* Impacto — NUEVO (17/09/2026), misma fuente que la sección de
+          pilares: por qué importa esto más allá del examen del INTRANT. */}
+      <section className="bg-white py-14">
+        <div className="mx-auto max-w-6xl px-4">
+          <div className="grid gap-8 sm:grid-cols-5">
+            {impacto.map((item) => {
+              const Icono = item.icono;
+              return (
+                <div
+                  key={item.texto}
+                  className="flex flex-col items-center gap-3 text-center"
+                >
+                  <Icono size={28} className="text-brand-blue" />
+                  <p className="text-sm font-medium text-neutral-text">
+                    {item.texto}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* NUEVO (17/09/2026): frase de marca, tal como la usa la fundadora
+          en su volante — banner corto, sin recargar. */}
+      <section className="bg-brand-yellow">
+        <div className="mx-auto max-w-4xl px-4 py-10 text-center">
+          <p className="font-display text-xl font-bold text-brand-blue sm:text-2xl">
+            Somos embajadores de la educación vial familiar
+          </p>
+          <span className="mx-auto mt-3 block h-1 w-20 rounded-full bg-brand-blue" />
+        </div>
+      </section>
+
       {/* CTA final */}
       <section className="mx-auto max-w-6xl px-4 py-16 text-center">
         <h2 className="font-display text-3xl font-bold text-brand-blue">
           ¿Todo listo para empezar?
         </h2>
-        <p className="mx-auto mt-3 max-w-xl text-neutral-text/80"></p>
+        <p className="mx-auto mt-3 max-w-xl text-neutral-text/80">
+          Crea tu cuenta, elige tu plan y empieza cuando quieras — a tu
+          ritmo, sin prisa.
+        </p>
+        {/* NUEVO (17/09/2026): cierre con el acento manuscrito
+            (--font-script, ver globals.css) — la frase del volante de la
+            fundadora, único lugar de la página donde se usa esta tipografía. */}
+        <p
+          style={{ fontFamily: "var(--font-script)" }}
+          className="mt-4 text-2xl text-brand-pink"
+        >
+          Hoy conduces mejor, mañana hay más historias.
+        </p>
         <Link
           href="/registro"
           className="mt-6 inline-block rounded-full bg-brand-blue px-8 py-3 text-sm font-semibold text-white transition hover:bg-brand-blue/90"
