@@ -1,9 +1,42 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Plus, School, Building2, Clock, CheckCircle2 } from "lucide-react";
+import {
+  Plus,
+  School,
+  Building2,
+  Clock,
+  CheckCircle2,
+  Search,
+  AlertTriangle,
+  Users,
+  GraduationCap,
+} from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { BarraProgreso, Indicador, haceCuanto } from "@/components/ui/grupos";
+
+// CAMBIO (18/09/2026): la lista dejó de ser solo "crear grupo + nombres".
+// Cada grupo ahora es una tarjeta con su resumen de avance (viene ya
+// calculado en `resumen` desde GET /api/grupos), y se puede filtrar por
+// tipo/estado y buscar por nombre. El detalle y la ficha de cada
+// estudiante viven en /panel/grupos/[id] y
+// /panel/grupos/[id]/estudiantes/[userId].
+
+type Resumen = {
+  total: number;
+  activas: number;
+  inactivas: number;
+  completados: number;
+  enCurso: number;
+  sinIniciar: number;
+  rezagadas: number;
+  diplomas: number;
+  cuestionariosCompletados: number;
+  porcentajeAvance: number;
+  promedioExamenes: number | null;
+  ultimaActividad: string | null;
+};
 
 type Grupo = {
   _id: string;
@@ -18,6 +51,7 @@ type Grupo = {
   pendienteRoster: boolean;
   activo: boolean;
   fechaInicio: string | null;
+  resumen: Resumen;
 };
 
 type FormularioGrupo = {
@@ -42,23 +76,47 @@ const FORM_VACIO: FormularioGrupo = {
   notas: "",
 };
 
+const RESUMEN_VACIO: Resumen = {
+  total: 0,
+  activas: 0,
+  inactivas: 0,
+  completados: 0,
+  enCurso: 0,
+  sinIniciar: 0,
+  rezagadas: 0,
+  diplomas: 0,
+  cuestionariosCompletados: 0,
+  porcentajeAvance: 0,
+  promedioExamenes: null,
+  ultimaActividad: null,
+};
+
+type EstadoGrupo = "pendiente" | "en_curso" | "finalizado";
+
+function estadoDeGrupo(g: Grupo): EstadoGrupo {
+  if (g.pendienteRoster) return "pendiente";
+  if (!g.activo) return "finalizado";
+  return "en_curso";
+}
+
 function EtiquetaEstado({ grupo }: { grupo: Grupo }) {
-  if (grupo.pendienteRoster) {
+  const estado = estadoDeGrupo(grupo);
+  if (estado === "pendiente") {
     return (
-      <span className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-700">
+      <span className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 whitespace-nowrap">
         <Clock size={12} /> Falta cargar roster
       </span>
     );
   }
-  if (!grupo.activo) {
+  if (estado === "finalizado") {
     return (
-      <span className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-neutral-bg text-neutral-text">
+      <span className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-neutral-bg text-neutral-text whitespace-nowrap">
         <CheckCircle2 size={12} /> Finalizado
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-status-success/15 text-status-success">
+    <span className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-status-success/15 text-status-success whitespace-nowrap">
       En curso
     </span>
   );
@@ -100,7 +158,7 @@ function FormularioNuevoGrupo({
       });
       const json = await res.json();
       if (json.success) {
-        onCreado({ ...json.data, cantidadEstudiantesReal: 0 });
+        onCreado({ ...json.data, cantidadEstudiantesReal: 0, resumen: RESUMEN_VACIO });
       } else {
         setError(json.error || "No se pudo crear el grupo.");
       }
@@ -118,7 +176,7 @@ function FormularioNuevoGrupo({
     >
       <p className="font-display font-semibold text-brand-blue">Nuevo grupo</p>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <label className="text-sm text-neutral-text">
           Tipo
           <select
@@ -141,7 +199,7 @@ function FormularioNuevoGrupo({
         </label>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <label className="text-sm text-neutral-text">
           Contacto (nombre)
           <input
@@ -172,7 +230,7 @@ function FormularioNuevoGrupo({
         </label>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <label className="text-sm text-neutral-text">
           Precio total acordado (RD$)
           <input
@@ -208,7 +266,7 @@ function FormularioNuevoGrupo({
       </label>
 
       {error && (
-        <div className="rounded-lg bg-brand-pinkLight border border-brand-pink p-3 text-sm text-brand-blue">
+        <div className="rounded-lg bg-brand-pink-light border border-brand-pink p-3 text-sm text-brand-blue">
           {error}
         </div>
       )}
@@ -237,11 +295,130 @@ function FormularioNuevoGrupo({
   );
 }
 
+function TarjetaGrupo({ g }: { g: Grupo }) {
+  const r = g.resumen;
+  const estado = estadoDeGrupo(g);
+
+  return (
+    <Link
+      href={`/panel/grupos/${g._id}`}
+      className="rounded-xl bg-white border border-neutral-bg p-5 flex flex-col gap-4 hover:shadow-md hover:border-brand-blue-light transition"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start gap-3 min-w-0">
+          {g.tipo === "colegio" ? (
+            <School className="text-brand-blue shrink-0 mt-0.5" size={22} />
+          ) : (
+            <Building2 className="text-brand-blue shrink-0 mt-0.5" size={22} />
+          )}
+          <div className="min-w-0">
+            <p className="font-display font-semibold text-brand-blue leading-tight">
+              {g.nombreInstitucion}
+            </p>
+            <p className="text-xs text-neutral-text mt-0.5">
+              {g.tipo === "colegio" ? "Escolar" : "Empresarial"} · {g.contactoNombre}
+            </p>
+          </div>
+        </div>
+        <EtiquetaEstado grupo={g} />
+      </div>
+
+      {estado === "pendiente" ? (
+        <p className="text-sm text-neutral-text">
+          ~{g.cantidadEstudiantesEstimada} estudiantes estimados. Entra para
+          cargar el roster y crear sus cuentas.
+        </p>
+      ) : (
+        <>
+          <div>
+            <div className="flex items-baseline justify-between mb-1.5">
+              <p className="text-sm text-neutral-text">
+                <span className="font-display text-xl font-bold text-brand-blue">
+                  {r.activas}
+                </span>{" "}
+                estudiante{r.activas === 1 ? "" : "s"}
+                {r.inactivas > 0 && (
+                  <span className="text-xs text-neutral-text/60">
+                    {" "}
+                    (+{r.inactivas} inactiva{r.inactivas === 1 ? "" : "s"})
+                  </span>
+                )}
+              </p>
+              <p className="text-sm font-medium text-brand-blue">
+                {r.porcentajeAvance}%
+              </p>
+            </div>
+            <BarraProgreso porcentaje={r.porcentajeAvance} />
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div className="rounded-lg bg-neutral-bg py-2">
+              <p className="font-display font-semibold text-status-success">
+                {r.completados}
+              </p>
+              <p className="text-[11px] text-neutral-text">Completaron</p>
+            </div>
+            <div className="rounded-lg bg-neutral-bg py-2">
+              <p className="font-display font-semibold text-brand-blue">
+                {r.enCurso}
+              </p>
+              <p className="text-[11px] text-neutral-text">En curso</p>
+            </div>
+            <div className="rounded-lg bg-neutral-bg py-2">
+              <p className="font-display font-semibold text-neutral-text">
+                {r.sinIniciar}
+              </p>
+              <p className="text-[11px] text-neutral-text">Sin iniciar</p>
+            </div>
+          </div>
+
+          {r.rezagadas > 0 && (
+            <p className="flex items-center gap-1.5 text-xs font-medium text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
+              <AlertTriangle size={14} className="shrink-0" />
+              {r.rezagadas} sin actividad en más de 7 días
+            </p>
+          )}
+
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-neutral-text border-t border-neutral-bg pt-3">
+            <span>
+              Cuestionarios {r.cuestionariosCompletados}/{r.activas}
+            </span>
+            <span>Diplomas {r.diplomas}</span>
+            {r.promedioExamenes !== null && (
+              <span>Promedio {r.promedioExamenes}%</span>
+            )}
+            <span className="ml-auto">
+              Últ. actividad: {haceCuanto(r.ultimaActividad)}
+            </span>
+          </div>
+        </>
+      )}
+    </Link>
+  );
+}
+
+const FILTROS_TIPO: { id: "todos" | "colegio" | "empresa"; etiqueta: string }[] = [
+  { id: "todos", etiqueta: "Todos" },
+  { id: "colegio", etiqueta: "Colegios" },
+  { id: "empresa", etiqueta: "Empresas" },
+];
+
+const FILTROS_ESTADO: { id: "todos" | EstadoGrupo; etiqueta: string }[] = [
+  { id: "todos", etiqueta: "Cualquier estado" },
+  { id: "en_curso", etiqueta: "En curso" },
+  { id: "pendiente", etiqueta: "Falta roster" },
+  { id: "finalizado", etiqueta: "Finalizados" },
+];
+
 export default function PanelGruposPage() {
   const { token } = useAuth();
   const [grupos, setGrupos] = useState<Grupo[]>([]);
   const [cargando, setCargando] = useState(true);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
+
+  const [filtroTipo, setFiltroTipo] = useState<"todos" | "colegio" | "empresa">("todos");
+  const [filtroEstado, setFiltroEstado] = useState<"todos" | EstadoGrupo>("todos");
+  const [busqueda, setBusqueda] = useState("");
 
   const cargar = useCallback(async () => {
     if (!token) return;
@@ -253,25 +430,45 @@ export default function PanelGruposPage() {
       const json = await res.json();
       if (json.success) setGrupos(json.data);
     } catch {
-      // silencioso — la tabla se queda vacía, no es crítico bloquear la pantalla
+      // silencioso — la lista se queda vacía, no es crítico bloquear la pantalla
     } finally {
       setCargando(false);
     }
   }, [token]);
 
   useEffect(() => {
-    // NUEVO (09/09/2026): mismo fix ya usado en panel/estudiantes/page.tsx
-    // para el warning react-hooks/set-state-in-effect — cargar() hace
-    // setState (setCargando) antes del primer await, lo que el linter
-    // trata como "setState síncrono dentro de un efecto". queueMicrotask
-    // saca esa llamada del cuerpo síncrono del efecto sin cambiar el
-    // comportamiento (sigue disparando en el mismo ciclo de renderizado).
+    // Mismo fix ya usado en panel/estudiantes/page.tsx para el warning
+    // react-hooks/set-state-in-effect.
     queueMicrotask(() => cargar());
   }, [cargar]);
 
+  const visibles = useMemo(() => {
+    const termino = busqueda.trim().toLowerCase();
+    return grupos.filter((g) => {
+      if (filtroTipo !== "todos" && g.tipo !== filtroTipo) return false;
+      if (filtroEstado !== "todos" && estadoDeGrupo(g) !== filtroEstado) return false;
+      if (termino) {
+        const texto = `${g.nombreInstitucion} ${g.contactoNombre}`.toLowerCase();
+        if (!texto.includes(termino)) return false;
+      }
+      return true;
+    });
+  }, [grupos, filtroTipo, filtroEstado, busqueda]);
+
+  // Indicadores globales — solo sobre grupos que ya tienen roster.
+  const totales = useMemo(() => {
+    const conRoster = grupos.filter((g) => !g.pendienteRoster);
+    return {
+      gruposEnCurso: grupos.filter((g) => estadoDeGrupo(g) === "en_curso").length,
+      estudiantes: conRoster.reduce((a, g) => a + g.resumen.activas, 0),
+      completaron: conRoster.reduce((a, g) => a + g.resumen.completados, 0),
+      rezagadas: conRoster.reduce((a, g) => a + g.resumen.rezagadas, 0),
+    };
+  }, [grupos]);
+
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
+    <div className="max-w-6xl mx-auto">
+      <div className="flex items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="font-display text-xl font-bold text-brand-blue">Grupos</h1>
           <p className="text-sm text-neutral-text mt-1">
@@ -281,7 +478,7 @@ export default function PanelGruposPage() {
         {!mostrarFormulario && (
           <button
             onClick={() => setMostrarFormulario(true)}
-            className="inline-flex items-center gap-2 rounded-full bg-brand-pink text-white px-5 py-2.5 font-medium hover:opacity-90"
+            className="inline-flex items-center gap-2 rounded-full bg-brand-pink text-white px-5 py-2.5 font-medium hover:opacity-90 shrink-0"
           >
             <Plus size={18} /> Nuevo grupo
           </button>
@@ -298,42 +495,79 @@ export default function PanelGruposPage() {
         />
       )}
 
+      {!cargando && grupos.length > 0 && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+          <Indicador Icono={Building2} valor={totales.gruposEnCurso} etiqueta="Grupos en curso" />
+          <Indicador Icono={Users} valor={totales.estudiantes} etiqueta="Estudiantes activas" />
+          <Indicador
+            Icono={GraduationCap}
+            valor={totales.completaron}
+            etiqueta="Completaron la teoría"
+          />
+          <Indicador
+            Icono={AlertTriangle}
+            valor={totales.rezagadas}
+            etiqueta="Sin actividad en 7+ días"
+            alerta={totales.rezagadas > 0}
+          />
+        </div>
+      )}
+
+      {!cargando && grupos.length > 0 && (
+        <div className="flex flex-col lg:flex-row gap-3 mb-6">
+          <div className="relative flex-1">
+            <Search
+              size={16}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-text/50"
+            />
+            <input
+              type="text"
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              placeholder="Buscar por institución o contacto..."
+              className="w-full rounded-lg border border-neutral-bg bg-white pl-9 pr-4 py-2 text-sm focus:outline-none focus:border-brand-blue-light"
+            />
+          </div>
+          <div className="flex gap-1 bg-white rounded-lg border border-neutral-bg p-1">
+            {FILTROS_TIPO.map((f) => (
+              <button
+                key={f.id}
+                onClick={() => setFiltroTipo(f.id)}
+                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${filtroTipo === f.id
+                  ? "bg-brand-blue text-white"
+                  : "text-neutral-text hover:bg-neutral-bg"
+                  }`}
+              >
+                {f.etiqueta}
+              </button>
+            ))}
+          </div>
+          <select
+            value={filtroEstado}
+            onChange={(e) => setFiltroEstado(e.target.value as "todos" | EstadoGrupo)}
+            className="rounded-lg border border-neutral-bg bg-white px-3 py-2 text-sm"
+          >
+            {FILTROS_ESTADO.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.etiqueta}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {cargando ? (
         <p className="text-sm text-neutral-text">Cargando...</p>
       ) : grupos.length === 0 ? (
         <p className="text-sm text-neutral-text">Todavía no hay grupos creados.</p>
+      ) : visibles.length === 0 ? (
+        <p className="text-sm text-neutral-text">
+          Ningún grupo coincide con esos filtros.
+        </p>
       ) : (
-        <div className="grid gap-4">
-          {grupos.map((g) => (
-            <Link
-              key={g._id}
-              href={`/panel/grupos/${g._id}`}
-              className="rounded-xl bg-white border border-neutral-bg p-5 flex items-center justify-between hover:shadow-md transition-shadow"
-            >
-              <div className="flex items-center gap-3">
-                {g.tipo === "colegio" ? (
-                  <School className="text-brand-blue" size={22} />
-                ) : (
-                  <Building2 className="text-brand-blue" size={22} />
-                )}
-                <div>
-                  <p className="font-display font-semibold text-brand-blue">
-                    {g.nombreInstitucion}
-                  </p>
-                  <p className="text-xs text-neutral-text">
-                    {g.contactoNombre} — {g.contactoEmail}
-                  </p>
-                </div>
-              </div>
-              <div className="text-right flex flex-col items-end gap-1.5">
-                <EtiquetaEstado grupo={g} />
-                <p className="text-xs text-neutral-text">
-                  {g.pendienteRoster
-                    ? `~${g.cantidadEstudiantesEstimada} estudiantes (estimado)`
-                    : `${g.cantidadEstudiantesReal} estudiantes`}
-                </p>
-              </div>
-            </Link>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {visibles.map((g) => (
+            <TarjetaGrupo key={g._id} g={g} />
           ))}
         </div>
       )}
