@@ -118,8 +118,6 @@ export function EtiquetaEstadoEstudiante({
   );
 }
 
-// Tarjeta de indicador (icono + número grande + etiqueta). `alerta` la pinta
-// en ámbar — se usa para lo que requiere seguimiento (estudiantes rezagadas).
 export function Indicador({
   Icono,
   valor,
