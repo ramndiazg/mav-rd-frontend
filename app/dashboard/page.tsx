@@ -24,24 +24,28 @@ type Progreso = {
   tipoPlan?: "fundacion" | "normal" | "vip" | "teorico" | "grupo" | null;
 };
 
+type Instructor = {
+  _id: string;
+  diasDisponibles: { dia: string; horario: string }[];
+  userId: { nombre: string; apellido: string; telefono: string; email: string; provincia: string };
+}
+
 type Inscripcion = {
   _id: string;
   tipoPlan: "normal" | "vip" | "teorico";
   monto: number;
   estadoPago: "pendiente" | "pendiente_verificacion" | "pagado" | "rechazado";
   notaRechazo?: string | null;
+  // NUEVO: chofer asignado automáticamente según la zona de la
+  // estudiante (ver inscripcionController.js) — null si no aplica o si
+  // todavía no había chofer para esa zona.
+  instructorId?: Instructor | null;
 };
 
 // NUEVO (13/09/2026): mismo criterio que utils/elegibilidadPractica.js en
 // el backend — Motorizados y Pesados tampoco cursan práctica de manejo,
 // igual que Escolar/Empresarial (ver ANALISIS_MOTORISTA_PESADOS.md).
 const PROGRAMAS_SIN_PRACTICA = ["motorizados", "pesados"];
-
-type Instructor = {
-  _id: string;
-  diasDisponibles: { dia: string; horario: string }[];
-  userId: { nombre: string; apellido: string; telefono: string; email: string; provincia: string };
-}
 
 const SESIONES = [1, 2, 3, 4];
 
@@ -136,13 +140,22 @@ function AvisoTestPendiente({ href }: { href: string }) {
 // choferes activos para que la estudiante misma los contacte.
 // Solo aplica al flujo estándar (requierePractica true) — ver
 // PantallaTeoriaCompletadaGrupo para Escolar/Empresarial.
-function PantallaListaParaPractica() {
+function PantallaListaParaPractica({
+  instructorAsignado,
+}: {
+  // NUEVO: chofer que ya le corresponde a la estudiante según su zona
+  // (Inscripcion.instructorId, ver inscripcionController.js). Si viene
+  // null/undefined (inscripciones de antes de este cambio, o zonas sin
+  // chofer todavía), se cae al comportamiento anterior: la lista completa.
+  instructorAsignado?: Instructor | null;
+}) {
   const { token } = useAuth();
   const [instructores, setInstructores] = useState<Instructor[]>([]);
-  const [cargando, setCargando] = useState(true);
+  const [cargando, setCargando] = useState(!instructorAsignado);
   const [error, setError] = useState(false);
 
   useEffect(() => {
+    if (instructorAsignado) return;
     let cancelado = false;
 
     (async () => {
@@ -166,7 +179,11 @@ function PantallaListaParaPractica() {
     return () => {
       cancelado = true;
     };
-  }, [token]);
+  }, [token, instructorAsignado]);
+
+  // NUEVO: con chofer ya asignado, se muestra solo esa tarjeta — se salta
+  // el fetch de arriba y toda la lista completa de abajo.
+  const listaAMostrar = instructorAsignado ? [instructorAsignado] : instructores;
 
   return (
     <div className="rounded-xl bg-white border border-neutral-bg p-8 text-center">
@@ -175,34 +192,36 @@ function PantallaListaParaPractica() {
         ¡Felicidades, terminaste toda la teoría!
       </p>
       <p className="text-sm text-neutral-text mb-6">
-        Ahora falta la parte práctica en el vehiculo. Contacta a uno de
-        nuestros instructores para coordinar día y hora — cuando confirme
-        tu práctica, tu diploma quedará disponible.
+        {instructorAsignado
+          ? "Ahora falta la parte práctica en el vehiculo. Este es tu instructor — coordina día y hora con él, y cuando confirme tu práctica, tu diploma quedará disponible."
+          : "Ahora falta la parte práctica en el vehiculo. Contacta a uno de nuestros instructores para coordinar día y hora — cuando confirme tu práctica, tu diploma quedará disponible."}
       </p>
       <p className="text-xs text-neutral-text mb-6">
         Cada clase presencial tiene un costo de RD$500, que se paga en
         efectivo directo al instructor.
       </p>
 
-      {cargando && <p className="text-sm text-neutral-text">Cargando instructores...</p>}
+      {!instructorAsignado && cargando && (
+        <p className="text-sm text-neutral-text">Cargando instructores...</p>
+      )}
 
-      {error && !cargando && (
+      {!instructorAsignado && error && !cargando && (
         <p className="text-sm text-brand-pink">
           No pudimos cargar la lista de instructores. Intenta de nuevo en
           unos minutos.
         </p>
       )}
 
-      {!cargando && !error && instructores.length === 0 && (
+      {!instructorAsignado && !cargando && !error && listaAMostrar.length === 0 && (
         <p className="text-sm text-neutral-text">
           Todavía no hay instructores disponibles — tu coordinadora te
           contactará pronto.
         </p>
       )}
 
-      {!cargando && !error && instructores.length > 0 && (
+      {(instructorAsignado || (!cargando && !error)) && listaAMostrar.length > 0 && (
         <div className="grid gap-3 text-left">
-          {instructores.map((instructor) => (
+          {listaAMostrar.map((instructor) => (
             <div
               key={instructor._id}
               className="rounded-lg border border-neutral-bg p-4"
@@ -576,7 +595,11 @@ function DashboardContenido() {
 
               {progreso.cursoCompletado &&
                 requierePractica &&
-                !progreso.practicaAprobada && <PantallaListaParaPractica />}
+                !progreso.practicaAprobada && (
+                  <PantallaListaParaPractica
+                    instructorAsignado={inscripcion?.instructorId}
+                  />
+                )}
             </>
           )}
       </div>

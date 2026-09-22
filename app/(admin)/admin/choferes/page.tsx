@@ -17,9 +17,16 @@ const DIAS: { valor: Dia; etiqueta: string }[] = [
 
 type DiaDisponible = { dia: Dia; horario: string };
 
+// NUEVO: zona (provincia+municipio) donde el chofer da práctica — ver
+// models/Instructor.js (municipiosCubiertos). Distinta de la provincia
+// personal del chofer, que sigue siendo el input de texto libre de abajo.
+type ZonaCubierta = { provincia: string; municipio: string };
+type ProvinciaConMunicipios = { provincia: string; municipios: string[] };
+
 type Instructor = {
   _id: string;
   diasDisponibles: DiaDisponible[];
+  municipiosCubiertos: ZonaCubierta[];
   activo: boolean;
   userId: {
     _id: string;
@@ -59,6 +66,17 @@ export default function ChoferesPage() {
   const [diasEdicion, setDiasEdicion] = useState<DiaDisponible[]>([]);
   const [guardandoEdicion, setGuardandoEdicion] = useState(false);
 
+  // NUEVO: mismo select en cascada provincia→municipio que ya usa
+  // /admin/cobertura-practica, para elegir las zonas donde el chofer da
+  // práctica (municipiosCubiertos).
+  const [referencia, setReferencia] = useState<ProvinciaConMunicipios[]>([]);
+  const [zonasNuevo, setZonasNuevo] = useState<ZonaCubierta[]>([]);
+  const [provinciaZonaNueva, setProvinciaZonaNueva] = useState("");
+  const [municipioZonaNueva, setMunicipioZonaNueva] = useState("");
+  const [zonasEdicion, setZonasEdicion] = useState<ZonaCubierta[]>([]);
+  const [provinciaZonaEdicion, setProvinciaZonaEdicion] = useState("");
+  const [municipioZonaEdicion, setMunicipioZonaEdicion] = useState("");
+
   const [mensaje, setMensaje] = useState<{ tipo: "ok" | "error"; texto: string } | null>(null);
 
   async function cargar() {
@@ -81,11 +99,20 @@ export default function ChoferesPage() {
 
     (async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/instructores`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const json = await res.json();
-        if (!cancelado && json.success) setInstructores(json.data);
+        const [resInstructores, resRef] = await Promise.all([
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/instructores`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/ubicaciones/provincias-municipios`,
+          ),
+        ]);
+        const json = await resInstructores.json();
+        const jsonRef = await resRef.json();
+        if (!cancelado) {
+          if (json.success) setInstructores(json.data);
+          if (jsonRef.success) setReferencia(jsonRef.data);
+        }
       } catch {
         if (!cancelado) {
           setMensaje({ tipo: "error", texto: "No pudimos cargar los choferes." });
@@ -99,6 +126,49 @@ export default function ChoferesPage() {
       cancelado = true;
     };
   }, [token]);
+
+  // NUEVO: municipios de la provincia elegida que todavía no están en la
+  // lista de zonas — evita agregar la misma zona dos veces.
+  function municipiosDisponiblesPara(
+    provinciaElegida: string,
+    zonasActuales: ZonaCubierta[],
+  ) {
+    const municipiosDeProvincia =
+      referencia.find((p) => p.provincia === provinciaElegida)?.municipios ??
+      [];
+    return municipiosDeProvincia.filter(
+      (m) =>
+        !zonasActuales.some(
+          (z) => z.provincia === provinciaElegida && z.municipio === m,
+        ),
+    );
+  }
+
+  function agregarZonaNueva() {
+    if (!provinciaZonaNueva || !municipioZonaNueva) return;
+    setZonasNuevo((prev) => [
+      ...prev,
+      { provincia: provinciaZonaNueva, municipio: municipioZonaNueva },
+    ]);
+    setMunicipioZonaNueva("");
+  }
+
+  function quitarZonaNueva(indice: number) {
+    setZonasNuevo((prev) => prev.filter((_, i) => i !== indice));
+  }
+
+  function agregarZonaEdicion() {
+    if (!provinciaZonaEdicion || !municipioZonaEdicion) return;
+    setZonasEdicion((prev) => [
+      ...prev,
+      { provincia: provinciaZonaEdicion, municipio: municipioZonaEdicion },
+    ]);
+    setMunicipioZonaEdicion("");
+  }
+
+  function quitarZonaEdicion(indice: number) {
+    setZonasEdicion((prev) => prev.filter((_, i) => i !== indice));
+  }
 
   function agregarDiaNuevo() {
     setDiasNuevo((prev) => [...prev, { dia: "lunes", horario: "" }]);
@@ -140,7 +210,11 @@ export default function ChoferesPage() {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ ...formCrear, diasDisponibles: diasNuevo }),
+        body: JSON.stringify({
+          ...formCrear,
+          diasDisponibles: diasNuevo,
+          municipiosCubiertos: zonasNuevo,
+        }),
       });
       const json = await res.json();
 
@@ -149,6 +223,9 @@ export default function ChoferesPage() {
         setCreando(false);
         setFormCrear(formularioCrearVacio());
         setDiasNuevo([]);
+        setZonasNuevo([]);
+        setProvinciaZonaNueva("");
+        setMunicipioZonaNueva("");
         cargar();
       } else {
         setMensaje({ tipo: "error", texto: json.error || "No se pudo crear el chofer." });
@@ -163,6 +240,9 @@ export default function ChoferesPage() {
   function abrirEdicion(instructor: Instructor) {
     setEditandoId(instructor._id);
     setDiasEdicion(instructor.diasDisponibles);
+    setZonasEdicion(instructor.municipiosCubiertos || []);
+    setProvinciaZonaEdicion("");
+    setMunicipioZonaEdicion("");
     setMensaje(null);
   }
 
@@ -181,13 +261,16 @@ export default function ChoferesPage() {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ diasDisponibles: diasEdicion }),
+          body: JSON.stringify({
+            diasDisponibles: diasEdicion,
+            municipiosCubiertos: zonasEdicion,
+          }),
         },
       );
       const json = await res.json();
 
       if (json.success) {
-        setMensaje({ tipo: "ok", texto: "Horarios actualizados." });
+        setMensaje({ tipo: "ok", texto: "Horarios y zonas actualizados." });
         setEditandoId(null);
         cargar();
       } else {
@@ -253,6 +336,9 @@ export default function ChoferesPage() {
                 setCreando(false);
                 setFormCrear(formularioCrearVacio());
                 setDiasNuevo([]);
+                setZonasNuevo([]);
+                setProvinciaZonaNueva("");
+                setMunicipioZonaNueva("");
               }}
               className="text-xs text-brand-blueLight hover:underline"
             >
@@ -386,6 +472,80 @@ export default function ChoferesPage() {
             </button>
           </div>
 
+          <div>
+            <p className="text-sm text-neutral-text mb-2">
+              Zonas donde da práctica
+            </p>
+            <p className="text-xs text-neutral-text mb-2">
+              Municipio(s) donde este chofer realmente da la práctica
+              presencial — no tiene que ser su provincia personal. Esto es
+              lo que lo conecta con /admin/cobertura-practica.
+            </p>
+            {zonasNuevo.length > 0 && (
+              <div className="grid gap-1 mb-2">
+                {zonasNuevo.map((z, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between rounded-lg bg-neutral-bg px-3 py-1.5 text-sm"
+                  >
+                    <span>
+                      {z.municipio}, {z.provincia}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => quitarZonaNueva(i)}
+                      className="text-xs text-brand-pink px-2"
+                    >
+                      Quitar
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex gap-2">
+              <select
+                value={provinciaZonaNueva}
+                onChange={(e) => {
+                  setProvinciaZonaNueva(e.target.value);
+                  setMunicipioZonaNueva("");
+                }}
+                className="flex-1 rounded-lg border border-neutral-bg px-3 py-2 text-sm bg-white"
+              >
+                <option value="">Provincia</option>
+                {referencia.map((p) => (
+                  <option key={p.provincia} value={p.provincia}>
+                    {p.provincia}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={municipioZonaNueva}
+                onChange={(e) => setMunicipioZonaNueva(e.target.value)}
+                disabled={!provinciaZonaNueva}
+                className="flex-1 rounded-lg border border-neutral-bg px-3 py-2 text-sm bg-white disabled:opacity-60"
+              >
+                <option value="">
+                  {provinciaZonaNueva ? "Municipio" : "Elige provincia"}
+                </option>
+                {municipiosDisponiblesPara(provinciaZonaNueva, zonasNuevo).map(
+                  (m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ),
+                )}
+              </select>
+              <button
+                type="button"
+                onClick={agregarZonaNueva}
+                disabled={!provinciaZonaNueva || !municipioZonaNueva}
+                className="rounded-lg bg-brand-blueLight text-white text-sm px-3 disabled:opacity-50"
+              >
+                + Agregar
+              </button>
+            </div>
+          </div>
+
           <button
             type="submit"
             disabled={guardandoCreacion}
@@ -408,7 +568,7 @@ export default function ChoferesPage() {
             {editandoId === instructor._id ? (
               <form onSubmit={guardarEdicion} className="grid gap-3">
                 <p className="font-medium text-brand-blue text-sm">
-                  {instructor.userId.nombre} {instructor.userId.apellido} — editar horarios
+                  {instructor.userId.nombre} {instructor.userId.apellido} — editar horarios y zonas
                 </p>
                 <div className="grid gap-2">
                   {diasEdicion.map((d, i) => (
@@ -448,6 +608,82 @@ export default function ChoferesPage() {
                 >
                   + Agregar día
                 </button>
+
+                <div>
+                  <p className="text-sm text-neutral-text mb-2">
+                    Zonas donde da práctica
+                  </p>
+                  {zonasEdicion.length > 0 && (
+                    <div className="grid gap-1 mb-2">
+                      {zonasEdicion.map((z, i) => (
+                        <div
+                          key={i}
+                          className="flex items-center justify-between rounded-lg bg-neutral-bg px-3 py-1.5 text-sm"
+                        >
+                          <span>
+                            {z.municipio}, {z.provincia}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => quitarZonaEdicion(i)}
+                            className="text-xs text-brand-pink px-2"
+                          >
+                            Quitar
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <select
+                      value={provinciaZonaEdicion}
+                      onChange={(e) => {
+                        setProvinciaZonaEdicion(e.target.value);
+                        setMunicipioZonaEdicion("");
+                      }}
+                      className="flex-1 rounded-lg border border-neutral-bg px-3 py-2 text-sm bg-white"
+                    >
+                      <option value="">Provincia</option>
+                      {referencia.map((p) => (
+                        <option key={p.provincia} value={p.provincia}>
+                          {p.provincia}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      value={municipioZonaEdicion}
+                      onChange={(e) => setMunicipioZonaEdicion(e.target.value)}
+                      disabled={!provinciaZonaEdicion}
+                      className="flex-1 rounded-lg border border-neutral-bg px-3 py-2 text-sm bg-white disabled:opacity-60"
+                    >
+                      <option value="">
+                        {provinciaZonaEdicion ? "Municipio" : "Elige provincia"}
+                      </option>
+                      {municipiosDisponiblesPara(
+                        provinciaZonaEdicion,
+                        zonasEdicion,
+                      ).map((m) => (
+                        <option key={m} value={m}>
+                          {m}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={agregarZonaEdicion}
+                      disabled={!provinciaZonaEdicion || !municipioZonaEdicion}
+                      className="rounded-lg bg-brand-blueLight text-white text-sm px-3 disabled:opacity-50"
+                    >
+                      + Agregar
+                    </button>
+                  </div>
+                  <p className="text-xs text-neutral-text mt-2">
+                    Si quitas la única zona activa que cubre un municipio (o
+                    desactivas este chofer), ese municipio se desactiva
+                    también en /admin/cobertura-practica.
+                  </p>
+                </div>
+
                 <div className="flex gap-2">
                   <button
                     type="submit"
@@ -486,6 +722,18 @@ export default function ChoferesPage() {
                         .join(" · ")}
                     </p>
                   )}
+                  {instructor.municipiosCubiertos?.length > 0 ? (
+                    <p className="text-xs text-brand-blueLight mt-1">
+                      Zonas:{" "}
+                      {instructor.municipiosCubiertos
+                        .map((z) => `${z.municipio}, ${z.provincia}`)
+                        .join(" · ")}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-brand-pink mt-1">
+                      Sin zonas de práctica asignadas
+                    </p>
+                  )}
                 </div>
                 <div className="flex gap-2 shrink-0">
                   <button
@@ -498,7 +746,7 @@ export default function ChoferesPage() {
                     onClick={() => abrirEdicion(instructor)}
                     className="text-xs font-medium px-3 py-1.5 rounded-full bg-brand-blueLight text-white hover:opacity-90"
                   >
-                    Editar horarios
+                    Editar horarios y zonas
                   </button>
                 </div>
               </div>

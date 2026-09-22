@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { MapPin, Plus } from "lucide-react";
 
@@ -169,10 +170,21 @@ export default function CoberturaPracticaPage() {
           Cobertura de práctica
         </h1>
       </div>
-      <p className="text-sm text-neutral-text mb-8">
+      <p className="text-sm text-neutral-text mb-2">
         Municipios donde ofrecemos práctica de manejo presencial. En los
         municipios que no estén aquí, las estudiantes del curso de livianos
         solo pueden inscribirse en la modalidad Solo Teórico.
+      </p>
+      <p className="text-sm text-neutral-text mb-8">
+        Para activar un municipio primero debe existir ahí un{" "}
+        <Link
+          href="/admin/choferes"
+          className="text-brand-blueLight underline underline-offset-2"
+        >
+          chofer activo con esa zona asignada
+        </Link>
+        — así nos aseguramos de que la estudiante que se inscriba con
+        práctica de verdad tenga con quién tomarla.
       </p>
 
       {mensaje && (
