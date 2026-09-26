@@ -469,13 +469,29 @@ export default function ChoferesPage() {
             </label>
             <label className="text-sm text-neutral-text">
               Provincia
-              <input
-                type="text"
+              {/* FIX (texto libre → lista validada): antes era un
+                  <input type="text">, sin relación con la lista real de
+                  provincias — un typo aquí no rompía nada técnicamente,
+                  pero es justo el dato que se le muestra a la estudiante
+                  para que sepa qué tan lejos vive el chofer, así que un
+                  error de tipeo la confundía. Ahora usa la misma
+                  `referencia` (provincias-municipios) que ya trae el
+                  select de zonas de práctica más abajo. */}
+              <select
                 required
                 value={formCrear.provincia}
                 onChange={(e) => setFormCrear((p) => ({ ...p, provincia: e.target.value }))}
                 className="mt-1 w-full rounded-lg border border-neutral-bg px-3 py-2 text-sm"
-              />
+              >
+                <option value="" disabled>
+                  Elige provincia
+                </option>
+                {referencia.map((p) => (
+                  <option key={p.provincia} value={p.provincia}>
+                    {p.provincia}
+                  </option>
+                ))}
+              </select>
             </label>
             <label className="text-sm text-neutral-text">
               Fecha de nacimiento

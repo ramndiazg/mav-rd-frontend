@@ -107,6 +107,7 @@ type FilaRoster = {
   telefono: string;
   email: string;
   provincia: string;
+  municipio: string;
   fechaNacimiento: string;
 };
 
@@ -127,6 +128,7 @@ const FILA_VACIA: FilaRoster = {
   telefono: "",
   email: "",
   provincia: "",
+  municipio: "",
   fechaNacimiento: "",
 };
 
@@ -137,6 +139,7 @@ const COLUMNAS: (keyof FilaRoster)[] = [
   "telefono",
   "email",
   "provincia",
+  "municipio",
   "fechaNacimiento",
 ];
 
@@ -147,6 +150,7 @@ const ETIQUETAS_COLUMNA: Record<keyof FilaRoster, string> = {
   telefono: "Teléfono",
   email: "Correo",
   provincia: "Provincia",
+  municipio: "Municipio",
   fechaNacimiento: "Fecha nac. (AAAA-MM-DD)",
 };
 
@@ -591,10 +595,38 @@ function PestanaRoster({
   const [error, setError] = useState<string | null>(null);
   const [resultado, setResultado] = useState<ResultadoRoster | null>(null);
 
+  // FIX (texto libre → lista validada, 26/09/2026): antes "provincia" era
+  // un <input type="text"> igual que "nombre" o "apellido", sin relación
+  // con la lista real, y "municipio" ni existía como columna — por eso
+  // estas estudiantes nunca tenían cobertura de práctica calculable. Se
+  // trae la misma referencia (provincias-municipios) que ya usan
+  // /registro, /admin/choferes y /admin/cobertura-practica.
+  const [referencia, setReferencia] = useState<{ provincia: string; municipios: string[] }[]>(
+    [],
+  );
+
+  useEffect(() => {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/ubicaciones/provincias-municipios`)
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.success) setReferencia(json.data);
+      })
+      .catch(() => {
+        // Si falla, provincia/municipio quedan como selects vacíos —
+        // mismo comportamiento de respaldo que ya tienen las otras
+        // pantallas que consumen este mismo endpoint.
+      });
+  }, []);
+
   function actualizarFila(indice: number, campo: keyof FilaRoster, valor: string) {
     setFilas((prev) => {
       const copia = [...prev];
-      copia[indice] = { ...copia[indice], [campo]: valor };
+      const filaActualizada = { ...copia[indice], [campo]: valor };
+      // Si cambia la provincia, el municipio que tenía puede ya no
+      // pertenecer a la nueva provincia — se limpia para no dejar una
+      // combinación inválida guardada sin que se note.
+      if (campo === "provincia") filaActualizada.municipio = "";
+      copia[indice] = filaActualizada;
       return copia;
     });
   }
@@ -675,13 +707,47 @@ function PestanaRoster({
                 <tr key={indice}>
                   {COLUMNAS.map((col) => (
                     <td key={col} className="pr-2 pb-2">
-                      <input
-                        type={col === "fechaNacimiento" ? "date" : "text"}
-                        value={fila[col]}
-                        onChange={(e) => actualizarFila(indice, col, e.target.value)}
-                        placeholder={col === "cedula" ? PLACEHOLDER_CEDULA : undefined}
-                        className="w-full rounded border border-neutral-bg px-2 py-1"
-                      />
+                      {col === "provincia" ? (
+                        <select
+                          value={fila.provincia}
+                          onChange={(e) => actualizarFila(indice, "provincia", e.target.value)}
+                          className="w-full rounded border border-neutral-bg px-2 py-1"
+                        >
+                          <option value="">Provincia</option>
+                          {referencia.map((p) => (
+                            <option key={p.provincia} value={p.provincia}>
+                              {p.provincia}
+                            </option>
+                          ))}
+                        </select>
+                      ) : col === "municipio" ? (
+                        <select
+                          value={fila.municipio}
+                          disabled={!fila.provincia}
+                          onChange={(e) => actualizarFila(indice, "municipio", e.target.value)}
+                          className="w-full rounded border border-neutral-bg px-2 py-1"
+                        >
+                          <option value="">
+                            {fila.provincia ? "Municipio" : "Elige provincia"}
+                          </option>
+                          {(
+                            referencia.find((p) => p.provincia === fila.provincia)
+                              ?.municipios ?? []
+                          ).map((m) => (
+                            <option key={m} value={m}>
+                              {m}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          type={col === "fechaNacimiento" ? "date" : "text"}
+                          value={fila[col]}
+                          onChange={(e) => actualizarFila(indice, col, e.target.value)}
+                          placeholder={col === "cedula" ? PLACEHOLDER_CEDULA : undefined}
+                          className="w-full rounded border border-neutral-bg px-2 py-1"
+                        />
+                      )}
                     </td>
                   ))}
                   <td>
