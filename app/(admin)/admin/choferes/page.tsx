@@ -17,6 +17,26 @@ const DIAS: { valor: Dia; etiqueta: string }[] = [
 
 type DiaDisponible = { dia: Dia; horario: string };
 
+// FIX (bug reportado): antes había un solo input de texto libre para el
+// horario completo ("Ej: 2:00 PM - 5:00 PM") y nada obligaba a escribir la
+// hora de fin — así quedó Ramón D. con "lunes 2:00" sin fin, sin que la
+// estudiante pueda saber hasta qué hora está disponible. El formulario
+// ahora pide hora de inicio y fin por separado (<input type="time">, sin
+// ambigüedad de AM/PM) y arma el string "HH:MM - HH:MM" al guardar — el
+// modelo de datos (Instructor.diasDisponibles[].horario) no cambia, sigue
+// siendo un string libre en el backend, solo se estructura desde el
+// formulario.
+type DiaDisponibleForm = { dia: Dia; horaInicio: string; horaFin: string };
+
+function horarioAForm(horario: string): { horaInicio: string; horaFin: string } {
+  const [horaInicio, horaFin] = horario.split(" - ").map((p) => p?.trim() ?? "");
+  return { horaInicio: horaInicio || "", horaFin: horaFin || "" };
+}
+
+function formAHorario(horaInicio: string, horaFin: string): string {
+  return `${horaInicio} - ${horaFin}`;
+}
+
 // NUEVO: zona (provincia+municipio) donde el chofer da práctica — ver
 // models/Instructor.js (municipiosCubiertos). Distinta de la provincia
 // personal del chofer, que sigue siendo el input de texto libre de abajo.
@@ -59,11 +79,11 @@ export default function ChoferesPage() {
 
   const [creando, setCreando] = useState(false);
   const [formCrear, setFormCrear] = useState(formularioCrearVacio());
-  const [diasNuevo, setDiasNuevo] = useState<DiaDisponible[]>([]);
+  const [diasNuevo, setDiasNuevo] = useState<DiaDisponibleForm[]>([]);
   const [guardandoCreacion, setGuardandoCreacion] = useState(false);
 
   const [editandoId, setEditandoId] = useState<string | null>(null);
-  const [diasEdicion, setDiasEdicion] = useState<DiaDisponible[]>([]);
+  const [diasEdicion, setDiasEdicion] = useState<DiaDisponibleForm[]>([]);
   const [guardandoEdicion, setGuardandoEdicion] = useState(false);
 
   // NUEVO: mismo select en cascada provincia→municipio que ya usa
@@ -171,35 +191,57 @@ export default function ChoferesPage() {
   }
 
   function agregarDiaNuevo() {
-    setDiasNuevo((prev) => [...prev, { dia: "lunes", horario: "" }]);
+    setDiasNuevo((prev) => [...prev, { dia: "lunes", horaInicio: "", horaFin: "" }]);
   }
 
   function quitarDiaNuevo(indice: number) {
     setDiasNuevo((prev) => prev.filter((_, i) => i !== indice));
   }
 
-  function actualizarDiaNuevo(indice: number, campo: keyof DiaDisponible, valor: string) {
+  function actualizarDiaNuevo(indice: number, campo: keyof DiaDisponibleForm, valor: string) {
     setDiasNuevo((prev) =>
       prev.map((d, i) => (i === indice ? { ...d, [campo]: valor } : d)),
     );
   }
 
   function agregarDiaEdicion() {
-    setDiasEdicion((prev) => [...prev, { dia: "lunes", horario: "" }]);
+    setDiasEdicion((prev) => [...prev, { dia: "lunes", horaInicio: "", horaFin: "" }]);
   }
 
   function quitarDiaEdicion(indice: number) {
     setDiasEdicion((prev) => prev.filter((_, i) => i !== indice));
   }
 
-  function actualizarDiaEdicion(indice: number, campo: keyof DiaDisponible, valor: string) {
+  function actualizarDiaEdicion(indice: number, campo: keyof DiaDisponibleForm, valor: string) {
     setDiasEdicion((prev) =>
       prev.map((d, i) => (i === indice ? { ...d, [campo]: valor } : d)),
     );
   }
 
+  // FIX: valida que cada día tenga hora de inicio Y fin, y que el fin sea
+  // después del inicio, antes de dejar guardar — antes no había ningún
+  // control y se podía guardar un horario incompleto o invertido.
+  function validarDias(dias: DiaDisponibleForm[]): string | null {
+    for (const d of dias) {
+      if (!d.horaInicio || !d.horaFin) {
+        return "Cada día necesita hora de inicio y hora de fin.";
+      }
+      if (d.horaFin <= d.horaInicio) {
+        return "La hora de fin debe ser después de la hora de inicio.";
+      }
+    }
+    return null;
+  }
+
   async function crearChofer(e: React.FormEvent) {
     e.preventDefault();
+
+    const errorDias = validarDias(diasNuevo);
+    if (errorDias) {
+      setMensaje({ tipo: "error", texto: errorDias });
+      return;
+    }
+
     setGuardandoCreacion(true);
     setMensaje(null);
 
@@ -212,7 +254,10 @@ export default function ChoferesPage() {
         },
         body: JSON.stringify({
           ...formCrear,
-          diasDisponibles: diasNuevo,
+          diasDisponibles: diasNuevo.map((d) => ({
+            dia: d.dia,
+            horario: formAHorario(d.horaInicio, d.horaFin),
+          })),
           municipiosCubiertos: zonasNuevo,
         }),
       });
@@ -239,7 +284,12 @@ export default function ChoferesPage() {
 
   function abrirEdicion(instructor: Instructor) {
     setEditandoId(instructor._id);
-    setDiasEdicion(instructor.diasDisponibles);
+    setDiasEdicion(
+      instructor.diasDisponibles.map((d) => ({
+        dia: d.dia,
+        ...horarioAForm(d.horario),
+      })),
+    );
     setZonasEdicion(instructor.municipiosCubiertos || []);
     setProvinciaZonaEdicion("");
     setMunicipioZonaEdicion("");
@@ -249,6 +299,13 @@ export default function ChoferesPage() {
   async function guardarEdicion(e: React.FormEvent) {
     e.preventDefault();
     if (!editandoId) return;
+
+    const errorDias = validarDias(diasEdicion);
+    if (errorDias) {
+      setMensaje({ tipo: "error", texto: errorDias });
+      return;
+    }
+
     setGuardandoEdicion(true);
     setMensaje(null);
 
@@ -262,7 +319,10 @@ export default function ChoferesPage() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            diasDisponibles: diasEdicion,
+            diasDisponibles: diasEdicion.map((d) => ({
+              dia: d.dia,
+              horario: formAHorario(d.horaInicio, d.horaFin),
+            })),
             municipiosCubiertos: zonasEdicion,
           }),
         },
@@ -340,7 +400,7 @@ export default function ChoferesPage() {
                 setProvinciaZonaNueva("");
                 setMunicipioZonaNueva("");
               }}
-              className="text-xs text-brand-blueLight hover:underline"
+              className="text-xs text-brand-blue-light hover:underline"
             >
               Cancelar
             </button>
@@ -446,12 +506,19 @@ export default function ChoferesPage() {
                     ))}
                   </select>
                   <input
-                    type="text"
+                    type="time"
                     required
-                    placeholder="Ej: 2:00 PM - 5:00 PM"
-                    value={d.horario}
-                    onChange={(e) => actualizarDiaNuevo(i, "horario", e.target.value)}
-                    className="flex-1 rounded-lg border border-neutral-bg px-3 py-1.5 text-sm"
+                    value={d.horaInicio}
+                    onChange={(e) => actualizarDiaNuevo(i, "horaInicio", e.target.value)}
+                    className="rounded-lg border border-neutral-bg px-3 py-1.5 text-sm"
+                  />
+                  <span className="text-xs text-neutral-text">a</span>
+                  <input
+                    type="time"
+                    required
+                    value={d.horaFin}
+                    onChange={(e) => actualizarDiaNuevo(i, "horaFin", e.target.value)}
+                    className="rounded-lg border border-neutral-bg px-3 py-1.5 text-sm"
                   />
                   <button
                     type="button"
@@ -466,7 +533,7 @@ export default function ChoferesPage() {
             <button
               type="button"
               onClick={agregarDiaNuevo}
-              className="mt-2 text-xs font-medium text-brand-blueLight hover:underline"
+              className="mt-2 text-xs font-medium text-brand-blue-light hover:underline"
             >
               + Agregar día
             </button>
@@ -539,7 +606,7 @@ export default function ChoferesPage() {
                 type="button"
                 onClick={agregarZonaNueva}
                 disabled={!provinciaZonaNueva || !municipioZonaNueva}
-                className="rounded-lg bg-brand-blueLight text-white text-sm px-3 disabled:opacity-50"
+                className="rounded-lg bg-brand-blue-light text-white text-sm px-3 disabled:opacity-50"
               >
                 + Agregar
               </button>
@@ -585,11 +652,19 @@ export default function ChoferesPage() {
                         ))}
                       </select>
                       <input
-                        type="text"
+                        type="time"
                         required
-                        value={d.horario}
-                        onChange={(e) => actualizarDiaEdicion(i, "horario", e.target.value)}
-                        className="flex-1 rounded-lg border border-neutral-bg px-3 py-1.5 text-sm"
+                        value={d.horaInicio}
+                        onChange={(e) => actualizarDiaEdicion(i, "horaInicio", e.target.value)}
+                        className="rounded-lg border border-neutral-bg px-3 py-1.5 text-sm"
+                      />
+                      <span className="text-xs text-neutral-text">a</span>
+                      <input
+                        type="time"
+                        required
+                        value={d.horaFin}
+                        onChange={(e) => actualizarDiaEdicion(i, "horaFin", e.target.value)}
+                        className="rounded-lg border border-neutral-bg px-3 py-1.5 text-sm"
                       />
                       <button
                         type="button"
@@ -604,7 +679,7 @@ export default function ChoferesPage() {
                 <button
                   type="button"
                   onClick={agregarDiaEdicion}
-                  className="text-xs font-medium text-brand-blueLight hover:underline text-left"
+                  className="text-xs font-medium text-brand-blue-light hover:underline text-left"
                 >
                   + Agregar día
                 </button>
@@ -672,7 +747,7 @@ export default function ChoferesPage() {
                       type="button"
                       onClick={agregarZonaEdicion}
                       disabled={!provinciaZonaEdicion || !municipioZonaEdicion}
-                      className="rounded-lg bg-brand-blueLight text-white text-sm px-3 disabled:opacity-50"
+                      className="rounded-lg bg-brand-blue-light text-white text-sm px-3 disabled:opacity-50"
                     >
                       + Agregar
                     </button>
@@ -723,7 +798,7 @@ export default function ChoferesPage() {
                     </p>
                   )}
                   {instructor.municipiosCubiertos?.length > 0 ? (
-                    <p className="text-xs text-brand-blueLight mt-1">
+                    <p className="text-xs text-brand-blue-light mt-1">
                       Zonas:{" "}
                       {instructor.municipiosCubiertos
                         .map((z) => `${z.municipio}, ${z.provincia}`)
@@ -738,13 +813,13 @@ export default function ChoferesPage() {
                 <div className="flex gap-2 shrink-0">
                   <button
                     onClick={() => toggleActivo(instructor)}
-                    className="text-xs font-medium px-3 py-1.5 rounded-full bg-neutral-bg text-neutral-text hover:bg-brand-pinkLight"
+                    className="text-xs font-medium px-3 py-1.5 rounded-full bg-neutral-bg text-neutral-text hover:bg-brand-pink-light"
                   >
                     {instructor.activo ? "Desactivar" : "Activar"}
                   </button>
                   <button
                     onClick={() => abrirEdicion(instructor)}
-                    className="text-xs font-medium px-3 py-1.5 rounded-full bg-brand-blueLight text-white hover:opacity-90"
+                    className="text-xs font-medium px-3 py-1.5 rounded-full bg-brand-blue-light text-white hover:opacity-90"
                   >
                     Editar horarios y zonas
                   </button>
@@ -759,7 +834,7 @@ export default function ChoferesPage() {
         <div
           className={`mt-6 rounded-lg p-4 text-sm ${mensaje.tipo === "ok"
             ? "bg-status-success/10 border border-status-success text-status-success"
-            : "bg-brand-pinkLight border border-brand-pink text-brand-blue"
+            : "bg-brand-pink-light border border-brand-pink text-brand-blue"
             }`}
         >
           {mensaje.texto}

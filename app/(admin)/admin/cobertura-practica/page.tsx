@@ -179,7 +179,7 @@ export default function CoberturaPracticaPage() {
         Para activar un municipio primero debe existir ahí un{" "}
         <Link
           href="/admin/choferes"
-          className="text-brand-blueLight underline underline-offset-2"
+          className="text-brand-blue-light underline underline-offset-2"
         >
           chofer activo con esa zona asignada
         </Link>

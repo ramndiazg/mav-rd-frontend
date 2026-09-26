@@ -94,7 +94,7 @@ function AvisoEmailSinVerificar() {
   }
 
   return (
-    <div className="rounded-lg bg-brand-pinkLight border border-brand-pink p-3 text-sm text-brand-blue mb-6 flex items-center justify-between gap-3 flex-wrap">
+    <div className="rounded-lg bg-brand-pink-light border border-brand-pink p-3 text-sm text-brand-blue mb-6 flex items-center justify-between gap-3 flex-wrap">
       <span>Verifica tu correo para poder inscribirte en el curso.</span>
       <div className="flex items-center gap-2">
         {mensaje && <span className="text-xs">{mensaje}</span>}
@@ -230,7 +230,7 @@ function PantallaListaParaPractica({
                 <p className="font-display font-semibold text-brand-blue">
                   {instructor.userId.nombre} {instructor.userId.apellido}
                 </p>
-                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-brand-pinkLight text-brand-pink shrink-0">
+                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-brand-pink-light text-brand-pink shrink-0">
                   {instructor.userId.provincia}
                 </span>
               </div>
@@ -427,7 +427,7 @@ function DashboardContenido() {
         )}
 
         {error && !cargando && (
-          <div className="rounded-lg bg-brand-pinkLight border border-brand-pink p-4 text-brand-blue text-sm">
+          <div className="rounded-lg bg-brand-pink-light border border-brand-pink p-4 text-brand-blue text-sm">
             No pudimos cargar tu información. Intenta de nuevo en unos minutos.
           </div>
         )}

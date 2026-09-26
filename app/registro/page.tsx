@@ -6,40 +6,16 @@ import Link from "next/link";
 import Script from "next/script";
 import { useAuth } from "@/contexts/AuthContext";
 
-const PROVINCIAS = [
-  "Azua",
-  "Bahoruco",
-  "Barahona",
-  "Dajabon",
-  "Distrito Nacional",
-  "Duarte",
-  "Elias Pina",
-  "El Seibo",
-  "Espaillat",
-  "Hato Mayor",
-  "Hermanas Mirabal",
-  "Independencia",
-  "La Altagracia",
-  "La Romana",
-  "La Vega",
-  "Maria Trinidad Sanchez",
-  "Monsenor Nouel",
-  "Monte Cristi",
-  "Monte Plata",
-  "Pedernales",
-  "Peravia",
-  "Puerto Plata",
-  "Samana",
-  "San Cristobal",
-  "San Jose de Ocoa",
-  "San Juan",
-  "San Pedro de Macoris",
-  "Sanchez Ramirez",
-  "Santiago",
-  "Santiago Rodriguez",
-  "Santo Domingo",
-  "Valverde",
-];
+// FIX (sincronización de listas): antes esta lista de 32 provincias vivía
+// hardcodeada aquí, separada de `src/data/municipiosRD.js` en el backend
+// (la fuente que SÍ usan /admin/choferes y /admin/cobertura-practica vía
+// GET /ubicaciones/provincias-municipios). Hoy coincidían las dos copias,
+// pero era pura casualidad de mantenimiento — si alguien corrige o agrega
+// una provincia en el backend (pendiente real: verificar municipiosRD.js
+// contra una fuente oficial JCE/ONE, ver HISTORIAL_MODIFICACIONES.md) esta
+// página se desincroniza en silencio. Ahora las provincias salen del mismo
+// array `provinciasConMunicipios` que ya se traía para los municipios —
+// una sola fuente de verdad para todo el <select> en cascada.
 
 type FormularioRegistro = {
   nombre: string;
@@ -304,9 +280,9 @@ function RegistroContenido() {
               <option value="" disabled>
                 Selecciona tu provincia
               </option>
-              {PROVINCIAS.map((p) => (
-                <option key={p} value={p}>
-                  {p}
+              {provinciasConMunicipios.map((p) => (
+                <option key={p.provincia} value={p.provincia}>
+                  {p.provincia}
                 </option>
               ))}
             </select>
