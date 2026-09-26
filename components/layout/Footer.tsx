@@ -85,8 +85,8 @@ export default function Footer() {
           © {new Date().getFullYear()} Muvo RD Vial. Todos los derechos
           reservados.
         </p>
-        {/* NUEVO (17/09/2026): crédito del desarrollador, a pedido. */}
-        <p className="mt-1">
+
+        {/* <p className="mt-1">
           Desarrollado por{" "}
           <a
             href="mailto:ramndiaz@gmail.com"
@@ -94,7 +94,7 @@ export default function Footer() {
           >
             Ramón Díaz
           </a>
-        </p>
+        </p> */}
       </div>
     </footer>
   );
