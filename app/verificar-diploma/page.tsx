@@ -125,7 +125,7 @@ export default function VerificarDiplomaPage() {
         )}
 
         {estado === "error" && (
-          <div className="rounded-xl bg-brand-pinkLight border border-brand-pink p-6 text-center text-brand-blue">
+          <div className="rounded-xl bg-brand-pink-light border border-brand-pink p-6 text-center text-brand-blue">
             No pudimos conectarnos con el servidor. Intenta de nuevo en unos
             minutos.
           </div>

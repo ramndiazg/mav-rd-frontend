@@ -285,7 +285,7 @@ function DiplomaContenido() {
       <div className="max-w-xl mx-auto">
         <Link
           href="/dashboard"
-          className="text-sm text-brand-blueLight hover:underline"
+          className="text-sm text-brand-blue-light hover:underline"
         >
           ← Volver a mi panel
         </Link>
@@ -295,7 +295,7 @@ function DiplomaContenido() {
         )}
 
         {!cargando && error && (
-          <div className="mt-6 rounded-lg bg-brand-pinkLight border border-brand-pink p-4 text-brand-blue text-sm">
+          <div className="mt-6 rounded-lg bg-brand-pink-light border border-brand-pink p-4 text-brand-blue text-sm">
             {error}
           </div>
         )}
@@ -316,7 +316,7 @@ function DiplomaContenido() {
         {!cargando && diploma && (
           <>
             <div className="mt-6 rounded-xl bg-white border border-neutral-bg p-8 text-center">
-              <div className="w-16 h-16 rounded-full bg-brand-pinkLight flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 rounded-full bg-brand-pink-light flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl">🎓</span>
               </div>
               <h1 className="font-display text-2xl font-bold text-brand-blue mb-1">
@@ -346,7 +346,7 @@ function DiplomaContenido() {
 
               <p className="text-xs text-neutral-text">
                 Cualquiera puede confirmar la autenticidad de este diploma en{" "}
-                <Link href="/verificar-diploma" className="text-brand-blueLight hover:underline">
+                <Link href="/verificar-diploma" className="text-brand-blue-light hover:underline">
                   la página de verificación
                 </Link>{" "}
                 usando el código de arriba.

@@ -61,7 +61,7 @@ export default async function NoticiasPage() {
         </p>
 
         {error && (
-          <div className="rounded-lg bg-brand-pinkLight border border-brand-pink p-4 text-brand-blue">
+          <div className="rounded-lg bg-brand-pink-light border border-brand-pink p-4 text-brand-blue">
             No pudimos cargar las noticias en este momento. Intenta de nuevo en unos minutos.
           </div>
         )}

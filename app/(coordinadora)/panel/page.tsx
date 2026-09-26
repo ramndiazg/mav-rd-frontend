@@ -95,7 +95,7 @@ function GrupoTarjetas({
             <Link
               key={href}
               href={href}
-              className={`relative rounded-xl border p-5 hover:shadow-lg transition-shadow ${acento ? "bg-brand-pinkLight border-brand-pink" : "bg-white border-neutral-bg"
+              className={`relative rounded-xl border p-5 hover:shadow-lg transition-shadow ${acento ? "bg-brand-pink-light border-brand-pink" : "bg-white border-neutral-bg"
                 }`}
             >
               {conteo > 0 && (

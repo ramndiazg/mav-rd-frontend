@@ -534,7 +534,7 @@ export default function PanelAulaVirtualPage() {
                     <div className="flex gap-2 mt-3">
                       <button
                         onClick={() => abrirEdicionContenido(item)}
-                        className="text-xs font-medium px-3 py-1.5 rounded-full bg-brand-blueLight text-white hover:opacity-90"
+                        className="text-xs font-medium px-3 py-1.5 rounded-full bg-brand-blue-light text-white hover:opacity-90"
                       >
                         Editar
                       </button>
@@ -560,7 +560,7 @@ export default function PanelAulaVirtualPage() {
                 <button
                   type="button"
                   onClick={() => setEditandoContenidoId(null)}
-                  className="text-xs text-brand-blueLight hover:underline"
+                  className="text-xs text-brand-blue-light hover:underline"
                 >
                   Cancelar
                 </button>
@@ -628,14 +628,14 @@ export default function PanelAulaVirtualPage() {
                     className="mt-1 w-full text-sm"
                   />
                   {subiendoPDFContenido && (
-                    <p className="text-xs text-brand-blueLight mt-1">Subiendo...</p>
+                    <p className="text-xs text-brand-blue-light mt-1">Subiendo...</p>
                   )}
                   {formContenido.url && !subiendoPDFContenido && (
                     <a
                       href={formContenido.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-xs text-brand-blueLight hover:underline mt-2 inline-block"
+                      className="text-xs text-brand-blue-light hover:underline mt-2 inline-block"
                     >
                       PDF cargado ↗
                     </a>
@@ -664,7 +664,7 @@ export default function PanelAulaVirtualPage() {
                   className="mt-1 w-full text-sm"
                 />
                 {subiendoImagenContenido && (
-                  <p className="text-xs text-brand-blueLight mt-1">Subiendo...</p>
+                  <p className="text-xs text-brand-blue-light mt-1">Subiendo...</p>
                 )}
                 {formContenido.imagenUrl && !subiendoImagenContenido && (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -731,7 +731,7 @@ export default function PanelAulaVirtualPage() {
                   <button
                     key={est._id}
                     onClick={() => seleccionarEstudiante(est)}
-                    className="text-left rounded-lg bg-white border border-neutral-bg p-3 hover:border-brand-blueLight transition-colors"
+                    className="text-left rounded-lg bg-white border border-neutral-bg p-3 hover:border-brand-blue-light transition-colors"
                   >
                     <p className="font-medium text-brand-blue text-sm">
                       {est.nombre} {est.apellido}
@@ -754,7 +754,7 @@ export default function PanelAulaVirtualPage() {
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
               placeholder="Nombre, cédula o email..."
-              className="flex-1 rounded-lg border border-neutral-bg px-4 py-2 text-sm focus:outline-none focus:border-brand-blueLight"
+              className="flex-1 rounded-lg border border-neutral-bg px-4 py-2 text-sm focus:outline-none focus:border-brand-blue-light"
             />
             <button
               type="submit"
@@ -771,7 +771,7 @@ export default function PanelAulaVirtualPage() {
                 <button
                   key={est._id}
                   onClick={() => seleccionarEstudiante(est)}
-                  className="text-left rounded-lg bg-white border border-neutral-bg p-4 hover:border-brand-blueLight transition-colors"
+                  className="text-left rounded-lg bg-white border border-neutral-bg p-4 hover:border-brand-blue-light transition-colors"
                 >
                   <p className="font-medium text-brand-blue">
                     {est.nombre} {est.apellido}
@@ -799,7 +799,7 @@ export default function PanelAulaVirtualPage() {
                     setProgreso(null);
                     setMensaje(null);
                   }}
-                  className="text-xs text-brand-blueLight hover:underline"
+                  className="text-xs text-brand-blue-light hover:underline"
                 >
                   Cambiar estudiante
                 </button>
@@ -810,7 +810,7 @@ export default function PanelAulaVirtualPage() {
               )}
 
               {!cargandoProgreso && sinPago && (
-                <div className="rounded-lg bg-brand-pinkLight border border-brand-pink p-4 text-sm text-brand-blue">
+                <div className="rounded-lg bg-brand-pink-light border border-brand-pink p-4 text-sm text-brand-blue">
                   Esta estudiante no tiene un pago confirmado — no se puede
                   desbloquear ninguna sesión todavía. Confírmalo primero desde el
                   panel de Pagos.
@@ -874,7 +874,7 @@ export default function PanelAulaVirtualPage() {
         <div
           className={`mt-6 rounded-lg p-4 text-sm ${mensaje.tipo === "ok"
             ? "bg-status-success/10 border border-status-success text-status-success"
-            : "bg-brand-pinkLight border border-brand-pink text-brand-blue"
+            : "bg-brand-pink-light border border-brand-pink text-brand-blue"
             }`}
         >
           {mensaje.texto}

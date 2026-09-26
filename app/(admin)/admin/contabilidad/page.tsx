@@ -505,7 +505,7 @@ export default function PanelContabilidadPage() {
             href={`${process.env.NEXT_PUBLIC_API_URL}/contabilidad/balances/${b._id}/descargar?token=${token}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-between rounded-lg bg-white border border-neutral-bg p-4 hover:border-brand-blueLight transition-colors"
+            className="flex items-center justify-between rounded-lg bg-white border border-neutral-bg p-4 hover:border-brand-blue-light transition-colors"
           >
             <p className="text-sm font-medium text-brand-blue">
               {MESES[b.mes - 1]} {b.anio}
@@ -524,7 +524,7 @@ export default function PanelContabilidadPage() {
         <div
           className={`mt-6 rounded-lg p-4 text-sm ${mensaje.tipo === "ok"
             ? "bg-status-success/10 border border-status-success text-status-success"
-            : "bg-brand-pinkLight border border-brand-pink text-brand-blue"
+            : "bg-brand-pink-light border border-brand-pink text-brand-blue"
             }`}
         >
           {mensaje.texto}

@@ -102,7 +102,7 @@ function LoginContenido() {
               </label>
               <Link
                 href="/olvide-password"
-                className="text-xs text-brand-blueLight hover:underline"
+                className="text-xs text-brand-blue-light hover:underline"
               >
                 ¿Olvidaste tu contraseña?
               </Link>

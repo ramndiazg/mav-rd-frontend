@@ -121,7 +121,7 @@ export default function AsistentePage() {
               className={`max-w-[80%] rounded-lg p-3 text-sm whitespace-pre-wrap ${m.rol === "usuario"
                 ? "bg-brand-blue text-white"
                 : m.esError
-                  ? "bg-brand-pinkLight border border-brand-pink text-brand-blue"
+                  ? "bg-brand-pink-light border border-brand-pink text-brand-blue"
                   : "bg-neutral-bg text-neutral-text"
                 }`}
             >
@@ -149,7 +149,7 @@ export default function AsistentePage() {
               type="button"
               onClick={() => enviarPregunta(sugerida)}
               disabled={enviando}
-              className="rounded-lg border border-brand-blue/20 text-brand-blueLight text-xs px-3 py-1.5 hover:bg-brand-blue/5 disabled:opacity-60"
+              className="rounded-lg border border-brand-blue/20 text-brand-blue-light text-xs px-3 py-1.5 hover:bg-brand-blue/5 disabled:opacity-60"
             >
               {sugerida}
             </button>

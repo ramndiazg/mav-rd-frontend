@@ -184,7 +184,7 @@ function ExamenContenido() {
             </p>
             <Link
               href="/dashboard"
-              className="text-brand-blueLight hover:underline text-sm"
+              className="text-brand-blue-light hover:underline text-sm"
             >
               Volver a mi panel
             </Link>
@@ -192,7 +192,7 @@ function ExamenContenido() {
         )}
 
         {!cargando && error && !resultado && (
-          <div className="rounded-lg bg-brand-pinkLight border border-brand-pink p-4 text-brand-blue text-sm mb-6">
+          <div className="rounded-lg bg-brand-pink-light border border-brand-pink p-4 text-brand-blue text-sm mb-6">
             {error}
           </div>
         )}
@@ -212,7 +212,7 @@ function ExamenContenido() {
             </p>
 
             {resultado.aprobado && resultado.proximaSesionDisponibleEn && (
-              <div className="rounded-lg bg-brand-pinkLight border border-brand-pink/30 p-4 text-sm text-brand-blue mb-6">
+              <div className="rounded-lg bg-brand-pink-light border border-brand-pink/30 p-4 text-sm text-brand-blue mb-6">
                 Ya puedes empezar a estudiar la siguiente sesión ahora mismo.
                 Su examen se habilitará el{" "}
                 <strong>
@@ -231,7 +231,7 @@ function ExamenContenido() {
                     key={i}
                     className={`rounded-xl border p-4 ${p.acerto
                       ? "border-status-success bg-status-success/5"
-                      : "border-brand-pink bg-brand-pinkLight"
+                      : "border-brand-pink bg-brand-pink-light"
                       }`}
                   >
                     <p className="font-medium text-neutral-text mb-2">
@@ -305,8 +305,8 @@ function ExamenContenido() {
                       <label
                         key={j}
                         className={`flex items-center gap-2 rounded-lg border p-3 cursor-pointer text-sm transition-colors ${respuestas[i] === j
-                          ? "border-brand-pink bg-brand-pinkLight"
-                          : "border-neutral-bg hover:border-brand-blueLight"
+                          ? "border-brand-pink bg-brand-pink-light"
+                          : "border-neutral-bg hover:border-brand-blue-light"
                           }`}
                       >
                         <input

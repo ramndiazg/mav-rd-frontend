@@ -441,7 +441,7 @@ function InscripcionContenido() {
               key={p.valor}
               type="button"
               onClick={() => setPrograma(p.valor)}
-              className={`text-left rounded-xl bg-white overflow-hidden border transition-colors ${programa === p.valor ? "border-brand-pink ring-2 ring-brand-pink" : "border-neutral-bg hover:border-brand-blueLight"
+              className={`text-left rounded-xl bg-white overflow-hidden border transition-colors ${programa === p.valor ? "border-brand-pink ring-2 ring-brand-pink" : "border-neutral-bg hover:border-brand-blue-light"
                 }`}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -472,7 +472,7 @@ function InscripcionContenido() {
             "estandar"; Motorizados y Pesados son teóricos en todo el país,
             así que ahí el aviso sobraría. */}
           {programa === "estandar" && cobertura === false && (
-            <div className="mb-8 rounded-xl border border-brand-blueLight bg-brand-blueLight/10 px-5 py-4">
+            <div className="mb-8 rounded-xl border border-brand-blue-light bg-brand-blue-light/10 px-5 py-4">
               <p className="text-sm text-neutral-text">
                 {usuario?.municipio ? (
                   <>
@@ -530,7 +530,7 @@ function InscripcionContenido() {
                         <li key={caracteristica} className="flex gap-2">
                           <CheckCircle2
                             size={18}
-                            className={`shrink-0 ${destacado ? "text-brand-pink" : "text-brand-blueLight"}`}
+                            className={`shrink-0 ${destacado ? "text-brand-pink" : "text-brand-blue-light"}`}
                           />
                           {caracteristica}
                         </li>
@@ -728,7 +728,7 @@ function InscripcionContenido() {
               </h3>
 
               {inscripcion?.estadoPago === "rechazado" && (
-                <div className="text-sm bg-brand-pinkLight border border-brand-pink rounded-lg p-3 mb-4 text-brand-blue">
+                <div className="text-sm bg-brand-pink-light border border-brand-pink rounded-lg p-3 mb-4 text-brand-blue">
                   Tu comprobante anterior no fue validado
                   {inscripcion.notaRechazo && `: ${inscripcion.notaRechazo}`}.
                   Puedes corregirlo y reenviarlo abajo.
@@ -808,7 +808,7 @@ function InscripcionContenido() {
                   <div
                     className={`rounded-lg p-3 text-sm ${mensaje.tipo === "ok"
                       ? "bg-status-success/10 border border-status-success text-status-success"
-                      : "bg-brand-pinkLight border border-brand-pink text-brand-blue"
+                      : "bg-brand-pink-light border border-brand-pink text-brand-blue"
                       }`}
                   >
                     {mensaje.texto}

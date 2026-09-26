@@ -198,7 +198,7 @@ export default function NotificacionesPage() {
                   <div className="flex items-center gap-2 mb-1">
                     <span
                       className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${d.tipo === "email"
-                        ? "bg-brand-blueLight text-white"
+                        ? "bg-brand-blue-light text-white"
                         : "bg-brand-pink text-white"
                         }`}
                     >
@@ -214,19 +214,19 @@ export default function NotificacionesPage() {
                 <div className="flex gap-2 shrink-0">
                   <button
                     onClick={() => toggleActivo(d)}
-                    className="text-xs font-medium px-3 py-1.5 rounded-full bg-neutral-bg text-neutral-text hover:bg-brand-pinkLight"
+                    className="text-xs font-medium px-3 py-1.5 rounded-full bg-neutral-bg text-neutral-text hover:bg-brand-pink-light"
                   >
                     {d.activo ? "Desactivar" : "Activar"}
                   </button>
                   <button
                     onClick={() => abrirEdicion(d)}
-                    className="text-xs font-medium px-3 py-1.5 rounded-full bg-brand-blueLight text-white hover:opacity-90"
+                    className="text-xs font-medium px-3 py-1.5 rounded-full bg-brand-blue-light text-white hover:opacity-90"
                   >
                     Editar
                   </button>
                   <button
                     onClick={() => eliminar(d)}
-                    className="text-xs font-medium px-3 py-1.5 rounded-full bg-white border border-brand-pink text-brand-pink hover:bg-brand-pinkLight"
+                    className="text-xs font-medium px-3 py-1.5 rounded-full bg-white border border-brand-pink text-brand-pink hover:bg-brand-pink-light"
                   >
                     Eliminar
                   </button>
@@ -246,7 +246,7 @@ export default function NotificacionesPage() {
             <button
               type="button"
               onClick={() => setEditandoId(null)}
-              className="text-xs text-brand-blueLight hover:underline"
+              className="text-xs text-brand-blue-light hover:underline"
             >
               Cancelar
             </button>
@@ -309,7 +309,7 @@ export default function NotificacionesPage() {
         <div
           className={`mt-6 rounded-lg p-4 text-sm ${mensaje.tipo === "ok"
             ? "bg-status-success/10 border border-status-success text-status-success"
-            : "bg-brand-pinkLight border border-brand-pink text-brand-blue"
+            : "bg-brand-pink-light border border-brand-pink text-brand-blue"
             }`}
         >
           {mensaje.texto}

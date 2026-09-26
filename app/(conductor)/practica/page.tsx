@@ -116,7 +116,7 @@ export default function PracticaPendientesPage() {
               <p className="font-medium text-brand-blue text-sm">
                 {p.nombre} {p.apellido}
                 {p.tipoPlan && (
-                  <span className="ml-2 text-[10px] font-medium px-2 py-0.5 rounded-full bg-brand-pinkLight text-brand-pink">
+                  <span className="ml-2 text-[10px] font-medium px-2 py-0.5 rounded-full bg-brand-pink-light text-brand-pink">
                     Plan {p.tipoPlan}
                   </span>
                 )}
@@ -149,7 +149,7 @@ export default function PracticaPendientesPage() {
         <div
           className={`mt-6 rounded-lg p-4 text-sm ${mensaje.tipo === "ok"
             ? "bg-status-success/10 border border-status-success text-status-success"
-            : "bg-brand-pinkLight border border-brand-pink text-brand-blue"
+            : "bg-brand-pink-light border border-brand-pink text-brand-blue"
             }`}
         >
           {mensaje.texto}

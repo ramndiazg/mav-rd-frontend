@@ -319,7 +319,7 @@ export default function ContenidoPaginaPage() {
               className="text-sm mb-3"
             />
             {subiendoImagenClave === campo.clave && (
-              <p className="text-xs text-brand-blueLight mb-3">Subiendo...</p>
+              <p className="text-xs text-brand-blue-light mb-3">Subiendo...</p>
             )}
             {valoresNuevos[campo.clave] && (
               // eslint-disable-next-line @next/next/no-img-element
@@ -374,7 +374,7 @@ export default function ContenidoPaginaPage() {
             className="text-sm mb-3"
           />
           {subiendoImagenClave === campo.clave && (
-            <p className="text-xs text-brand-blueLight mb-3">Subiendo...</p>
+            <p className="text-xs text-brand-blue-light mb-3">Subiendo...</p>
           )}
           {cambio && (
             <button
@@ -422,7 +422,7 @@ export default function ContenidoPaginaPage() {
                     href={`https://youtu.be/${video.youtubeId}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs text-brand-blueLight hover:underline mt-1 inline-block"
+                    className="text-xs text-brand-blue-light hover:underline mt-1 inline-block"
                   >
                     Ver en YouTube ↗
                   </a>
@@ -430,7 +430,7 @@ export default function ContenidoPaginaPage() {
               </div>
             ))}
           </div>
-          <button onClick={agregarVideo} className="text-sm text-brand-blueLight hover:underline mb-3 block">
+          <button onClick={agregarVideo} className="text-sm text-brand-blue-light hover:underline mb-3 block">
             + Agregar video
           </button>
           {cambio && (
@@ -474,7 +474,7 @@ export default function ContenidoPaginaPage() {
               </div>
             ))}
           </div>
-          <button onClick={agregarLugar} className="text-sm text-brand-blueLight hover:underline mb-3 block">
+          <button onClick={agregarLugar} className="text-sm text-brand-blue-light hover:underline mb-3 block">
             + Agregar sede
           </button>
           {cambio && (
@@ -544,7 +544,7 @@ export default function ContenidoPaginaPage() {
               <button
                 key={a.id}
                 onClick={() => setAreaActiva(a.id)}
-                className="rounded-xl bg-white border border-neutral-bg p-6 text-left hover:border-brand-blueLight transition-colors"
+                className="rounded-xl bg-white border border-neutral-bg p-6 text-left hover:border-brand-blue-light transition-colors"
               >
                 <p className="font-display font-semibold text-brand-blue">{a.titulo}</p>
                 <p className="text-xs text-neutral-text mt-1">{a.campos.length} elementos editables</p>
@@ -558,7 +558,7 @@ export default function ContenidoPaginaPage() {
         <>
           <button
             onClick={() => setAreaActiva(null)}
-            className="text-sm text-brand-blueLight hover:underline mb-4 block"
+            className="text-sm text-brand-blue-light hover:underline mb-4 block"
           >
             ← Volver a las áreas
           </button>
@@ -573,7 +573,7 @@ export default function ContenidoPaginaPage() {
         <div
           className={`mt-6 rounded-lg p-4 text-sm ${mensaje.tipo === "ok"
             ? "bg-status-success/10 border border-status-success text-status-success"
-            : "bg-brand-pinkLight border border-brand-pink text-brand-blue"
+            : "bg-brand-pink-light border border-brand-pink text-brand-blue"
             }`}
         >
           {mensaje.texto}

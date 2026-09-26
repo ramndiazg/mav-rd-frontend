@@ -240,7 +240,7 @@ export default function PanelEstudiantesPage() {
   const etiquetaPago: Record<EstadoMostrado, { texto: string; clase: string }> = {
     pagado: { texto: "Pagó", clase: "bg-status-success text-white" },
     pendiente: { texto: "Pago pendiente", clase: "bg-brand-pink text-white" },
-    pendiente_verificacion: { texto: "Voucher por verificar", clase: "bg-brand-blueLight text-white" },
+    pendiente_verificacion: { texto: "Voucher por verificar", clase: "bg-brand-blue-light text-white" },
     rechazado: { texto: "Voucher rechazado", clase: "bg-neutral-text text-white" },
     sin_inscripcion: { texto: "Sin inscripción", clase: "bg-neutral-bg text-neutral-text" },
   };
@@ -283,7 +283,7 @@ export default function PanelEstudiantesPage() {
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
               placeholder="Nombre, cédula o email..."
-              className="flex-1 rounded-lg border border-neutral-bg px-4 py-2 text-sm focus:outline-none focus:border-brand-blueLight"
+              className="flex-1 rounded-lg border border-neutral-bg px-4 py-2 text-sm focus:outline-none focus:border-brand-blue-light"
             />
             <button
               type="submit"
@@ -333,7 +333,7 @@ export default function PanelEstudiantesPage() {
                 <button
                   key={est._id}
                   onClick={() => seleccionar(est)}
-                  className="flex items-center justify-between text-left rounded-lg bg-white border border-neutral-bg p-4 hover:border-brand-blueLight transition-colors"
+                  className="flex items-center justify-between text-left rounded-lg bg-white border border-neutral-bg p-4 hover:border-brand-blue-light transition-colors"
                 >
                   <div>
                     <p className="font-medium text-brand-blue text-sm">
@@ -385,7 +385,7 @@ export default function PanelEstudiantesPage() {
         <div>
           <button
             onClick={() => setSeleccionada(null)}
-            className="text-sm text-brand-blueLight hover:underline mb-4 block"
+            className="text-sm text-brand-blue-light hover:underline mb-4 block"
           >
             ← Volver a la lista
           </button>
@@ -445,7 +445,7 @@ export default function PanelEstudiantesPage() {
           )}
 
           {!cargandoDetalle && !progreso && (
-            <div className="rounded-lg bg-brand-pinkLight border border-brand-pink p-4 text-sm text-brand-blue mb-4">
+            <div className="rounded-lg bg-brand-pink-light border border-brand-pink p-4 text-sm text-brand-blue mb-4">
               Sin pago confirmado — no tiene progreso todavía.
             </div>
           )}
@@ -495,7 +495,7 @@ export default function PanelEstudiantesPage() {
         <div
           className={`mt-6 rounded-lg p-4 text-sm ${mensaje.tipo === "ok"
             ? "bg-status-success/10 border border-status-success text-status-success"
-            : "bg-brand-pinkLight border border-brand-pink text-brand-blue"
+            : "bg-brand-pink-light border border-brand-pink text-brand-blue"
             }`}
         >
           {mensaje.texto}

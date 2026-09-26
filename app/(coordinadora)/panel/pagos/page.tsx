@@ -298,7 +298,7 @@ export default function PanelPagosPage() {
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
                 placeholder="Nombre, cédula o email de la estudiante..."
-                className="flex-1 rounded-lg border border-neutral-bg px-4 py-2 text-sm focus:outline-none focus:border-brand-blueLight"
+                className="flex-1 rounded-lg border border-neutral-bg px-4 py-2 text-sm focus:outline-none focus:border-brand-blue-light"
               />
               <button
                 type="submit"
@@ -315,7 +315,7 @@ export default function PanelPagosPage() {
                   <button
                     key={est._id}
                     onClick={() => setEstudianteElegida(est)}
-                    className="text-left rounded-lg border border-neutral-bg p-3 hover:border-brand-blueLight transition-colors"
+                    className="text-left rounded-lg border border-neutral-bg p-3 hover:border-brand-blue-light transition-colors"
                   >
                     <p className="font-medium text-brand-blue text-sm">
                       {est.nombre} {est.apellido}
@@ -339,7 +339,7 @@ export default function PanelPagosPage() {
               <button
                 type="button"
                 onClick={() => setEstudianteElegida(null)}
-                className="text-xs text-brand-blueLight hover:underline"
+                className="text-xs text-brand-blue-light hover:underline"
               >
                 Cambiar
               </button>
@@ -472,7 +472,7 @@ export default function PanelPagosPage() {
                         <button
                           onClick={() => rechazarPago(ins)}
                           disabled={procesandoId === ins._id}
-                          className="text-xs font-medium px-3 py-1.5 rounded-full bg-white border border-brand-pink text-brand-pink hover:bg-brand-pinkLight disabled:opacity-60"
+                          className="text-xs font-medium px-3 py-1.5 rounded-full bg-white border border-brand-pink text-brand-pink hover:bg-brand-pink-light disabled:opacity-60"
                         >
                           Rechazar
                         </button>
@@ -496,7 +496,7 @@ export default function PanelPagosPage() {
         <div
           className={`mt-6 rounded-lg p-4 text-sm ${mensaje.tipo === "ok"
             ? "bg-status-success/10 border border-status-success text-status-success"
-            : "bg-brand-pinkLight border border-brand-pink text-brand-blue"
+            : "bg-brand-pink-light border border-brand-pink text-brand-blue"
             }`}
         >
           {mensaje.texto}

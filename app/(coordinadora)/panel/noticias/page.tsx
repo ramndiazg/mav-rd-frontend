@@ -280,13 +280,13 @@ export default function PanelNoticiasPage() {
                   <div className="flex gap-2 shrink-0">
                     <button
                       onClick={() => abrirEdicion(noticia)}
-                      className="text-xs font-medium px-3 py-1.5 rounded-full bg-brand-blueLight text-white hover:opacity-90"
+                      className="text-xs font-medium px-3 py-1.5 rounded-full bg-brand-blue-light text-white hover:opacity-90"
                     >
                       Editar
                     </button>
                     <button
                       onClick={() => eliminar(noticia)}
-                      className="text-xs font-medium px-3 py-1.5 rounded-full bg-white border border-brand-pink text-brand-pink hover:bg-brand-pinkLight"
+                      className="text-xs font-medium px-3 py-1.5 rounded-full bg-white border border-brand-pink text-brand-pink hover:bg-brand-pink-light"
                     >
                       Eliminar
                     </button>
@@ -300,7 +300,7 @@ export default function PanelNoticiasPage() {
                         prev === noticia._id ? null : noticia._id,
                       )
                     }
-                    className="text-xs text-brand-blueLight hover:underline"
+                    className="text-xs text-brand-blue-light hover:underline"
                   >
                     {comentariosAbiertos === noticia._id
                       ? "Ocultar comentarios"
@@ -357,7 +357,7 @@ export default function PanelNoticiasPage() {
             <button
               type="button"
               onClick={() => setEditandoId(null)}
-              className="text-xs text-brand-blueLight hover:underline"
+              className="text-xs text-brand-blue-light hover:underline"
             >
               Cancelar
             </button>
@@ -393,7 +393,7 @@ export default function PanelNoticiasPage() {
               onChange={subirImagen}
               className="mt-1 w-full text-sm"
             />
-            {subiendoImagen && <p className="text-xs text-brand-blueLight mt-1">Subiendo...</p>}
+            {subiendoImagen && <p className="text-xs text-brand-blue-light mt-1">Subiendo...</p>}
             {form.imagenUrl && !subiendoImagen && (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -430,7 +430,7 @@ export default function PanelNoticiasPage() {
         <div
           className={`mt-6 rounded-lg p-4 text-sm ${mensaje.tipo === "ok"
             ? "bg-status-success/10 border border-status-success text-status-success"
-            : "bg-brand-pinkLight border border-brand-pink text-brand-blue"
+            : "bg-brand-pink-light border border-brand-pink text-brand-blue"
             }`}
         >
           {mensaje.texto}

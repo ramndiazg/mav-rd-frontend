@@ -234,7 +234,7 @@ function TestPsicologicoContenido() {
         </div>
 
         {error && (
-          <div className="rounded-lg bg-brand-pinkLight border border-brand-pink p-3 text-sm text-brand-blue mb-4">
+          <div className="rounded-lg bg-brand-pink-light border border-brand-pink p-3 text-sm text-brand-blue mb-4">
             {error}
           </div>
         )}

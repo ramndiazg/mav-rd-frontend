@@ -36,7 +36,7 @@ export default function KitPreparacionPage() {
           <h1 className="font-display text-3xl md:text-4xl font-bold mb-4">
             Kit de Preparacion para tu permiso de aprendizaje en INTRANT
           </h1>
-          <p className="font-body text-brand-blueLight text-lg leading-relaxed">
+          <p className="font-body text-brand-blue-light text-lg leading-relaxed">
             Esta seccion ha sido diseñada para acompañarte en el proceso de
             formacion previo a la optencion de tu permiso de aprendizaje ante el
             INTRANT, materiales de estudio, ejercicios practicos y orientacion para
@@ -52,7 +52,7 @@ export default function KitPreparacionPage() {
           href="https://ov.intrant.gob.do/#/login"
           target="_blank"
           rel="noopener noreferrer"
-          className="rounded-xl bg-white border-2 border-brand-pink p-6 text-center hover:bg-brand-pinkLight transition-colors"
+          className="rounded-xl bg-white border-2 border-brand-pink p-6 text-center hover:bg-brand-pink-light transition-colors"
         >
           <p className="font-display font-semibold text-brand-blue mb-1">
             Simulador de examen INTRANT
@@ -66,7 +66,7 @@ export default function KitPreparacionPage() {
           href="http://wsgeointrant.intrant.gob.do:82/Turnos/Turnos/Domini3"
           target="_blank"
           rel="noopener noreferrer"
-          className="rounded-xl bg-white border-2 border-brand-blue p-6 text-center hover:bg-brand-pinkLight transition-colors"
+          className="rounded-xl bg-white border-2 border-brand-blue p-6 text-center hover:bg-brand-pink-light transition-colors"
         >
           <p className="font-display font-semibold text-brand-blue mb-1">
             Agenda tu cita en INTRANT
@@ -78,7 +78,7 @@ export default function KitPreparacionPage() {
       </section>
 
       <section className="px-6 pb-4 max-w-4xl mx-auto">
-        <div className="rounded-xl bg-brand-pinkLight p-6 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="rounded-xl bg-brand-pink-light p-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="font-body text-neutral-text">
             <strong className="font-display text-brand-blue">
               Minimanual de vehiculos livianos

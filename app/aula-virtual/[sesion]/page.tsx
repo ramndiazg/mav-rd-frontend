@@ -340,7 +340,7 @@ function AulaVirtualContenido() {
       <div className="max-w-3xl mx-auto">
         <Link
           href="/dashboard"
-          className="text-sm text-brand-blueLight hover:underline"
+          className="text-sm text-brand-blue-light hover:underline"
         >
           ← Volver a mi panel
         </Link>
@@ -359,7 +359,7 @@ function AulaVirtualContenido() {
         )}
 
         {!cargando && !bloqueada && error && (
-          <div className="mt-6 rounded-lg bg-brand-pinkLight border border-brand-pink p-4 text-brand-blue text-sm">
+          <div className="mt-6 rounded-lg bg-brand-pink-light border border-brand-pink p-4 text-brand-blue text-sm">
             {error}
           </div>
         )}
@@ -440,7 +440,7 @@ function AulaVirtualContenido() {
                         }
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="mb-3 flex items-center justify-center rounded-lg border border-brand-blue/15 bg-neutral-bg px-4 py-8 text-sm font-medium text-brand-blueLight hover:bg-brand-blue/5 hover:underline"
+                        className="mb-3 flex items-center justify-center rounded-lg border border-brand-blue/15 bg-neutral-bg px-4 py-8 text-sm font-medium text-brand-blue-light hover:bg-brand-blue/5 hover:underline"
                       >
                         Abrir PDF ↗
                       </a>
@@ -451,7 +451,7 @@ function AulaVirtualContenido() {
                         href={item.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="mb-3 flex items-center justify-center rounded-lg border border-brand-blue/15 bg-neutral-bg px-4 py-8 text-sm font-medium text-brand-blueLight hover:bg-brand-blue/5 hover:underline"
+                        className="mb-3 flex items-center justify-center rounded-lg border border-brand-blue/15 bg-neutral-bg px-4 py-8 text-sm font-medium text-brand-blue-light hover:bg-brand-blue/5 hover:underline"
                       >
                         Abrir enlace ↗
                       </a>
