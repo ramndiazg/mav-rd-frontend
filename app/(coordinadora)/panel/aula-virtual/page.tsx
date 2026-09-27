@@ -18,23 +18,35 @@ type Progreso = {
   // NUEVO (13/09/2026): decide qué Sesion (de qué programa) desbloquear —
   // ver models/ProgresoEstudiante.js.
   programa?: Programa;
+  // NUEVO (26/09/2026): junto con `programa`, decide el `programaContenido`
+  // real (ver utils/resolverProgramaContenido.js en el backend) — una
+  // estudiante del plan "fundacion" tiene programa "estandar" igual que
+  // normal/vip, pero su teoría vive en un programaContenido distinto.
+  tipoPlan?: string | null;
 };
 
 // ACTUALIZADO (13/09/2026): incluye programaContenido — con Motorizados/
 // Pesados ya sembrados, `numero` se repite entre programas (ver
 // models/Sesion.js), así que la UI necesita saber a qué programa
 // pertenece cada Sesion para poder filtrar/agrupar.
+//
+// ACTUALIZADO (26/09/2026): se suma "estandar-fundacion" — la teoría
+// propia del plan Fundación dentro de Categoría 02 (ver
+// utils/resolverProgramaContenido.js en el backend). No es un programa de
+// negocio nuevo (Plan.programa sigue siendo "estandar" para los 3 planes
+// de Categoría 02), es solo la clave de contenido.
 type Sesion = {
   _id: string;
   numero: number;
   titulo: string;
-  programaContenido: "estandar" | "motorizados" | "pesados";
+  programaContenido: "estandar" | "estandar-fundacion" | "motorizados" | "pesados";
 };
 
-type Programa = "estandar" | "motorizados" | "pesados";
+type Programa = "estandar" | "estandar-fundacion" | "motorizados" | "pesados";
 
 const PROGRAMAS: { valor: Programa; etiqueta: string }[] = [
-  { valor: "estandar", etiqueta: "Categoría 02 — Livianos" },
+  { valor: "estandar", etiqueta: "Categoría 02 — Livianos (Normal/VIP)" },
+  { valor: "estandar-fundacion", etiqueta: "Categoría 02 — Fundación" },
   { valor: "motorizados", etiqueta: "Categoría 01 — Motocicletas" },
   { valor: "pesados", etiqueta: "Categoría 03/04 — Pesados" },
 ];
@@ -426,11 +438,24 @@ export default function PanelAulaVirtualPage() {
   // seleccionada (progreso.programa, default "estandar" por si el dato es
   // viejo y no lo tiene). Sin este filtro, con `numero` repetido entre
   // programas, se mostrarían sesiones duplicadas/ambiguas ("Sesión 1" x3).
+  //
+  // ACTUALIZADO (26/09/2026): "desbloquear" ahora también mira
+  // `progreso.tipoPlan` — mismo criterio que
+  // utils/resolverProgramaContenido.js en el backend (duplicado acá a
+  // propósito, es una función de una línea; si el criterio crece, vale la
+  // pena exponerlo como endpoint en vez de mantenerlo en dos lugares).
+  // Una estudiante con programa "estandar" y plan "fundacion" tiene su
+  // teoría en "estandar-fundacion", no en "estandar".
+  const programaContenidoDeLaEstudiante =
+    progreso?.programa === "estandar" && progreso?.tipoPlan === "fundacion"
+      ? "estandar-fundacion"
+      : progreso?.programa || "estandar";
+
   const sesionesContenido = sesiones.filter(
     (s) => s.programaContenido === programaSeleccionado,
   );
   const sesionesDesbloquear = sesiones.filter(
-    (s) => s.programaContenido === (progreso?.programa || "estandar"),
+    (s) => s.programaContenido === programaContenidoDeLaEstudiante,
   );
 
   return (

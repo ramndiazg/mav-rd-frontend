@@ -6,17 +6,23 @@ import { useAuth } from "@/contexts/AuthContext";
 // ACTUALIZADO (13/09/2026): incluye programaContenido — ver
 // panel/aula-virtual/page.tsx, mismo motivo (numero repetido entre
 // programas desde que existen Motorizados/Pesados).
+//
+// ACTUALIZADO (26/09/2026): se suma "estandar-fundacion" — banco de
+// preguntas propio para la teoría del plan Fundación, distinto del de
+// normal/vip aunque comparten Categoría 02. Ver
+// utils/resolverProgramaContenido.js en el backend.
 type Sesion = {
   _id: string;
   numero: number;
   titulo: string;
-  programaContenido: "estandar" | "motorizados" | "pesados";
+  programaContenido: "estandar" | "estandar-fundacion" | "motorizados" | "pesados";
 };
 
-type Programa = "estandar" | "motorizados" | "pesados";
+type Programa = "estandar" | "estandar-fundacion" | "motorizados" | "pesados";
 
 const PROGRAMAS: { valor: Programa; etiqueta: string }[] = [
-  { valor: "estandar", etiqueta: "Categoría 02 — Livianos" },
+  { valor: "estandar", etiqueta: "Categoría 02 — Livianos (Normal/VIP)" },
+  { valor: "estandar-fundacion", etiqueta: "Categoría 02 — Fundación" },
   { valor: "motorizados", etiqueta: "Categoría 01 — Motocicletas" },
   { valor: "pesados", etiqueta: "Categoría 03/04 — Pesados" },
 ];
