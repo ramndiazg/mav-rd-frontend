@@ -451,7 +451,10 @@ function InscripcionContenido() {
                 }`}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={p.imagen} alt={p.nombre} className="w-full h-32 object-cover" />
+              {/* ACTUALIZADO (27/09/2026): object-left — ver misma nota en
+                  app/page.tsx. Evita que el recorte centrado se coma el
+                  logo/texto pegado al borde izquierdo de estos banners. */}
+              <img src={p.imagen} alt={p.nombre} className="w-full h-32 object-cover object-left" />
               <div className="p-5">
                 <h3 className="font-display font-bold text-brand-blue text-lg mb-1">
                   {p.nombre}

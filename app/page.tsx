@@ -369,7 +369,13 @@ export default async function Home() {
                   src={categoria.imagen}
                   alt={categoria.nombre}
                   fill
-                  className="object-cover"
+                  // ACTUALIZADO (27/09/2026): object-left en vez del
+                  // object-cover centrado por defecto — el logo y el
+                  // texto de estos banners están pegados al borde
+                  // izquierdo del diseño, así que un recorte centrado se
+                  // los comía. Anclando a la izquierda, lo que se recorta
+                  // siempre es el margen "seguro" de la derecha.
+                  className="object-cover object-left"
                 />
               </div>
               <div className="p-6">
