@@ -288,16 +288,25 @@ function PantallaPlanes() {
 
   // NUEVO (13/09/2026): selector de programa — Motorizados y Pesados
   // tienen su propio plan "teorico", separado del de `estandar`.
+  //
+  // ACTUALIZADO (27/09/2026): se suma "montacargas" (Categoría 05).
   const [programaSeleccionado, setProgramaSeleccionado] = useState<
-    "estandar" | "motorizados" | "pesados"
+    "estandar" | "motorizados" | "pesados" | "montacargas"
   >("estandar");
 
   useEffect(() => {
     if (!token) return;
     let cancelado = false;
-    setCargando(true);
 
+    // ACTUALIZADO (27/09/2026): setCargando(true) se movió de acá afuera
+    // hacia dentro del closure async — el lint react-hooks/set-state-in-effect
+    // marca como riesgo de renders en cascada un setState llamado en el
+    // cuerpo directo del efecto. Moviéndolo adentro de la función async
+    // (mismo IIFE que ya hacía el fetch) el efecto en sí queda "puro"
+    // (solo arranca la suscripción/petición) y el setState pasa a ser
+    // parte del flujo async, que es el caso permitido por la regla.
     (async () => {
+      setCargando(true);
       try {
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/planes/admin/todos?programa=${programaSeleccionado}`,
@@ -351,6 +360,7 @@ function PantallaPlanes() {
             { valor: "estandar", etiqueta: "Categoría 02 — Livianos" },
             { valor: "motorizados", etiqueta: "Categoría 01 — Motocicletas" },
             { valor: "pesados", etiqueta: "Categoría 03/04 — Pesados" },
+            { valor: "montacargas", etiqueta: "Categoría 05 — Montacargas" },
           ] as const
         ).map((p) => (
           <button

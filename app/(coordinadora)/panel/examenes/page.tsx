@@ -11,20 +11,33 @@ import { useAuth } from "@/contexts/AuthContext";
 // preguntas propio para la teoría del plan Fundación, distinto del de
 // normal/vip aunque comparten Categoría 02. Ver
 // utils/resolverProgramaContenido.js en el backend.
+// ACTUALIZADO (27/09/2026): se suma "montacargas" (Categoría 05 —
+// Operador de Equipos), mismo patrón que Motorizados/Pesados.
 type Sesion = {
   _id: string;
   numero: number;
   titulo: string;
-  programaContenido: "estandar" | "estandar-fundacion" | "motorizados" | "pesados";
+  programaContenido:
+  | "estandar"
+  | "estandar-fundacion"
+  | "motorizados"
+  | "pesados"
+  | "montacargas";
 };
 
-type Programa = "estandar" | "estandar-fundacion" | "motorizados" | "pesados";
+type Programa =
+  | "estandar"
+  | "estandar-fundacion"
+  | "motorizados"
+  | "pesados"
+  | "montacargas";
 
 const PROGRAMAS: { valor: Programa; etiqueta: string }[] = [
   { valor: "estandar", etiqueta: "Categoría 02 — Livianos (Normal/VIP)" },
   { valor: "estandar-fundacion", etiqueta: "Categoría 02 — Fundación" },
   { valor: "motorizados", etiqueta: "Categoría 01 — Motocicletas" },
   { valor: "pesados", etiqueta: "Categoría 03/04 — Pesados" },
+  { valor: "montacargas", etiqueta: "Categoría 05 — Montacargas" },
 ];
 
 type Pregunta = {

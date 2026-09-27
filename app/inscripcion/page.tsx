@@ -26,7 +26,7 @@ type Plan = {
   orden: number;
 };
 
-type Programa = "estandar" | "motorizados" | "pesados";
+type Programa = "estandar" | "motorizados" | "pesados" | "montacargas";
 
 const PROGRAMAS: {
   valor: Programa;
@@ -51,6 +51,12 @@ const PROGRAMAS: {
       nombre: "Categoría 03/04 — Vehículos Pesados",
       foco: "Para conductores de camiones y trailers — solo teoría, organizada en 4 sesiones.",
       imagen: "/inscripcion/teoria-3.jpg",
+    },
+    {
+      valor: "montacargas",
+      nombre: "Categoría 05 — Operador de Equipos (Montacargas)",
+      foco: "Para operadores de montacargas — solo teoría, organizada en 4 sesiones.",
+      imagen: "/inscripcion/teoria-4.jpg",
     },
   ];
 

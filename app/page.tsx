@@ -90,6 +90,16 @@ const categorias = [
     href: "/inscripcion?programa=pesados",
     cta: "Empezar este curso",
   },
+  {
+    valor: "montacargas",
+    etiqueta: "Categoría 05 — Solo teoría",
+    nombre: "Montacargas",
+    detalle:
+      "Para operadores de montacargas — la teoría completa que exige el INTRANT, en 4 sesiones con exámenes y diploma.",
+    imagen: "/inscripcion/teoria-4.jpg",
+    href: "/inscripcion?programa=montacargas",
+    cta: "Empezar este curso",
+  },
 ];
 
 // NUEVO (17/09/2026): los 5 pilares del manejo preventivo/defensivo, tal
@@ -141,7 +151,7 @@ const testimonios = [
 
 type Plan = {
   codigo: string;
-  programa: "estandar" | "motorizados" | "pesados";
+  programa: "estandar" | "motorizados" | "pesados" | "montacargas";
   nombre: string;
   precio: number;
   fraseDestacada: string;
@@ -164,18 +174,23 @@ async function obtenerPlanes(programa: string = "estandar"): Promise<Plan[]> {
 }
 
 export default async function Home() {
-  const [planes, planesMotorizados, planesPesados, contenido] =
+  const [planes, planesMotorizados, planesPesados, planesMontacargas, contenido] =
     await Promise.all([
       obtenerPlanes("estandar"),
       obtenerPlanes("motorizados"),
       obtenerPlanes("pesados"),
+      obtenerPlanes("montacargas"),
       obtenerContenidoInicio(),
     ]);
 
-  // Un solo arreglo para pintar las tarjetas de Motorizados/Pesados con
-  // el mismo map — cada plan ya trae su propio `programa`, así el link
-  // "Ver detalles del plan" no necesita distinguirlos a mano.
-  const planesOtrosProgramas = [...planesMotorizados, ...planesPesados];
+  // Un solo arreglo para pintar las tarjetas de Motorizados/Pesados/
+  // Montacargas con el mismo map — cada plan ya trae su propio `programa`,
+  // así el link "Ver detalles del plan" no necesita distinguirlos a mano.
+  const planesOtrosProgramas = [
+    ...planesMotorizados,
+    ...planesPesados,
+    ...planesMontacargas,
+  ];
 
   const heroTitulo =
     contenido.inicio_hero_titulo ||
@@ -475,10 +490,10 @@ export default async function Home() {
         {planesOtrosProgramas.length > 0 && (
           <div className="mt-10 border-t border-brand-blue/10 pt-10">
             <p className="font-display text-sm font-semibold uppercase tracking-wide text-brand-pink">
-              ¿Deseas manejar moto o vehículo pesado? También tenemos tu curso
+              ¿Deseas manejar moto, vehículo pesado o montacargas? También tenemos tu curso
             </p>
 
-            <div className="mt-4 grid gap-6 sm:grid-cols-2">
+            <div className="mt-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {planesOtrosProgramas.map((plan) => (
                 <div
                   key={`${plan.programa}-${plan.codigo}`}

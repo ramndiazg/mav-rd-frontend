@@ -16,7 +16,7 @@ type Progreso = {
   // models/ProgresoEstudiante.js) — decide, junto con grupoId, si a la
   // estudiante le aplica la práctica de manejo (Motorizados/Pesados no
   // la tienen, igual que Escolar/Empresarial).
-  programa?: "estandar" | "motorizados" | "pesados";
+  programa?: "estandar" | "motorizados" | "pesados" | "montacargas";
   // NUEVO (13/09/2026): espejo de Inscripcion.tipoPlan — tercer criterio,
   // ver ANALISIS_COBERTURA_PRACTICA.md. Dentro de "estandar" ahora
   // conviven planes con y sin práctica (municipio sin cobertura ⇒ solo
@@ -45,7 +45,10 @@ type Inscripcion = {
 // NUEVO (13/09/2026): mismo criterio que utils/elegibilidadPractica.js en
 // el backend — Motorizados y Pesados tampoco cursan práctica de manejo,
 // igual que Escolar/Empresarial (ver ANALISIS_MOTORISTA_PESADOS.md).
-const PROGRAMAS_SIN_PRACTICA = ["motorizados", "pesados"];
+//
+// ACTUALIZADO (27/09/2026): se suma "montacargas" (Categoría 05) — mismo
+// caso, curso 100% teórico, sin práctica de manejo.
+const PROGRAMAS_SIN_PRACTICA = ["motorizados", "pesados", "montacargas"];
 
 const SESIONES = [1, 2, 3, 4];
 
