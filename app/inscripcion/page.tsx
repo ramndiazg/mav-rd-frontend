@@ -81,7 +81,7 @@ const BANCOS = [
 ];
 
 const CUENTAS_BANCARIAS = [
-  { banco: "Banco Popular Dominicano", numero: "no disponible" },
+  { banco: "Banco Popular Dominicano", numero: "850498460" },
   { banco: "Banco De Reservas", numero: "no disponible" },
 ];
 
