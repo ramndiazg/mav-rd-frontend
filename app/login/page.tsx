@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
+import { rutaInicioPorRol, redirectValidoParaRol } from "@/lib/rutasPorRol";
 
 function LoginContenido() {
   const { login, usuario } = useAuth();
@@ -39,19 +40,13 @@ function LoginContenido() {
   // resultado inmediato de login().
   useEffect(() => {
     if (!usuario) return;
-
-    if (usuario.rol === "coordinadora" || usuario.rol === "admin") {
-      // CAMBIO (10/09/2026): antes caía directo en /panel/pagos. La
-      // notificación de "pago nuevo" ya avisa cuando hace falta revisar
-      // pagos — no tiene sentido forzar esa pantalla en cada login si la
-      // admin va a hacer otra cosa. Ahora entra al dashboard del panel.
-      router.push("/panel");
-    } else if (usuario.rol === "conductor") {
-      // NUEVO (05/09/2026): el conductor tiene su propio dashboard de práctica.
-      router.push("/practica");
-    } else {
-      router.push(redirectSeguro || "/dashboard");
-    }
+    // El redirect solo se respeta si ESTE rol puede abrir esa ruta; si no,
+    // a su pantalla de inicio. Así un ?redirect=/panel viejo no manda a una
+    // estudiante a /panel (que la rebotaría otra vez a /login en bucle).
+    const destino =
+      redirectValidoParaRol(redirectSeguro, usuario.rol) ||
+      rutaInicioPorRol(usuario.rol);
+    router.replace(destino);
   }, [usuario, redirectSeguro, router]);
 
   async function manejarSubmit(e: React.FormEvent) {

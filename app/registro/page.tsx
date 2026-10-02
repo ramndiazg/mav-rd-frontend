@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Script from "next/script";
 import { useAuth } from "@/contexts/AuthContext";
+import { rutaInicioPorRol, redirectValidoParaRol } from "@/lib/rutasPorRol";
 
 // FIX (sincronización de listas): antes esta lista de 32 provincias vivía
 // hardcodeada aquí, separada de `src/data/municipiosRD.js` en el backend
@@ -137,7 +138,10 @@ function RegistroContenido() {
   // confirmado antes de navegar.
   useEffect(() => {
     if (!autoLogueado || !usuario) return;
-    router.push(redirectSeguro || "/dashboard");
+    router.replace(
+      redirectValidoParaRol(redirectSeguro, usuario.rol) ||
+      rutaInicioPorRol(usuario.rol)
+    );
   }, [autoLogueado, usuario, redirectSeguro, router]);
 
   function actualizar(campo: keyof FormularioRegistro, valor: string) {

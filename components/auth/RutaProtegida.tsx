@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import { rutaInicioPorRol } from "@/lib/rutasPorRol";
 
 type Rol = "estudiante" | "coordinadora" | "admin" | "conductor";
 
@@ -37,8 +38,11 @@ export default function RutaProtegida({
       return;
     }
 
+    // Con sesión pero rol equivocado: NUNCA mandar a /login (el login ve
+    // a un usuario ya logueado y lo devuelve aquí → bucle infinito). Se le
+    // lleva a su propia pantalla de inicio.
     if (!rolesPermitidos.includes(usuario.rol)) {
-      router.push(`/login?redirect=${encodeURIComponent(rutaCompleta)}`);
+      router.replace(rutaInicioPorRol(usuario.rol));
     }
   }, [cargando, usuario, rolesPermitidos, router, pathname]);
 
