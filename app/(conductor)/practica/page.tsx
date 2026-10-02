@@ -8,7 +8,7 @@ type Pendiente = {
   userId: string;
   nombre: string;
   apellido: string;
-  cedula: string;
+  cedula?: string; // solo la recibe el admin, nunca el chofer
   telefono: string;
   email: string;
   tipoPlan: "normal" | "vip" | null;
@@ -121,7 +121,9 @@ export default function PracticaPendientesPage() {
                   </span>
                 )}
               </p>
-              <p className="text-xs text-neutral-text mt-1">Cédula: {p.cedula}</p>
+              {p.cedula && (
+                <p className="text-xs text-neutral-text mt-1">Cédula: {p.cedula}</p>
+              )}
               <div className="flex gap-4 mt-1 text-xs text-neutral-text">
                 <span className="flex items-center gap-1">
                   <Phone size={12} className="text-brand-pink" />
