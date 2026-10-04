@@ -599,6 +599,15 @@ function PestanaRoster({
   const [error, setError] = useState<string | null>(null);
   const [resultado, setResultado] = useState<ResultadoRoster | null>(null);
 
+  // NUEVO (04/10/2026): la cédula depende del tipo de grupo. En colegio es
+  // opcional (menores sin cédula); en empresa es obligatoria (adultos). El
+  // backend aplica la misma regla — esto solo la anticipa en pantalla.
+  const esEmpresa = grupo.tipo === "empresa";
+  const etiquetaCedula = esEmpresa
+    ? "Cédula (obligatoria)"
+    : ETIQUETAS_COLUMNA.cedula;
+  const placeholderCedula = esEmpresa ? "Obligatoria" : PLACEHOLDER_CEDULA;
+
   // FIX (texto libre → lista validada, 26/09/2026): antes "provincia" era
   // un <input type="text"> igual que "nombre" o "apellido", sin relación
   // con la lista real, y "municipio" ni existía como columna — por eso
@@ -651,6 +660,20 @@ function PestanaRoster({
       return;
     }
 
+    // Misma regla que el backend: vacío o "N/A" cuenta como sin cédula.
+    if (esEmpresa) {
+      const indiceSinCedula = filtrados.findIndex((f) => {
+        const c = f.cedula.trim();
+        return !c || /^n\.?\/?a\.?$/i.test(c);
+      });
+      if (indiceSinCedula !== -1) {
+        setError(
+          `En grupos de empresa la cédula es obligatoria (revisa la fila ${indiceSinCedula + 1}).`,
+        );
+        return;
+      }
+    }
+
     setEnviando(true);
     setError(null);
     setResultado(null);
@@ -673,7 +696,19 @@ function PestanaRoster({
         setFilas([{ ...FILA_VACIA }]);
         onCargado();
       } else {
-        setError(json.error || "No se pudo cargar el roster.");
+        // Cuando fallan TODAS las filas el backend responde con el motivo de
+        // cada una en `errores`. Antes solo se mostraba el mensaje general
+        // ("No se pudo crear ninguna cuenta del roster") y nunca se veía
+        // por qué (correo duplicado, cédula, campo faltante...).
+        const detalle: string[] = Array.isArray(json.errores)
+          ? json.errores.map(
+            (e: ResultadoRoster["errores"][number]) =>
+              `Fila ${e.fila}${e.email ? ` (${e.email})` : ""}: ${e.motivo}`,
+          )
+          : [];
+        setError(
+          [json.error || "No se pudo cargar el roster.", ...detalle].join("\n"),
+        );
       }
     } catch {
       setError("No pudimos conectar con el servidor. Intenta de nuevo.");
@@ -700,7 +735,7 @@ function PestanaRoster({
               <tr>
                 {COLUMNAS.map((col) => (
                   <th key={col} className="text-left font-medium text-neutral-text pb-2 pr-2">
-                    {ETIQUETAS_COLUMNA[col]}
+                    {col === "cedula" ? etiquetaCedula : ETIQUETAS_COLUMNA[col]}
                   </th>
                 ))}
                 <th></th>
@@ -748,7 +783,7 @@ function PestanaRoster({
                           type={col === "fechaNacimiento" ? "date" : "text"}
                           value={fila[col]}
                           onChange={(e) => actualizarFila(indice, col, e.target.value)}
-                          placeholder={col === "cedula" ? PLACEHOLDER_CEDULA : undefined}
+                          placeholder={col === "cedula" ? placeholderCedula : undefined}
                           className="w-full rounded border border-neutral-bg px-2 py-1"
                         />
                       )}
@@ -777,7 +812,7 @@ function PestanaRoster({
         </div>
 
         {error && (
-          <div className="rounded-lg bg-brand-pink-light border border-brand-pink p-3 text-sm text-brand-blue mt-4">
+          <div className="rounded-lg bg-brand-pink-light border border-brand-pink p-3 text-sm text-brand-blue mt-4 whitespace-pre-line">
             {error}
           </div>
         )}
