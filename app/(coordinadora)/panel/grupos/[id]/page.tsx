@@ -118,6 +118,10 @@ type FilaRoster = {
 type ResultadoRoster = {
   creados: number;
   errores: { fila: number; email: string | null; motivo: string }[];
+  // NUEVO (04/10/2026): opcionales — el backend los manda al confirmar el
+  // roster para avisar qué correos de credenciales no salieron.
+  correosFallidos?: { email: string; nombre: string }[];
+  correosPendientes?: number;
   esPrimeraConfirmacion: boolean;
   discrepancia: boolean;
   cantidadEstimada: number;
@@ -839,6 +843,36 @@ function PestanaRoster({
                 Se estimaron {resultado.cantidadEstimada} estudiantes pero el roster
                 trajo {resultado.cantidadCreadaEnEsteLote}. El grupo se creó igual con
                 la cantidad real.
+              </span>
+            </div>
+          )}
+          {resultado.correosFallidos && resultado.correosFallidos.length > 0 && (
+            <div className="flex items-start gap-2 text-sm text-amber-700 bg-amber-50 rounded-lg p-3 mb-3">
+              <AlertTriangle size={16} className="mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-medium">
+                  {resultado.correosFallidos.length} correo(s) de credenciales
+                  NO se pudieron enviar. Las cuentas sí están creadas: abre
+                  la ficha de cada estudiante y pulsa «Reenviar credenciales».
+                </p>
+                <ul className="list-disc pl-4 mt-1">
+                  {resultado.correosFallidos.map((c, i) => (
+                    <li key={i}>
+                      {c.nombre} ({c.email})
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+          {!!resultado.correosPendientes && resultado.correosPendientes > 0 && (
+            <div className="flex items-start gap-2 text-sm text-amber-700 bg-amber-50 rounded-lg p-3 mb-3">
+              <AlertTriangle size={16} className="mt-0.5 flex-shrink-0" />
+              <span>
+                {resultado.correosPendientes} correo(s) de credenciales siguen
+                enviándose en segundo plano. Dentro de unos minutos confirma
+                con el colegio que todos los estudiantes los recibieron
+                (revisar también spam).
               </span>
             </div>
           )}

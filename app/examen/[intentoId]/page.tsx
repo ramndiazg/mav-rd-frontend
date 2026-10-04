@@ -11,6 +11,9 @@ type Resultado = {
   calificacion: number;
   aprobado: boolean;
   proximaSesionDisponibleEn: string | null;
+  // NUEVO (04/10/2026): el servidor ahora valida el tiempo límite; viene
+  // en true si la entrega llegó pasado el tiempo (nota 0).
+  fueraDeTiempo?: boolean;
 };
 type PreguntaDetalle = {
   texto: string;
@@ -50,6 +53,23 @@ function ExamenContenido() {
   const [resultado, setResultado] = useState<Resultado | null>(null);
   const [detalle, setDetalle] = useState<PreguntaDetalle[] | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // NUEVO (04/10/2026):
+  // - mensajeIniciado: texto que manda el servidor cuando el intento ya no
+  //   se puede abrir (ya entregado, o el tiempo terminó mientras estaba
+  //   fuera de la página).
+  // - finRef: momento exacto (reloj del dispositivo) en que termina el
+  //   examen. El contador se calcula contra esa hora en cada tick, en vez
+  //   de restar 1 por segundo — si el celular se bloquea o la pestaña
+  //   queda en segundo plano, al volver muestra el tiempo REAL que queda
+  //   (el servidor ahora también valida el límite).
+  // - respuestasRef: copia siempre actualizada de las respuestas, para que
+  //   la entrega automática al llegar a 0 mande las respuestas marcadas
+  //   (antes usaba las del momento en que arrancó el contador, es decir,
+  //   todas vacías).
+  const [mensajeIniciado, setMensajeIniciado] = useState<string | null>(null);
+  const finRef = useRef<number | null>(null);
+  const respuestasRef = useRef<(number | null)[]>([]);
+  const entregandoRef = useRef(false);
 
   // Iniciar el examen al montar la página
   useEffect(() => {
@@ -65,13 +85,18 @@ function ExamenContenido() {
         if (cancelado) return;
 
         if (json.success) {
+          const vacias = new Array(json.data.preguntas.length).fill(null);
+          respuestasRef.current = vacias;
+          finRef.current = Date.now() + json.data.tiempoLimiteSegundos * 1000;
           setPreguntas(json.data.preguntas);
-          setRespuestas(new Array(json.data.preguntas.length).fill(null));
+          setRespuestas(vacias);
           setSegundosRestantes(json.data.tiempoLimiteSegundos);
         } else if (res.status === 409) {
-          // Ya se había iniciado antes (ej. recargó la página). El backend
-          // no tiene endpoint para volver a pedir las preguntas de un intento
-          // ya iniciado, así que no podemos recuperar el examen desde aquí.
+          // CAMBIO (04/10/2026): si recargó con tiempo disponible, el
+          // servidor ahora REANUDA el examen (responde success, caso de
+          // arriba). Un 409 solo llega si el intento ya fue entregado o su
+          // tiempo ya terminó — se muestra el mensaje exacto del servidor.
+          setMensajeIniciado(json.error || null);
           setYaIniciado(true);
         } else {
           setError(json.error || "No pudimos iniciar el examen.");
@@ -95,14 +120,15 @@ function ExamenContenido() {
     if (segundosRestantes === null || resultado) return;
 
     timerRef.current = setInterval(() => {
-      setSegundosRestantes((prev) => {
-        if (prev === null) return null;
-        if (prev <= 1) {
-          entregar(); // se acabó el tiempo: entrega automática
-          return 0;
-        }
-        return prev - 1;
-      });
+      if (finRef.current === null) return;
+      const restante = Math.max(
+        0,
+        Math.ceil((finRef.current - Date.now()) / 1000),
+      );
+      setSegundosRestantes(restante);
+      if (restante <= 0) {
+        entregar(); // se acabó el tiempo: entrega automática
+      }
     }, 1000);
 
     return () => {
@@ -112,15 +138,17 @@ function ExamenContenido() {
   }, [segundosRestantes !== null]);
 
   function elegirRespuesta(indicePregunta: number, indiceOpcion: number) {
-    setRespuestas((prev) => {
-      const copia = [...prev];
-      copia[indicePregunta] = indiceOpcion;
-      return copia;
-    });
+    const copia = [...respuestasRef.current];
+    copia[indicePregunta] = indiceOpcion;
+    respuestasRef.current = copia;
+    setRespuestas(copia);
   }
 
   async function entregar() {
     if (timerRef.current) clearInterval(timerRef.current);
+    // Evita doble entrega (clic + entrega automática a la vez).
+    if (entregandoRef.current) return;
+    entregandoRef.current = true;
     setEntregando(true);
     try {
       const res = await fetch(
@@ -131,7 +159,7 @@ function ExamenContenido() {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ respuestas }),
+          body: JSON.stringify({ respuestas: respuestasRef.current }),
         },
       );
       const json = await res.json();
@@ -157,6 +185,7 @@ function ExamenContenido() {
     } catch {
       setError("No pudimos conectar con el servidor.");
     } finally {
+      entregandoRef.current = false;
       setEntregando(false);
     }
   }
@@ -174,14 +203,21 @@ function ExamenContenido() {
 
         {!cargando && yaIniciado && (
           <div className="rounded-xl bg-white border border-neutral-bg p-8 text-center">
-            <p className="text-neutral-text mb-2">
-              Este examen ya fue iniciado antes y no se puede volver a
-              cargar desde aquí.
-            </p>
-            <p className="text-sm text-neutral-text mb-6">
-              Si se te fue el tiempo o cerraste la página por error, contacta
-              a tu coordinadora — ella puede ver el estado de tu intento.
-            </p>
+            {mensajeIniciado ? (
+              <p className="text-neutral-text mb-6">{mensajeIniciado}</p>
+            ) : (
+              <>
+                <p className="text-neutral-text mb-2">
+                  Este examen ya fue iniciado antes y no se puede volver a
+                  cargar desde aquí.
+                </p>
+                <p className="text-sm text-neutral-text mb-6">
+                  Si se te fue el tiempo o cerraste la página por error,
+                  contacta a tu coordinadora — ella puede ver el estado de tu
+                  intento.
+                </p>
+              </>
+            )}
             <Link
               href="/dashboard"
               className="text-brand-blue-light hover:underline text-sm"
@@ -205,6 +241,11 @@ function ExamenContenido() {
             >
               {resultado.calificacion}%
             </p>
+            {resultado.fueraDeTiempo && (
+              <p className="text-sm text-neutral-text mb-2">
+                Tu entrega llegó después de que terminara el tiempo del examen.
+              </p>
+            )}
             <p className="text-neutral-text mb-4">
               {resultado.aprobado
                 ? "¡Aprobaste! Ya puedes ver tu progreso actualizado en tu panel."
@@ -326,7 +367,9 @@ function ExamenContenido() {
 
             <button
               onClick={entregar}
-              disabled={!todasRespondidas || entregando}
+              disabled={
+                (!todasRespondidas && segundosRestantes !== 0) || entregando
+              }
               className="w-full rounded-xl bg-brand-blue text-white p-4 font-display font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
             >
               {entregando
