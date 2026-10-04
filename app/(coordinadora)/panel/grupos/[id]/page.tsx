@@ -26,6 +26,7 @@ import {
   Send,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { PROGRAMAS_GRUPO, etiquetaPrograma } from "@/lib/programas";
 import {
   BarraProgreso,
   EtiquetaEstadoEstudiante,
@@ -52,6 +53,9 @@ import {
 type Grupo = {
   _id: string;
   tipo: "colegio" | "empresa";
+  // Programa contratado (el backend siempre lo manda; opcional aquí solo
+  // por seguridad — se muestra como estándar si faltara).
+  programa?: string;
   nombreInstitucion: string;
   contactoNombre: string;
   contactoEmail: string;
@@ -844,6 +848,7 @@ function PestanaDatos({
     notas: grupo.notas || "",
     precioAcordado: String(grupo.precioAcordado),
     cantidadEstudiantesEstimada: String(grupo.cantidadEstudiantesEstimada),
+    programa: grupo.programa || "estandar",
   });
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState<{ tipo: "ok" | "error"; texto: string } | null>(null);
@@ -894,6 +899,9 @@ function PestanaDatos({
     if (grupo.pendienteRoster) {
       cuerpo.precioAcordado = Number(form.precioAcordado);
       cuerpo.cantidadEstudiantesEstimada = Number(form.cantidadEstudiantesEstimada);
+      // Igual que los dos de arriba: después de confirmar el roster las
+      // estudiantes ya empezaron ese currículo y el backend lo rechaza.
+      cuerpo.programa = form.programa;
     }
     patch(cuerpo, "Cambios guardados.");
   }
@@ -1018,12 +1026,28 @@ function PestanaDatos({
                 className={claseInput}
               />
             </label>
+            <label className="text-sm text-neutral-text sm:col-span-2">
+              Programa contratado
+              <select
+                value={form.programa}
+                onChange={(e) => actualizar("programa", e.target.value)}
+                className={claseInput}
+              >
+                {PROGRAMAS_GRUPO.map((p) => (
+                  <option key={p.valor} value={p.valor}>
+                    {p.etiqueta}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
         ) : (
           <p className="text-xs text-neutral-text bg-neutral-bg rounded-lg px-3 py-2">
             Precio acordado: RD${grupo.precioAcordado.toLocaleString("es-DO")} · Estimado
             inicial: {grupo.cantidadEstudiantesEstimada} estudiantes. Ya no se pueden
             editar porque el pago del grupo quedó registrado en contabilidad.
+            Programa: {etiquetaPrograma(grupo.programa)} — tampoco se puede
+            cambiar, porque las estudiantes ya empezaron ese currículo.
           </p>
         )}
 
@@ -1197,7 +1221,7 @@ function PanelGrupoDetalleContenido() {
                 {grupo.nombreInstitucion}
               </p>
               <p className="text-sm text-neutral-text mt-0.5">
-                {grupo.tipo === "colegio" ? "Escolar" : "Empresarial"}
+                {grupo.tipo === "colegio" ? "Escolar" : "Empresarial"} · {etiquetaPrograma(grupo.programa)}
                 {grupo.fechaInicio && ` · Inició el ${formatearFecha(grupo.fechaInicio)}`}
               </p>
             </div>

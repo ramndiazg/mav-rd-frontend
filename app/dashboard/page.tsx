@@ -6,6 +6,7 @@ import { BookOpen, CheckCircle2, Lock, Trophy, ClipboardList, Phone, Mail, Clock
 import RutaProtegida from "@/components/auth/RutaProtegida";
 import { useAuth } from "@/contexts/AuthContext";
 import ProgresoCarretera from "@/components/dashboard/ProgresoCarretera";
+import { etiquetaPrograma } from "@/lib/programas";
 
 type Progreso = {
   sesionActualDesbloqueada: number;
@@ -200,8 +201,8 @@ function PantallaListaParaPractica({
           : "Ahora falta la parte práctica en el vehiculo. Contacta a uno de nuestros instructores para coordinar día y hora — cuando confirme tu práctica, tu diploma quedará disponible."}
       </p>
       <p className="text-xs text-neutral-text mb-6">
-        Cada hora de clase presencial tiene un costo de RD$800, que se paga
-        en efectivo directo al instructor.
+        Cada clase presencial tiene un costo de RD$500, que se paga en
+        efectivo directo al instructor.
       </p>
 
       {!instructorAsignado && cargando && (
@@ -286,7 +287,7 @@ function PantallaPracticaAprobada() {
 // NUEVO (08/09/2026): terminó toda la teoría y para esta estudiante (Grupo
 // Escolar/Empresarial) eso es TODO el curso — no hay práctica que
 // coordinar. Solo falta que la coordinadora genere el diploma. Texto
-// propio: nunca menciona instructores, práctica, ni el costo de RD$800 por hora de
+// propio: nunca menciona instructores, práctica, ni el costo de RD$500 de
 // las clases presenciales, porque nada de eso le aplica.
 function PantallaTeoriaCompletadaGrupo() {
   return (
@@ -421,6 +422,14 @@ function DashboardContenido() {
             Hola, {usuario?.nombre}
           </h1>
           <p className="text-neutral-text text-sm">Tu panel de estudiante</p>
+          {/* NUEVO (04/10/2026): hasta ahora el panel no decía en ningún
+              lado qué curso estaba cursando la estudiante. Sale del mismo
+              progreso.programa que ya decide qué contenido recibe. */}
+          {progreso?.programa && (
+            <span className="inline-block mt-3 text-xs font-medium px-3 py-1 rounded-full bg-brand-pink-light text-brand-blue">
+              {etiquetaPrograma(progreso.programa)}
+            </span>
+          )}
         </div>
 
         <AvisoEmailSinVerificar />

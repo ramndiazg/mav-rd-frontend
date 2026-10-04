@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { PROGRAMAS_GRUPO, etiquetaPrograma } from "@/lib/programas";
 import {
   Plus,
   School,
@@ -41,6 +42,9 @@ type Resumen = {
 type Grupo = {
   _id: string;
   tipo: "colegio" | "empresa";
+  // Programa contratado. El backend siempre lo manda; es opcional aquí
+  // solo por seguridad ante respuestas viejas (se muestra como estándar).
+  programa?: string;
   nombreInstitucion: string;
   contactoNombre: string;
   contactoEmail: string;
@@ -56,6 +60,7 @@ type Grupo = {
 
 type FormularioGrupo = {
   tipo: "colegio" | "empresa";
+  programa: string;
   nombreInstitucion: string;
   contactoNombre: string;
   contactoEmail: string;
@@ -67,6 +72,7 @@ type FormularioGrupo = {
 
 const FORM_VACIO: FormularioGrupo = {
   tipo: "colegio",
+  programa: "estandar",
   nombreInstitucion: "",
   contactoNombre: "",
   contactoEmail: "",
@@ -186,6 +192,20 @@ function FormularioNuevoGrupo({
           >
             <option value="colegio">Colegio (Escolar)</option>
             <option value="empresa">Empresa (Empresarial)</option>
+          </select>
+        </label>
+        <label className="text-sm text-neutral-text">
+          Programa contratado
+          <select
+            value={form.programa}
+            onChange={(e) => actualizar("programa", e.target.value)}
+            className="w-full mt-1 rounded-lg border border-neutral-bg px-3 py-2"
+          >
+            {PROGRAMAS_GRUPO.map((p) => (
+              <option key={p.valor} value={p.valor}>
+                {p.etiqueta}
+              </option>
+            ))}
           </select>
         </label>
         <label className="text-sm text-neutral-text">
@@ -316,7 +336,7 @@ function TarjetaGrupo({ g }: { g: Grupo }) {
               {g.nombreInstitucion}
             </p>
             <p className="text-xs text-neutral-text mt-0.5">
-              {g.tipo === "colegio" ? "Escolar" : "Empresarial"} · {g.contactoNombre}
+              {g.tipo === "colegio" ? "Escolar" : "Empresarial"} · {etiquetaPrograma(g.programa)} · {g.contactoNombre}
             </p>
           </div>
         </div>

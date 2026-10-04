@@ -306,7 +306,7 @@ function DiplomaContenido() {
               Todavía no tienes un diploma generado.
             </p>
             <p className="text-sm text-neutral-text">
-              Ya completaste y aprobaste las 3 sesiones — pide a tu
+              Ya completaste y aprobaste todas las sesiones — pide a tu
               coordinadora que lo genere. En cuanto lo haga, va a aparecer
               aquí automáticamente.
             </p>

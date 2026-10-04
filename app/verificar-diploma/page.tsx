@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 type ResultadoDiploma = {
   nombreCompleto: string;
@@ -19,10 +20,51 @@ function formatearFecha(fecha: string) {
   });
 }
 
-export default function VerificarDiplomaPage() {
-  const [codigo, setCodigo] = useState("");
-  const [estado, setEstado] = useState<Estado>("inicial");
+// Consulta pública del diploma. Devuelve el resultado en vez de tocar el
+// estado, para poder usarla tanto desde el formulario como desde el efecto
+// que se dispara al abrir la página con ?codigo= (el QR del diploma).
+async function buscarDiploma(
+  codigoLimpio: string,
+): Promise<{ estado: Estado; data: ResultadoDiploma | null }> {
+  try {
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/diplomas/verificar/${encodeURIComponent(codigoLimpio)}`
+    );
+    const json = await res.json();
+    return json.success
+      ? { estado: "encontrado", data: json.data }
+      : { estado: "no_encontrado", data: null };
+  } catch {
+    return { estado: "error", data: null };
+  }
+}
+
+function VerificarDiplomaContenido() {
+  const searchParams = useSearchParams();
+  // NUEVO (04/10/2026): el QR del diploma abre esta página con
+  // ?codigo=MUVO-2026-000123 y se verifica solo. Entrar sin parámetro
+  // funciona exactamente igual que antes (formulario manual).
+  const codigoDeUrl = searchParams.get("codigo")?.trim().toUpperCase() || "";
+
+  const [codigo, setCodigo] = useState(codigoDeUrl);
+  const [estado, setEstado] = useState<Estado>(codigoDeUrl ? "cargando" : "inicial");
   const [resultado, setResultado] = useState<ResultadoDiploma | null>(null);
+
+  useEffect(() => {
+    if (!codigoDeUrl) return;
+    let cancelado = false;
+
+    (async () => {
+      const r = await buscarDiploma(codigoDeUrl);
+      if (cancelado) return;
+      setResultado(r.data);
+      setEstado(r.estado);
+    })();
+
+    return () => {
+      cancelado = true;
+    };
+  }, [codigoDeUrl]);
 
   async function verificar(e: React.FormEvent) {
     e.preventDefault();
@@ -31,22 +73,9 @@ export default function VerificarDiplomaPage() {
 
     setEstado("cargando");
     setResultado(null);
-
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/diplomas/verificar/${encodeURIComponent(codigoLimpio)}`
-      );
-      const json = await res.json();
-
-      if (json.success) {
-        setResultado(json.data);
-        setEstado("encontrado");
-      } else {
-        setEstado("no_encontrado");
-      }
-    } catch {
-      setEstado("error");
-    }
+    const r = await buscarDiploma(codigoLimpio);
+    setResultado(r.data);
+    setEstado(r.estado);
   }
 
   return (
@@ -65,7 +94,7 @@ export default function VerificarDiplomaPage() {
             type="text"
             value={codigo}
             onChange={(e) => setCodigo(e.target.value)}
-            placeholder="Ej: MAV-2026-000001"
+            placeholder="Ej: MUVO-2026-000001"
             className="flex-1 rounded-full border border-neutral-bg bg-white px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue"
           />
           <button
@@ -132,5 +161,13 @@ export default function VerificarDiplomaPage() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function VerificarDiplomaPage() {
+  return (
+    <Suspense fallback={null}>
+      <VerificarDiplomaContenido />
+    </Suspense>
   );
 }
