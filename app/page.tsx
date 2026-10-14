@@ -100,6 +100,20 @@ const categorias = [
     href: "/inscripcion?programa=montacargas",
     cta: "Empezar este curso",
   },
+  // NUEVO (10/2026): Auxiliar de Transporte Escolar. No es categoría de
+  // licencia sino formación complementaria — por eso la etiqueta y el
+  // texto NO dicen "exige el INTRANT". Esta tarjeta solo se muestra si el
+  // curso tiene un plan activo (ver `categoriasVisibles` en Home).
+  {
+    valor: "auxiliar-escolar",
+    etiqueta: "Formación complementaria — Solo teoría",
+    nombre: "Auxiliar de Transporte Escolar",
+    detalle:
+      "Para quienes acompañan y cuidan a los niños en el autobús escolar — formación alineada con el Decreto 257-20 y la NT-003-2022, en 4 sesiones con exámenes y diploma.",
+    imagen: "/inscripcion/teoria-5.jpg",
+    href: "/inscripcion?programa=auxiliar-escolar",
+    cta: "Empezar este curso",
+  },
 ];
 
 // NUEVO (17/09/2026): los 5 pilares del manejo preventivo/defensivo, tal
@@ -151,7 +165,12 @@ const testimonios = [
 
 type Plan = {
   codigo: string;
-  programa: "estandar" | "motorizados" | "pesados" | "montacargas";
+  programa:
+  | "estandar"
+  | "motorizados"
+  | "pesados"
+  | "montacargas"
+  | "auxiliar-escolar";
   nombre: string;
   precio: number;
   fraseDestacada: string;
@@ -174,23 +193,41 @@ async function obtenerPlanes(programa: string = "estandar"): Promise<Plan[]> {
 }
 
 export default async function Home() {
-  const [planes, planesMotorizados, planesPesados, planesMontacargas, contenido] =
-    await Promise.all([
-      obtenerPlanes("estandar"),
-      obtenerPlanes("motorizados"),
-      obtenerPlanes("pesados"),
-      obtenerPlanes("montacargas"),
-      obtenerContenidoInicio(),
-    ]);
+  const [
+    planes,
+    planesMotorizados,
+    planesPesados,
+    planesMontacargas,
+    planesAuxiliarEscolar,
+    contenido,
+  ] = await Promise.all([
+    obtenerPlanes("estandar"),
+    obtenerPlanes("motorizados"),
+    obtenerPlanes("pesados"),
+    obtenerPlanes("montacargas"),
+    obtenerPlanes("auxiliar-escolar"),
+    obtenerContenidoInicio(),
+  ]);
 
   // Un solo arreglo para pintar las tarjetas de Motorizados/Pesados/
-  // Montacargas con el mismo map — cada plan ya trae su propio `programa`,
-  // así el link "Ver detalles del plan" no necesita distinguirlos a mano.
+  // Montacargas/Auxiliar Escolar con el mismo map — cada plan ya trae su
+  // propio `programa`, así el link "Ver detalles del plan" no necesita
+  // distinguirlos a mano.
   const planesOtrosProgramas = [
     ...planesMotorizados,
     ...planesPesados,
     ...planesMontacargas,
+    ...planesAuxiliarEscolar,
   ];
+
+  // NUEVO (10/2026): el curso de Auxiliar Escolar se ofrece solo si tiene un
+  // plan ACTIVO (GET /planes devuelve únicamente los activos). Mientras el
+  // plan esté inactivo —o no exista— su tarjeta no aparece: así se puede
+  // sembrar y probar en producción sin que el público lo vea, y lanzarlo es
+  // activar el plan desde /admin/planes.
+  const categoriasVisibles = categorias.filter(
+    (c) => c.valor !== "auxiliar-escolar" || planesAuxiliarEscolar.length > 0,
+  );
 
   const heroTitulo =
     contenido.inicio_hero_titulo ||
@@ -359,7 +396,7 @@ export default async function Home() {
         </div>
 
         <div className="mt-10 grid gap-6 sm:grid-cols-3">
-          {categorias.map((categoria) => (
+          {categoriasVisibles.map((categoria) => (
             <div
               key={categoria.valor}
               className="overflow-hidden rounded-xl border border-brand-blue/10 bg-white shadow-sm transition hover:shadow-md"
@@ -496,7 +533,7 @@ export default async function Home() {
         {planesOtrosProgramas.length > 0 && (
           <div className="mt-10 border-t border-brand-blue/10 pt-10">
             <p className="font-display text-sm font-semibold uppercase tracking-wide text-brand-pink">
-              ¿Deseas manejar moto, vehículo pesado o montacargas? También tenemos tu curso
+              ¿Moto, vehículo pesado, montacargas o auxiliar de transporte escolar? También tenemos tu curso
             </p>
 
             <div className="mt-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">

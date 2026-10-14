@@ -291,7 +291,7 @@ function PantallaPlanes() {
   //
   // ACTUALIZADO (27/09/2026): se suma "montacargas" (Categoría 05).
   const [programaSeleccionado, setProgramaSeleccionado] = useState<
-    "estandar" | "motorizados" | "pesados" | "montacargas"
+    "estandar" | "motorizados" | "pesados" | "montacargas" | "auxiliar-escolar"
   >("estandar");
 
   useEffect(() => {
@@ -361,6 +361,9 @@ function PantallaPlanes() {
             { valor: "motorizados", etiqueta: "Categoría 01 — Motocicletas" },
             { valor: "pesados", etiqueta: "Categoría 03/04 — Pesados" },
             { valor: "montacargas", etiqueta: "Categoría 05 — Montacargas" },
+            // NUEVO (10/2026): el plan se siembra INACTIVO — aquí se
+            // activa (casilla "activo") para lanzar el curso.
+            { valor: "auxiliar-escolar", etiqueta: "Auxiliar de Transporte Escolar" },
           ] as const
         ).map((p) => (
           <button
@@ -386,8 +389,9 @@ function PantallaPlanes() {
 
       {!cargando && !error && planes.length === 0 && (
         <p className="text-sm text-neutral-text">
-          Todavía no hay planes sembrados para este programa — corre
-          scripts/sembrarMotorizadosPesados.js --confirmar en el backend.
+          Todavía no hay planes sembrados para este programa — corre el
+          script de siembra de este programa en el backend (por ejemplo,
+          scripts/sembrarAuxiliarEscolar.js --confirmar).
         </p>
       )}
 

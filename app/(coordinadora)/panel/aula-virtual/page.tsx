@@ -46,7 +46,8 @@ type Sesion = {
   | "estandar-fundacion"
   | "motorizados"
   | "pesados"
-  | "montacargas";
+  | "montacargas"
+  | "auxiliar-escolar";
 };
 
 type Programa =
@@ -54,7 +55,8 @@ type Programa =
   | "estandar-fundacion"
   | "motorizados"
   | "pesados"
-  | "montacargas";
+  | "montacargas"
+  | "auxiliar-escolar";
 
 const PROGRAMAS: { valor: Programa; etiqueta: string }[] = [
   { valor: "estandar", etiqueta: "Categoría 02 — Livianos (Normal/VIP)" },
@@ -62,6 +64,7 @@ const PROGRAMAS: { valor: Programa; etiqueta: string }[] = [
   { valor: "motorizados", etiqueta: "Categoría 01 — Motocicletas" },
   { valor: "pesados", etiqueta: "Categoría 03/04 — Pesados" },
   { valor: "montacargas", etiqueta: "Categoría 05 — Montacargas" },
+  { valor: "auxiliar-escolar", etiqueta: "Auxiliar de Transporte Escolar" },
 ];
 
 type TipoContenido = "video" | "pdf" | "enlace" | "texto";

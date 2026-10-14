@@ -26,7 +26,12 @@ type Plan = {
   orden: number;
 };
 
-type Programa = "estandar" | "motorizados" | "pesados" | "montacargas";
+type Programa =
+  | "estandar"
+  | "motorizados"
+  | "pesados"
+  | "montacargas"
+  | "auxiliar-escolar";
 
 const PROGRAMAS: {
   valor: Programa;
@@ -57,6 +62,15 @@ const PROGRAMAS: {
       nombre: "Categoría 05 — Operador de Equipos (Montacargas)",
       foco: "Para operadores de montacargas — solo teoría, organizada en 4 sesiones.",
       imagen: "/inscripcion/teoria-4.jpg",
+    },
+    // NUEVO (10/2026): no es una categoría de licencia sino formación
+    // complementaria, por eso el nombre no lleva "Categoría". Solo se
+    // muestra si tiene un plan activo — ver `programasVisibles` abajo.
+    {
+      valor: "auxiliar-escolar",
+      nombre: "Auxiliar de Transporte Escolar",
+      foco: "Para quienes acompañan y cuidan a los niños en el autobús escolar — formación complementaria, solo teoría, en 4 sesiones.",
+      imagen: "/inscripcion/teoria-5.jpg",
     },
   ];
 
@@ -187,6 +201,51 @@ function InscripcionContenido() {
       cancelado = true;
     };
   }, [token]);
+
+  // NUEVO (10/2026): el curso de Auxiliar Escolar solo se ofrece si tiene un
+  // plan ACTIVO (GET /planes devuelve únicamente los activos). null = todavía
+  // no se sabe. Si alguien entra con ?programa=auxiliar-escolar y el curso
+  // aún no está lanzado, se le quita la preselección en vez de mostrarle un
+  // "Elige tu plan" vacío. El setState va después del await (no en el
+  // cuerpo del efecto), igual que los demás efectos de esta página.
+  const [auxiliarDisponible, setAuxiliarDisponible] = useState<boolean | null>(
+    null,
+  );
+
+  useEffect(() => {
+    let cancelado = false;
+
+    (async () => {
+      let disponible = false;
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/planes?programa=auxiliar-escolar`,
+        );
+        const json = await res.json();
+        disponible =
+          Boolean(json.success) &&
+          Array.isArray(json.data) &&
+          json.data.length > 0;
+      } catch {
+        // si falla, el curso simplemente no se ofrece — lado seguro
+      }
+      if (cancelado) return;
+      setAuxiliarDisponible(disponible);
+      if (!disponible) {
+        setPrograma((actual) =>
+          actual === "auxiliar-escolar" ? null : actual,
+        );
+      }
+    })();
+
+    return () => {
+      cancelado = true;
+    };
+  }, []);
+
+  const programasVisibles = PROGRAMAS.filter(
+    (p) => p.valor !== "auxiliar-escolar" || auxiliarDisponible === true,
+  );
 
   // Trae los planes del programa elegido — se repite cada vez que cambia
   // `programa` (empieza en null, así que no dispara hasta que la
@@ -442,7 +501,7 @@ function InscripcionContenido() {
         </p>
 
         <div className="grid md:grid-cols-3 gap-6">
-          {PROGRAMAS.map((p) => (
+          {programasVisibles.map((p) => (
             <button
               key={p.valor}
               type="button"
@@ -566,8 +625,9 @@ function InscripcionContenido() {
             <div>
               <p className="font-medium text-brand-blue mb-1">Elige tu curso y tu plan</p>
               <p className="text-sm text-neutral-text">
-                Categoría 01 (Motocicletas), 02 (Vehículos Livianos) o 03/04
-                (Vehículos Pesados) — cada uno con el plan que mejor se
+                Categoría 01 (Motocicletas), 02 (Vehículos Livianos), 03/04
+                (Vehículos Pesados), 05 (Montacargas) o el curso de Auxiliar
+                de Transporte Escolar — cada uno con el plan que mejor se
                 ajuste a lo que necesitas.
               </p>
             </div>
