@@ -61,7 +61,7 @@ const MODULOS_ADMIN: Tarjeta[] = [
   { href: "/admin/contabilidad", titulo: "Contabilidad", descripcion: "Movimientos y balances", Icono: Landmark },
   { href: "/admin/contenido-pagina", titulo: "Contenido de página", descripcion: "Textos e imágenes del sitio", Icono: FileEdit },
   { href: "/admin/notificaciones", titulo: "Notificaciones", descripcion: "Quién recibe avisos de pagos nuevos", Icono: BellRing },
-  { href: "/admin/choferes", titulo: "Choferes", descripcion: "Crear y gestionar instructores de práctica", Icono: Car },
+  { href: "/admin/choferes", titulo: "Choferes", descripcion: "Instructores de práctica y choferes recomendados (camión y montacargas)", Icono: Car },
   { href: "/admin/notificaciones-practica", titulo: "Notif. de práctica", descripcion: "Quién recibe avisos cuando una estudiante termina la teoría", Icono: Send },
   { href: "/admin/asistente", titulo: "Asistente", descripcion: "Pregúntale por cifras reales de la app", Icono: Bot },
   // NUEVO (07/09/2026)

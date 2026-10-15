@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import ChoferesRecomendados from "@/components/admin/ChoferesRecomendados";
 
 type Dia = "lunes" | "martes" | "miercoles" | "jueves" | "viernes" | "sabado" | "domingo";
 
@@ -71,7 +72,9 @@ function formularioCrearVacio() {
   };
 }
 
-export default function ChoferesPage() {
+// Pestaña 1 (sin cambios de lógica): instructores de práctica de la
+// fundación — con cuenta, acceso al sistema y aprobación de prácticas.
+function InstructoresPractica() {
   const { token } = useAuth();
 
   const [instructores, setInstructores] = useState<Instructor[]>([]);
@@ -855,6 +858,51 @@ export default function ChoferesPage() {
         >
           {mensaje.texto}
         </div>
+      )}
+    </div>
+  );
+}
+
+// NUEVO (15/10/2026): la tarjeta "Choferes" ahora tiene 3 pestañas. La
+// primera es el flujo de siempre (instructores de la fundación, Cat. 2).
+// Las otras dos son choferes RECOMENDADOS (no de la fundación, sin cuenta)
+// para los cursos teóricos de Camionero y Montacargas — ver
+// components/admin/ChoferesRecomendados.tsx.
+type Pestana = "practica" | "pesados" | "montacargas";
+
+const PESTANAS: { valor: Pestana; etiqueta: string }[] = [
+  { valor: "practica", etiqueta: "Instructores de práctica (Cat. 2)" },
+  { valor: "pesados", etiqueta: "Recomendados: Camión (3/4)" },
+  { valor: "montacargas", etiqueta: "Recomendados: Montacargas (5)" },
+];
+
+export default function ChoferesPage() {
+  const [pestana, setPestana] = useState<Pestana>("practica");
+
+  return (
+    <div className="max-w-2xl mx-auto">
+      <div className="flex flex-wrap gap-2 mb-6">
+        {PESTANAS.map((p) => (
+          <button
+            key={p.valor}
+            type="button"
+            onClick={() => setPestana(p.valor)}
+            className={`text-xs font-medium px-4 py-2 rounded-full transition-colors ${pestana === p.valor
+              ? "bg-brand-blue text-white"
+              : "bg-white border border-neutral-bg text-neutral-text hover:bg-brand-pink-light"
+              }`}
+          >
+            {p.etiqueta}
+          </button>
+        ))}
+      </div>
+
+      {pestana === "practica" && <InstructoresPractica />}
+      {pestana === "pesados" && (
+        <ChoferesRecomendados programa="pesados" etiqueta="Camionero (Categoría 3/4)" />
+      )}
+      {pestana === "montacargas" && (
+        <ChoferesRecomendados programa="montacargas" etiqueta="Montacargas (Categoría 5)" />
       )}
     </div>
   );

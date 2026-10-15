@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { BookOpen, CheckCircle2, Lock, Trophy, ClipboardList, Phone, Mail, Clock } from "lucide-react";
+import { BookOpen, CheckCircle2, Lock, Trophy, ClipboardList, Phone, Mail, Clock, MapPin } from "lucide-react";
 import RutaProtegida from "@/components/auth/RutaProtegida";
 import { useAuth } from "@/contexts/AuthContext";
 import ProgresoCarretera from "@/components/dashboard/ProgresoCarretera";
@@ -318,6 +318,114 @@ function PantallaTeoriaCompletadaGrupo() {
   );
 }
 
+// NUEVO (15/10/2026): al terminar un curso 100% teórico de Camionero
+// (pesados) o Montacargas, se le ofrece a la estudiante contactar a
+// profesionales independientes para clases prácticas. NO son de la
+// fundación — el texto lo dice de forma amable (se recomiendan, las
+// condiciones se acuerdan directo con cada uno). Si no hay ninguno activo
+// (o falla la carga), no se muestra nada. Backend:
+// GET /api/choferes-recomendados/mis-recomendados.
+type ChoferRecomendado = {
+  _id: string;
+  nombre: string;
+  telefono: string;
+  email: string;
+  zonas: { provincia: string; municipio: string }[];
+};
+
+function PantallaChoferesRecomendados({
+  programa,
+}: {
+  programa: "pesados" | "montacargas";
+}) {
+  const { token } = useAuth();
+  const [choferes, setChoferes] = useState<ChoferRecomendado[]>([]);
+
+  useEffect(() => {
+    let cancelado = false;
+
+    (async () => {
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/choferes-recomendados/mis-recomendados`,
+          { headers: { Authorization: `Bearer ${token}` } },
+        );
+        const json = await res.json();
+        if (!cancelado && json.success) setChoferes(json.data);
+      } catch {
+        // Sección opcional: si falla, simplemente no se muestra.
+      }
+    })();
+
+    return () => {
+      cancelado = true;
+    };
+  }, [token]);
+
+  if (choferes.length === 0) return null;
+
+  const tema =
+    programa === "montacargas"
+      ? "operación de montacargas"
+      : "manejo de camión y vehículos pesados";
+
+  return (
+    <div className="rounded-xl bg-white border border-neutral-bg p-8 mt-6">
+      <div className="text-center mb-6">
+        <Trophy className="mx-auto mb-3 text-brand-pink" size={32} />
+        <p className="font-display font-semibold text-brand-blue text-xl mb-2">
+          ¡Felicidades por aprobar tu curso!
+        </p>
+        <p className="text-sm text-neutral-text">
+          Si te gustaría reforzar lo aprendido con clases prácticas de{" "}
+          {tema}, estos profesionales independientes pueden acompañarte.
+          Son personas que conocemos y te recomendamos con gusto; no forman
+          parte de la fundación, así que las clases, horarios y tarifas los
+          acuerdas directamente con ellos, como mejor te convenga.
+        </p>
+      </div>
+
+      <div className="grid gap-3 text-left">
+        {choferes.map((c) => (
+          <div key={c._id} className="rounded-lg border border-neutral-bg p-4">
+            <p className="font-display font-semibold text-brand-blue mb-2">
+              {c.nombre}
+            </p>
+            <div className="flex flex-col gap-1 text-sm text-neutral-text">
+              <span className="flex items-center gap-2">
+                <Phone size={14} className="text-brand-pink shrink-0" />
+                <a href={`tel:${c.telefono}`} className="hover:underline">
+                  {c.telefono}
+                </a>
+              </span>
+              {c.email && (
+                <span className="flex items-center gap-2">
+                  <Mail size={14} className="text-brand-pink shrink-0" />
+                  <a href={`mailto:${c.email}`} className="hover:underline break-all">
+                    {c.email}
+                  </a>
+                </span>
+              )}
+              <span className="flex items-start gap-2">
+                <MapPin size={14} className="text-brand-pink shrink-0 mt-0.5" />
+                <span>
+                  Zona de práctica:{" "}
+                  {c.zonas.map((z) => `${z.municipio}, ${z.provincia}`).join(" · ")}
+                </span>
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <p className="text-xs text-neutral-text mt-5 text-center">
+        Compartimos estos contactos como una referencia de cortesía. Eres
+        libre de elegir al profesional que prefieras.
+      </p>
+    </div>
+  );
+}
+
 function DashboardContenido() {
   const { usuario, token } = useAuth();
   const [inscripcion, setInscripcion] = useState<Inscripcion | null>(null);
@@ -625,6 +733,15 @@ function DashboardContenido() {
                   <PantallaListaParaPractica
                     instructorAsignado={inscripcion?.instructorId}
                   />
+                )}
+
+              {/* NUEVO (15/10/2026): cursos teóricos de Camionero y
+                  Montacargas — recomendación de choferes para clases
+                  prácticas, debajo del mensaje de curso completado. */}
+              {progreso.cursoCompletado &&
+                (progreso.programa === "pesados" ||
+                  progreso.programa === "montacargas") && (
+                  <PantallaChoferesRecomendados programa={progreso.programa} />
                 )}
             </>
           )}
