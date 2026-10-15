@@ -224,7 +224,7 @@ export default function ChoferesRecomendados({
           Choferes recomendados — {etiqueta}
         </p>
         <p className="text-xs text-neutral-text">
-          Estas personas <strong>no son de la fundación</strong>: no tienen
+          Estos choferes no tienen
           cuenta ni acceso al sistema. Sus datos se muestran como
           recomendación a las estudiantes que terminan este curso, para que
           los contacten si quieren tomar clases prácticas.
