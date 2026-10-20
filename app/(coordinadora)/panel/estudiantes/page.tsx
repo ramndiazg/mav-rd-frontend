@@ -370,12 +370,11 @@ export default function PanelEstudiantesPage() {
               Exportar listado en PDF
             </p>
             <p className="text-xs text-neutral-text mb-3">
-              Hoja con el membrete de Muvo RD Vial: una fila por estudiante,
-              con el curso en el que se inscribió y si lo completó o está
+              Hoja con el curso en el que se inscribió y si lo completó o está
               pendiente.{" "}
               {filtroGrupo
                 ? "Solo incluye el grupo elegido arriba."
-                : "Incluye todas las estudiantes activas (individuales y de grupo); no incluye cuentas archivadas."}
+                : "Incluye todas las estudiantes activas (individuales y de grupo)"}
             </p>
             <label className="mb-3 flex items-start gap-2 text-xs text-neutral-text">
               <input
@@ -385,8 +384,7 @@ export default function PanelEstudiantesPage() {
                 className="mt-0.5"
               />
               <span>
-                Incluir cédula y correo (solo uso interno — no lo marques si el
-                PDF se va a compartir con una institución).
+                Incluir cédula y correo (solo uso interno).
               </span>
             </label>
             <button
