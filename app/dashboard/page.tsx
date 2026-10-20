@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { BookOpen, CheckCircle2, Lock, Trophy, ClipboardList, Phone, Mail, Clock, MapPin } from "lucide-react";
+import { BookOpen, CheckCircle2, Lock, Trophy, ClipboardList, Phone, Mail, Clock, MapPin, Download, Share2, Copy, Check } from "lucide-react";
 import RutaProtegida from "@/components/auth/RutaProtegida";
 import { useAuth } from "@/contexts/AuthContext";
 import ProgresoCarretera from "@/components/dashboard/ProgresoCarretera";
@@ -156,8 +156,8 @@ function AvisoTestPendiente({ href }: { href: string }) {
 // NUEVO (05/09/2026): terminó toda la teoría, todavía no la aprueba un
 // instructor. En vez de las tarjetas de sesión, felicitación + lista de
 // choferes activos para que la estudiante misma los contacte.
-// Solo aplica al flujo estándar (requierePractica true) — ver
-// PantallaTeoriaCompletadaGrupo para Escolar/Empresarial.
+// Solo aplica al flujo estándar (requierePractica true). Desde el
+// 19/10/2026 ya no bloquea el diploma: se muestra debajo de él.
 function PantallaListaParaPractica({
   instructorAsignado,
 }: {
@@ -204,15 +204,18 @@ function PantallaListaParaPractica({
   const listaAMostrar = instructorAsignado ? [instructorAsignado] : instructores;
 
   return (
-    <div className="rounded-xl bg-white border border-neutral-bg p-8 text-center">
+    <div className="rounded-xl bg-white border border-neutral-bg p-8 text-center mt-6">
       <Trophy className="mx-auto mb-3 text-brand-pink" size={36} />
       <p className="font-display font-semibold text-brand-blue text-xl mb-2">
         ¡Felicidades, terminaste toda la teoría!
       </p>
+      {/* CAMBIO (19/10/2026): el diploma ya no espera a la práctica — se
+          genera al terminar la teoría. La práctica en el vehículo la
+          coordina cada estudiante directamente con instructores externos. */}
       <p className="text-sm text-neutral-text mb-6">
         {instructorAsignado
-          ? "Ahora falta la parte práctica en el vehiculo. Este es tu instructor — coordina día y hora con él, y cuando confirme tu práctica, tu diploma quedará disponible."
-          : "Ahora falta la parte práctica en el vehiculo. Contacta a uno de nuestros instructores para coordinar día y hora — cuando confirme tu práctica, tu diploma quedará disponible."}
+          ? "Tu diploma de la parte teórica ya es tuyo. Para la práctica en el vehículo, este es el instructor que te corresponde — coordina día y hora directamente con él."
+          : "Tu diploma de la parte teórica ya es tuyo. Para la práctica en el vehículo, contacta a uno de los instructores para coordinar día y hora directamente con él."}
       </p>
       <p className="text-xs text-neutral-text mb-6">
         Cada clase presencial tiene un costo de RD$500, que se paga en
@@ -280,40 +283,148 @@ function PantallaListaParaPractica({
   );
 }
 
-// NUEVO (05/09/2026): terminó teoría Y el instructor ya aprobó la práctica —
-// solo falta que la coordinadora genere el diploma. Solo aplica al flujo
-// estándar (requierePractica true).
-function PantallaPracticaAprobada() {
+// NUEVO (19/10/2026): desde que existe el diploma, la estudiante está
+// GRADUADA para la app (decisión de la fundadora). La práctica de manejo
+// queda como responsabilidad de los choferes externos: cuando ellos la
+// marcan como hecha solo sirve de información (desaparece la tarjeta del
+// chofer), no cambia nada del diploma ni de su condición de graduada.
+function PantallaGraduada({ token }: { token: string | null }) {
   return (
-    <div className="rounded-xl bg-white border border-neutral-bg p-8 text-center">
-      <Trophy className="mx-auto mb-3 text-status-success" size={36} />
-      <p className="font-display font-semibold text-brand-blue text-xl mb-2">
-        ¡Tu instructor confirmó tu práctica!
+    <div className="session-card-in rounded-xl bg-white border border-neutral-bg p-8 text-center">
+      <Trophy className="mx-auto mb-3 text-status-success" size={40} />
+      <p className="font-display font-semibold text-brand-blue text-2xl mb-2">
+        ¡Felicidades, te graduaste!
       </p>
-      <p className="text-sm text-neutral-text">
-        Ya completaste el curso por completo. Tu diploma está siendo
-        preparado — te avisaremos por correo en cuanto esté listo.
+      <p className="text-sm text-neutral-text mb-6">
+        Completaste las 4 sesiones y todos tus exámenes. Tu diploma ya está
+        listo para descargar.
       </p>
+      <a
+        href={`${process.env.NEXT_PUBLIC_API_URL}/diplomas/me/descargar?token=${token}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-blue p-4 font-display font-semibold text-white transition-opacity hover:opacity-90"
+      >
+        <Download size={20} />
+        Descargar mi diploma (PDF)
+      </a>
+      <Link
+        href="/diploma"
+        className="mt-4 inline-block text-sm text-brand-blue-light hover:underline"
+      >
+        Ver mi código de verificación y compartir mi logro
+      </Link>
     </div>
   );
 }
 
-// NUEVO (08/09/2026): terminó toda la teoría y para esta estudiante (Grupo
-// Escolar/Empresarial) eso es TODO el curso — no hay práctica que
-// coordinar. Solo falta que la coordinadora genere el diploma. Texto
-// propio: nunca menciona instructores, práctica, ni el costo de RD$500 de
-// las clases presenciales, porque nada de eso le aplica.
-function PantallaTeoriaCompletadaGrupo() {
+// NUEVO (19/10/2026): invitar a la graduada a recomendar el curso. En el
+// celular abre el menú de compartir del sistema (WhatsApp, etc.); donde no
+// existe (escritorio) abre WhatsApp Web con el mensaje, y además hay un
+// botón para copiarlo.
+const URL_CURSO = "https://www.muvordvial.com";
+
+function RecomendarCurso() {
+  const [copiado, setCopiado] = useState(false);
+
+  const textoCorto =
+    "Acabo de graduarme del curso de educación vial de Muvo RD Vial. Te lo recomiendo.";
+  const mensajeCompleto = `${textoCorto} ${URL_CURSO}`;
+
+  async function compartir() {
+    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+      try {
+        await navigator.share({
+          title: "Muvo RD Vial",
+          text: textoCorto,
+          url: URL_CURSO,
+        });
+      } catch {
+        // Cerró el menú de compartir: no es un error.
+      }
+      return;
+    }
+    window.open(
+      `https://wa.me/?text=${encodeURIComponent(mensajeCompleto)}`,
+      "_blank",
+      "noopener,noreferrer",
+    );
+  }
+
+  async function copiar() {
+    try {
+      await navigator.clipboard.writeText(mensajeCompleto);
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2500);
+    } catch {
+      // Sin permiso de portapapeles: se puede compartir con el otro botón.
+    }
+  }
+
+  return (
+    <div className="rounded-xl bg-white border border-neutral-bg p-8 mt-6 text-center">
+      <p className="font-display font-semibold text-brand-blue text-xl mb-2">
+        Recomienda el curso a tus amigos
+      </p>
+      <p className="text-sm text-neutral-text mb-6">
+        Si el curso te sirvió, ayuda a que más personas aprendan a moverse
+        con seguridad en la vía. Compártelo con quien creas que lo necesita.
+      </p>
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <button
+          type="button"
+          onClick={compartir}
+          className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-brand-pink p-3 font-display font-semibold text-white transition-opacity hover:opacity-90"
+        >
+          <Share2 size={18} />
+          Compartir
+        </button>
+        <button
+          type="button"
+          onClick={copiar}
+          className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-neutral-bg p-3 font-display font-semibold text-brand-blue transition-colors hover:bg-neutral-bg"
+        >
+          {copiado ? <Check size={18} /> : <Copy size={18} />}
+          {copiado ? "¡Copiado!" : "Copiar mensaje"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// NUEVO (19/10/2026): terminó la teoría pero el diploma no se pudo generar
+// (falló la emisión automática y también el intento al abrir el panel,
+// por ejemplo por un corte de Cloudinary). Antes esta pantalla decía que la
+// coordinadora lo estaba preparando; ahora el diploma lo obtiene la propia
+// estudiante, así que se le ofrece reintentar. Reemplaza a
+// PantallaPracticaAprobada y PantallaTeoriaCompletadaGrupo, que ya no aplican
+// (la práctica dejó de ser requisito del diploma).
+function PantallaDiplomaPendiente({
+  onReintentar,
+  generando,
+}: {
+  onReintentar: () => void;
+  generando: boolean;
+}) {
   return (
     <div className="rounded-xl bg-white border border-neutral-bg p-8 text-center">
       <Trophy className="mx-auto mb-3 text-status-success" size={36} />
       <p className="font-display font-semibold text-brand-blue text-xl mb-2">
         ¡Felicidades, completaste el curso!
       </p>
-      <p className="text-sm text-neutral-text">
-        Terminaste las 4 sesiones y todos tus exámenes. Tu diploma está
-        siendo preparado — te avisaremos por correo en cuanto esté listo.
+      <p className="text-sm text-neutral-text mb-6">
+        Terminaste las 4 sesiones y todos tus exámenes, pero no pudimos
+        generar tu diploma en este momento. Inténtalo de nuevo — si el
+        problema continúa, escríbenos desde Soporte.
       </p>
+      <button
+        type="button"
+        onClick={onReintentar}
+        disabled={generando}
+        className="rounded-full bg-brand-pink text-white px-6 py-3 font-medium hover:opacity-90 disabled:opacity-60"
+      >
+        {generando ? "Generando..." : "Generar mi diploma"}
+      </button>
     </div>
   );
 }
@@ -426,12 +537,37 @@ function PantallaChoferesRecomendados({
   );
 }
 
+// NUEVO (19/10/2026): devuelve true si la estudiante ya tiene diploma, y si
+// no lo tiene lo pide al backend (POST /diplomas/me/generar, idempotente).
+// Normalmente el diploma ya se emitió solo al aprobar la última sesión; esto
+// cubre a quienes completaron antes de ese cambio y el caso en que la emisión
+// automática falló.
+async function obtenerODiplomaListo(token: string | null): Promise<boolean> {
+  const base = process.env.NEXT_PUBLIC_API_URL;
+  const cabeceras = { Authorization: `Bearer ${token}` };
+  try {
+    const resExistente = await fetch(`${base}/diplomas/me`, {
+      headers: cabeceras,
+    });
+    if ((await resExistente.json()).success) return true;
+
+    const resGenerar = await fetch(`${base}/diplomas/me/generar`, {
+      method: "POST",
+      headers: cabeceras,
+    });
+    return Boolean((await resGenerar.json()).success);
+  } catch {
+    return false;
+  }
+}
+
 function DashboardContenido() {
   const { usuario, token } = useAuth();
   const [inscripcion, setInscripcion] = useState<Inscripcion | null>(null);
   const [progreso, setProgreso] = useState<Progreso | null>(null);
   const [testCompletado, setTestCompletado] = useState<boolean | null>(null);
   const [diplomaListo, setDiplomaListo] = useState(false);
+  const [generandoDiploma, setGenerandoDiploma] = useState(false);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(false);
 
@@ -506,22 +642,12 @@ function DashboardContenido() {
           if (jsonProgreso.success) setProgreso(jsonProgreso.data);
           if (jsonTest.success) setTestCompletado(jsonTest.completado);
 
-          // NUEVO (08/09/2026): para un estudiante de Grupo (sin
-          // requierePractica), cursoCompletado por sí solo ya vuelve
-          // elegible el diploma — no depende de practicaAprobada, que
-          // para estas estudiantes nunca se vuelve true.
-          const elegibleParaDiploma =
-            jsonProgreso.success &&
-            jsonProgreso.data.cursoCompletado &&
-            (!requierePractica || jsonProgreso.data.practicaAprobada);
-
-          if (elegibleParaDiploma) {
-            const resDiploma = await fetch(
-              `${process.env.NEXT_PUBLIC_API_URL}/diplomas/me`,
-              { headers: { Authorization: `Bearer ${token}` } },
-            );
-            const jsonDiploma = await resDiploma.json();
-            if (!cancelado) setDiplomaListo(jsonDiploma.success);
+          // CAMBIO (19/10/2026): el diploma depende SOLO de haber
+          // completado la teoría (cursoCompletado) — la práctica ya no es
+          // requisito para nadie. Si todavía no existe, se genera aquí.
+          if (jsonProgreso.success && jsonProgreso.data.cursoCompletado) {
+            const listo = await obtenerODiplomaListo(token);
+            if (!cancelado) setDiplomaListo(listo);
           }
         }
       } catch {
@@ -534,7 +660,13 @@ function DashboardContenido() {
     return () => {
       cancelado = true;
     };
-  }, [token, requierePractica, esEscolar]);
+  }, [token, esEscolar]);
+
+  async function reintentarDiploma() {
+    setGenerandoDiploma(true);
+    setDiplomaListo(await obtenerODiplomaListo(token));
+    setGenerandoDiploma(false);
+  }
 
   return (
     <main className="bg-neutral-bg min-h-screen px-6 py-16">
@@ -646,7 +778,7 @@ function DashboardContenido() {
               <ProgresoCarretera
                 progreso={progreso}
                 diplomaListo={diplomaListo}
-                requierePractica={requierePractica}
+                requierePractica={false}
               />
 
               {!progreso.cursoCompletado && (
@@ -705,28 +837,20 @@ function DashboardContenido() {
               )}
 
               {progreso.cursoCompletado && diplomaListo && (
-                <Link
-                  href="/diploma"
-                  className="session-card-in rounded-xl bg-brand-blue text-white p-6 text-center font-display font-semibold hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
-                >
-                  <Trophy size={20} />
-                  Ver mi diploma
-                </Link>
+                <PantallaGraduada token={token} />
               )}
 
-              {/* NUEVO (08/09/2026): estudiantes de Grupo van directo de
-                  "curso completado" a "esperando diploma" — nunca pasan
-                  por PantallaListaParaPractica ni PantallaPracticaAprobada,
-                  que hablan de instructores y práctica en vehículo. */}
-              {progreso.cursoCompletado && !diplomaListo && !requierePractica && (
-                <PantallaTeoriaCompletadaGrupo />
+              {progreso.cursoCompletado && !diplomaListo && (
+                <PantallaDiplomaPendiente
+                  onReintentar={reintentarDiploma}
+                  generando={generandoDiploma}
+                />
               )}
 
-              {progreso.cursoCompletado &&
-                !diplomaListo &&
-                requierePractica &&
-                progreso.practicaAprobada && <PantallaPracticaAprobada />}
-
+              {/* CAMBIO (19/10/2026): graduada = tiene diploma. Debajo se
+                  sigue mostrando el contacto de los instructores
+                  (externos) mientras el chofer no marque la práctica como
+                  hecha; cuando la marca, esta tarjeta desaparece. */}
               {progreso.cursoCompletado &&
                 requierePractica &&
                 !progreso.practicaAprobada && (
@@ -743,6 +867,8 @@ function DashboardContenido() {
                   progreso.programa === "montacargas") && (
                   <PantallaChoferesRecomendados programa={progreso.programa} />
                 )}
+
+              {progreso.cursoCompletado && diplomaListo && <RecomendarCurso />}
             </>
           )}
       </div>
