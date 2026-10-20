@@ -72,6 +72,66 @@ function formularioCrearVacio() {
   };
 }
 
+// NUEVO (18/10/2026): fila de "día + hora de inicio + hora de fin". Antes era
+// un solo <div className="flex gap-2"> con 5 elementos en línea (día, hora,
+// "a", hora, Quitar) que en un celular no cabía y se salía del formulario.
+// En pantallas chicas ahora es una mini-tarjeta de dos columnas (día arriba,
+// las dos horas debajo, con su etiqueta); desde `sm` vuelve a ser una sola
+// línea como siempre. Se usa tanto al crear como al editar.
+function FilaDia({
+  valor,
+  onCambiar,
+  onQuitar,
+}: {
+  valor: DiaDisponibleForm;
+  onCambiar: (campo: keyof DiaDisponibleForm, valor: string) => void;
+  onQuitar: () => void;
+}) {
+  return (
+    <div className="grid grid-cols-2 gap-2 rounded-lg border border-neutral-bg p-3 sm:flex sm:items-center sm:rounded-none sm:border-0 sm:p-0">
+      <select
+        value={valor.dia}
+        onChange={(e) => onCambiar("dia", e.target.value)}
+        className="col-span-2 w-full min-w-0 rounded-lg border border-neutral-bg bg-white px-2 py-2 text-sm sm:w-auto sm:py-1.5"
+      >
+        {DIAS.map((opcion) => (
+          <option key={opcion.valor} value={opcion.valor}>
+            {opcion.etiqueta}
+          </option>
+        ))}
+      </select>
+      <label className="min-w-0 text-[11px] text-neutral-text sm:contents">
+        <span className="sm:hidden">Inicio</span>
+        <input
+          type="time"
+          required
+          value={valor.horaInicio}
+          onChange={(e) => onCambiar("horaInicio", e.target.value)}
+          className="mt-0.5 block w-full min-w-0 rounded-lg border border-neutral-bg px-3 py-2 text-sm sm:mt-0 sm:w-auto sm:py-1.5"
+        />
+      </label>
+      <span className="hidden text-xs text-neutral-text sm:inline">a</span>
+      <label className="min-w-0 text-[11px] text-neutral-text sm:contents">
+        <span className="sm:hidden">Fin</span>
+        <input
+          type="time"
+          required
+          value={valor.horaFin}
+          onChange={(e) => onCambiar("horaFin", e.target.value)}
+          className="mt-0.5 block w-full min-w-0 rounded-lg border border-neutral-bg px-3 py-2 text-sm sm:mt-0 sm:w-auto sm:py-1.5"
+        />
+      </label>
+      <button
+        type="button"
+        onClick={onQuitar}
+        className="col-span-2 justify-self-start text-xs text-brand-pink sm:col-span-1 sm:px-2"
+      >
+        Quitar
+      </button>
+    </div>
+  );
+}
+
 // Pestaña 1 (sin cambios de lógica): instructores de práctica de la
 // fundación — con cuenta, acceso al sistema y aprobación de prácticas.
 function InstructoresPractica() {
@@ -390,7 +450,7 @@ function InstructoresPractica() {
       )}
 
       {creando && (
-        <form onSubmit={crearChofer} className="grid gap-4 mb-8 rounded-xl bg-white border border-neutral-bg p-6">
+        <form onSubmit={crearChofer} className="grid gap-4 mb-8 rounded-xl bg-white border border-neutral-bg p-4 sm:p-6">
           <div className="flex items-center justify-between">
             <h3 className="font-display font-semibold text-brand-blue">Nuevo chofer</h3>
             <button
@@ -409,68 +469,68 @@ function InstructoresPractica() {
             </button>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <label className="text-sm text-neutral-text">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <label className="min-w-0 text-sm text-neutral-text">
               Nombre
               <input
                 type="text"
                 required
                 value={formCrear.nombre}
                 onChange={(e) => setFormCrear((p) => ({ ...p, nombre: e.target.value }))}
-                className="mt-1 w-full rounded-lg border border-neutral-bg px-3 py-2 text-sm"
+                className="mt-1 w-full min-w-0 rounded-lg border border-neutral-bg px-3 py-2 text-sm"
               />
             </label>
-            <label className="text-sm text-neutral-text">
+            <label className="min-w-0 text-sm text-neutral-text">
               Apellido
               <input
                 type="text"
                 required
                 value={formCrear.apellido}
                 onChange={(e) => setFormCrear((p) => ({ ...p, apellido: e.target.value }))}
-                className="mt-1 w-full rounded-lg border border-neutral-bg px-3 py-2 text-sm"
+                className="mt-1 w-full min-w-0 rounded-lg border border-neutral-bg px-3 py-2 text-sm"
               />
             </label>
-            <label className="text-sm text-neutral-text">
+            <label className="min-w-0 text-sm text-neutral-text">
               Cédula
               <input
                 type="text"
                 required
                 value={formCrear.cedula}
                 onChange={(e) => setFormCrear((p) => ({ ...p, cedula: e.target.value }))}
-                className="mt-1 w-full rounded-lg border border-neutral-bg px-3 py-2 text-sm"
+                className="mt-1 w-full min-w-0 rounded-lg border border-neutral-bg px-3 py-2 text-sm"
               />
             </label>
-            <label className="text-sm text-neutral-text">
+            <label className="min-w-0 text-sm text-neutral-text">
               Teléfono
               <input
                 type="text"
                 required
                 value={formCrear.telefono}
                 onChange={(e) => setFormCrear((p) => ({ ...p, telefono: e.target.value }))}
-                className="mt-1 w-full rounded-lg border border-neutral-bg px-3 py-2 text-sm"
+                className="mt-1 w-full min-w-0 rounded-lg border border-neutral-bg px-3 py-2 text-sm"
               />
             </label>
-            <label className="text-sm text-neutral-text col-span-2">
+            <label className="min-w-0 text-sm text-neutral-text sm:col-span-2">
               Correo
               <input
                 type="email"
                 required
                 value={formCrear.email}
                 onChange={(e) => setFormCrear((p) => ({ ...p, email: e.target.value }))}
-                className="mt-1 w-full rounded-lg border border-neutral-bg px-3 py-2 text-sm"
+                className="mt-1 w-full min-w-0 rounded-lg border border-neutral-bg px-3 py-2 text-sm"
               />
             </label>
-            <label className="text-sm text-neutral-text col-span-2">
+            <label className="min-w-0 text-sm text-neutral-text sm:col-span-2">
               Contraseña
               <input
                 type="password"
                 required
                 value={formCrear.password}
                 onChange={(e) => setFormCrear((p) => ({ ...p, password: e.target.value }))}
-                className="mt-1 w-full rounded-lg border border-neutral-bg px-3 py-2 text-sm"
+                className="mt-1 w-full min-w-0 rounded-lg border border-neutral-bg px-3 py-2 text-sm"
               />
             </label>
-            <label className="text-sm text-neutral-text">
+            <label className="min-w-0 text-sm text-neutral-text">
               Provincia
               {/* FIX (texto libre → lista validada): antes era un
                   <input type="text">, sin relación con la lista real de
@@ -484,7 +544,7 @@ function InstructoresPractica() {
                 required
                 value={formCrear.provincia}
                 onChange={(e) => setFormCrear((p) => ({ ...p, provincia: e.target.value }))}
-                className="mt-1 w-full rounded-lg border border-neutral-bg px-3 py-2 text-sm"
+                className="mt-1 w-full min-w-0 rounded-lg border border-neutral-bg px-3 py-2 text-sm"
               >
                 <option value="" disabled>
                   Elige provincia
@@ -496,14 +556,14 @@ function InstructoresPractica() {
                 ))}
               </select>
             </label>
-            <label className="text-sm text-neutral-text">
+            <label className="min-w-0 text-sm text-neutral-text">
               Fecha de nacimiento
               <input
                 type="date"
                 required
                 value={formCrear.fechaNacimiento}
                 onChange={(e) => setFormCrear((p) => ({ ...p, fechaNacimiento: e.target.value }))}
-                className="mt-1 w-full rounded-lg border border-neutral-bg px-3 py-2 text-sm"
+                className="mt-1 w-full min-w-0 rounded-lg border border-neutral-bg px-3 py-2 text-sm"
               />
             </label>
           </div>
@@ -512,41 +572,12 @@ function InstructoresPractica() {
             <p className="text-sm text-neutral-text mb-2">Días y horarios de práctica</p>
             <div className="grid gap-2">
               {diasNuevo.map((d, i) => (
-                <div key={i} className="flex gap-2 items-center">
-                  <select
-                    value={d.dia}
-                    onChange={(e) => actualizarDiaNuevo(i, "dia", e.target.value)}
-                    className="rounded-lg border border-neutral-bg px-2 py-1.5 text-sm"
-                  >
-                    {DIAS.map((opcion) => (
-                      <option key={opcion.valor} value={opcion.valor}>
-                        {opcion.etiqueta}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    type="time"
-                    required
-                    value={d.horaInicio}
-                    onChange={(e) => actualizarDiaNuevo(i, "horaInicio", e.target.value)}
-                    className="rounded-lg border border-neutral-bg px-3 py-1.5 text-sm"
-                  />
-                  <span className="text-xs text-neutral-text">a</span>
-                  <input
-                    type="time"
-                    required
-                    value={d.horaFin}
-                    onChange={(e) => actualizarDiaNuevo(i, "horaFin", e.target.value)}
-                    className="rounded-lg border border-neutral-bg px-3 py-1.5 text-sm"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => quitarDiaNuevo(i)}
-                    className="text-xs text-brand-pink px-2"
-                  >
-                    Quitar
-                  </button>
-                </div>
+                <FilaDia
+                  key={i}
+                  valor={d}
+                  onCambiar={(campo, valor) => actualizarDiaNuevo(i, campo, valor)}
+                  onQuitar={() => quitarDiaNuevo(i)}
+                />
               ))}
             </div>
             <button
@@ -572,7 +603,7 @@ function InstructoresPractica() {
                 {zonasNuevo.map((z, i) => (
                   <div
                     key={i}
-                    className="flex items-center justify-between rounded-lg bg-neutral-bg px-3 py-1.5 text-sm"
+                    className="flex items-center justify-between gap-2 rounded-lg bg-neutral-bg px-3 py-1.5 text-sm"
                   >
                     <span>
                       {z.municipio}, {z.provincia}
@@ -588,14 +619,14 @@ function InstructoresPractica() {
                 ))}
               </div>
             )}
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row">
               <select
                 value={provinciaZonaNueva}
                 onChange={(e) => {
                   setProvinciaZonaNueva(e.target.value);
                   setMunicipioZonaNueva("");
                 }}
-                className="flex-1 rounded-lg border border-neutral-bg px-3 py-2 text-sm bg-white"
+                className="w-full min-w-0 sm:flex-1 rounded-lg border border-neutral-bg px-3 py-2 text-sm bg-white"
               >
                 <option value="">Provincia</option>
                 {referencia.map((p) => (
@@ -608,7 +639,7 @@ function InstructoresPractica() {
                 value={municipioZonaNueva}
                 onChange={(e) => setMunicipioZonaNueva(e.target.value)}
                 disabled={!provinciaZonaNueva}
-                className="flex-1 rounded-lg border border-neutral-bg px-3 py-2 text-sm bg-white disabled:opacity-60"
+                className="w-full min-w-0 sm:flex-1 rounded-lg border border-neutral-bg px-3 py-2 text-sm bg-white disabled:opacity-60"
               >
                 <option value="">
                   {provinciaZonaNueva ? "Municipio" : "Elige provincia"}
@@ -625,7 +656,7 @@ function InstructoresPractica() {
                 type="button"
                 onClick={agregarZonaNueva}
                 disabled={!provinciaZonaNueva || !municipioZonaNueva}
-                className="rounded-lg bg-brand-blue-light text-white text-sm px-3 disabled:opacity-50"
+                className="w-full rounded-lg bg-brand-blue-light px-3 py-2 text-sm text-white disabled:opacity-50 sm:w-auto"
               >
                 + Agregar
               </button>
@@ -658,41 +689,12 @@ function InstructoresPractica() {
                 </p>
                 <div className="grid gap-2">
                   {diasEdicion.map((d, i) => (
-                    <div key={i} className="flex gap-2 items-center">
-                      <select
-                        value={d.dia}
-                        onChange={(e) => actualizarDiaEdicion(i, "dia", e.target.value)}
-                        className="rounded-lg border border-neutral-bg px-2 py-1.5 text-sm"
-                      >
-                        {DIAS.map((opcion) => (
-                          <option key={opcion.valor} value={opcion.valor}>
-                            {opcion.etiqueta}
-                          </option>
-                        ))}
-                      </select>
-                      <input
-                        type="time"
-                        required
-                        value={d.horaInicio}
-                        onChange={(e) => actualizarDiaEdicion(i, "horaInicio", e.target.value)}
-                        className="rounded-lg border border-neutral-bg px-3 py-1.5 text-sm"
-                      />
-                      <span className="text-xs text-neutral-text">a</span>
-                      <input
-                        type="time"
-                        required
-                        value={d.horaFin}
-                        onChange={(e) => actualizarDiaEdicion(i, "horaFin", e.target.value)}
-                        className="rounded-lg border border-neutral-bg px-3 py-1.5 text-sm"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => quitarDiaEdicion(i)}
-                        className="text-xs text-brand-pink px-2"
-                      >
-                        Quitar
-                      </button>
-                    </div>
+                    <FilaDia
+                      key={i}
+                      valor={d}
+                      onCambiar={(campo, valor) => actualizarDiaEdicion(i, campo, valor)}
+                      onQuitar={() => quitarDiaEdicion(i)}
+                    />
                   ))}
                 </div>
                 <button
@@ -712,7 +714,7 @@ function InstructoresPractica() {
                       {zonasEdicion.map((z, i) => (
                         <div
                           key={i}
-                          className="flex items-center justify-between rounded-lg bg-neutral-bg px-3 py-1.5 text-sm"
+                          className="flex items-center justify-between gap-2 rounded-lg bg-neutral-bg px-3 py-1.5 text-sm"
                         >
                           <span>
                             {z.municipio}, {z.provincia}
@@ -728,14 +730,14 @@ function InstructoresPractica() {
                       ))}
                     </div>
                   )}
-                  <div className="flex gap-2">
+                  <div className="flex flex-col gap-2 sm:flex-row">
                     <select
                       value={provinciaZonaEdicion}
                       onChange={(e) => {
                         setProvinciaZonaEdicion(e.target.value);
                         setMunicipioZonaEdicion("");
                       }}
-                      className="flex-1 rounded-lg border border-neutral-bg px-3 py-2 text-sm bg-white"
+                      className="w-full min-w-0 sm:flex-1 rounded-lg border border-neutral-bg px-3 py-2 text-sm bg-white"
                     >
                       <option value="">Provincia</option>
                       {referencia.map((p) => (
@@ -748,7 +750,7 @@ function InstructoresPractica() {
                       value={municipioZonaEdicion}
                       onChange={(e) => setMunicipioZonaEdicion(e.target.value)}
                       disabled={!provinciaZonaEdicion}
-                      className="flex-1 rounded-lg border border-neutral-bg px-3 py-2 text-sm bg-white disabled:opacity-60"
+                      className="w-full min-w-0 sm:flex-1 rounded-lg border border-neutral-bg px-3 py-2 text-sm bg-white disabled:opacity-60"
                     >
                       <option value="">
                         {provinciaZonaEdicion ? "Municipio" : "Elige provincia"}
@@ -766,7 +768,7 @@ function InstructoresPractica() {
                       type="button"
                       onClick={agregarZonaEdicion}
                       disabled={!provinciaZonaEdicion || !municipioZonaEdicion}
-                      className="rounded-lg bg-brand-blue-light text-white text-sm px-3 disabled:opacity-50"
+                      className="w-full rounded-lg bg-brand-blue-light px-3 py-2 text-sm text-white disabled:opacity-50 sm:w-auto"
                     >
                       + Agregar
                     </button>
@@ -796,9 +798,9 @@ function InstructoresPractica() {
                 </div>
               </form>
             ) : (
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0 [overflow-wrap:anywhere]">
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
                     <p className="font-medium text-brand-blue text-sm">
                       {instructor.userId.nombre} {instructor.userId.apellido}
                     </p>
@@ -829,7 +831,7 @@ function InstructoresPractica() {
                     </p>
                   )}
                 </div>
-                <div className="flex gap-2 shrink-0">
+                <div className="flex flex-wrap gap-2 sm:shrink-0">
                   <button
                     onClick={() => toggleActivo(instructor)}
                     className="text-xs font-medium px-3 py-1.5 rounded-full bg-neutral-bg text-neutral-text hover:bg-brand-pink-light"

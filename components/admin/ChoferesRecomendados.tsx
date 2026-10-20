@@ -243,7 +243,7 @@ export default function ChoferesRecomendados({
       {formAbierto !== null && (
         <form
           onSubmit={guardar}
-          className="grid gap-4 mb-8 rounded-xl bg-white border-2 border-brand-blue-light p-6"
+          className="grid gap-4 mb-8 rounded-xl bg-white border-2 border-brand-blue-light p-4 sm:p-6"
         >
           <div className="flex items-center justify-between">
             <h3 className="font-display font-semibold text-brand-blue">
@@ -258,8 +258,8 @@ export default function ChoferesRecomendados({
             </button>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <label className="text-sm text-neutral-text col-span-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <label className="min-w-0 text-sm text-neutral-text sm:col-span-2">
               Nombre completo
               <input
                 type="text"
@@ -267,10 +267,10 @@ export default function ChoferesRecomendados({
                 maxLength={120}
                 value={form.nombre}
                 onChange={(e) => setForm((p) => ({ ...p, nombre: e.target.value }))}
-                className="mt-1 w-full rounded-lg border border-neutral-bg px-3 py-2 text-sm"
+                className="mt-1 w-full min-w-0 rounded-lg border border-neutral-bg px-3 py-2 text-sm"
               />
             </label>
-            <label className="text-sm text-neutral-text">
+            <label className="min-w-0 text-sm text-neutral-text">
               Celular / teléfono
               <input
                 type="tel"
@@ -278,17 +278,17 @@ export default function ChoferesRecomendados({
                 maxLength={30}
                 value={form.telefono}
                 onChange={(e) => setForm((p) => ({ ...p, telefono: e.target.value }))}
-                className="mt-1 w-full rounded-lg border border-neutral-bg px-3 py-2 text-sm"
+                className="mt-1 w-full min-w-0 rounded-lg border border-neutral-bg px-3 py-2 text-sm"
               />
             </label>
-            <label className="text-sm text-neutral-text">
+            <label className="min-w-0 text-sm text-neutral-text">
               Correo (opcional)
               <input
                 type="email"
                 maxLength={120}
                 value={form.email}
                 onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
-                className="mt-1 w-full rounded-lg border border-neutral-bg px-3 py-2 text-sm"
+                className="mt-1 w-full min-w-0 rounded-lg border border-neutral-bg px-3 py-2 text-sm"
               />
             </label>
           </div>
@@ -300,7 +300,7 @@ export default function ChoferesRecomendados({
                 {zonas.map((z, i) => (
                   <div
                     key={`${z.provincia}-${z.municipio}`}
-                    className="flex items-center justify-between rounded-lg bg-neutral-bg px-3 py-1.5 text-sm"
+                    className="flex items-center justify-between gap-2 rounded-lg bg-neutral-bg px-3 py-1.5 text-sm"
                   >
                     <span>
                       {z.municipio}, {z.provincia}
@@ -316,14 +316,14 @@ export default function ChoferesRecomendados({
                 ))}
               </div>
             )}
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row">
               <select
                 value={provinciaSel}
                 onChange={(e) => {
                   setProvinciaSel(e.target.value);
                   setMunicipioSel("");
                 }}
-                className="flex-1 rounded-lg border border-neutral-bg px-3 py-2 text-sm bg-white"
+                className="w-full min-w-0 sm:flex-1 rounded-lg border border-neutral-bg px-3 py-2 text-sm bg-white"
               >
                 <option value="">Provincia</option>
                 {referencia.map((p) => (
@@ -336,7 +336,7 @@ export default function ChoferesRecomendados({
                 value={municipioSel}
                 onChange={(e) => setMunicipioSel(e.target.value)}
                 disabled={!provinciaSel}
-                className="flex-1 rounded-lg border border-neutral-bg px-3 py-2 text-sm bg-white disabled:opacity-60"
+                className="w-full min-w-0 sm:flex-1 rounded-lg border border-neutral-bg px-3 py-2 text-sm bg-white disabled:opacity-60"
               >
                 <option value="">{provinciaSel ? "Municipio" : "Elige provincia"}</option>
                 {municipiosDisponibles().map((m) => (
@@ -349,7 +349,7 @@ export default function ChoferesRecomendados({
                 type="button"
                 onClick={agregarZona}
                 disabled={!provinciaSel || !municipioSel}
-                className="rounded-lg bg-brand-blue-light text-white text-sm px-3 disabled:opacity-50"
+                className="w-full rounded-lg bg-brand-blue-light px-3 py-2 text-sm text-white disabled:opacity-50 sm:w-auto"
               >
                 + Agregar
               </button>
@@ -381,9 +381,9 @@ export default function ChoferesRecomendados({
             key={c._id}
             className="rounded-lg bg-white border border-neutral-bg border-l-4 border-l-brand-blue-light p-4"
           >
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0 [overflow-wrap:anywhere]">
+                <div className="flex flex-wrap items-center gap-2 mb-1">
                   <p className="font-medium text-brand-blue text-sm">{c.nombre}</p>
                   <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-brand-blue-light/10 text-brand-blue-light">
                     Recomendado
@@ -400,7 +400,7 @@ export default function ChoferesRecomendados({
                   Zonas: {c.zonas.map((z) => `${z.municipio}, ${z.provincia}`).join(" · ")}
                 </p>
               </div>
-              <div className="flex flex-wrap gap-2 justify-end shrink-0">
+              <div className="flex flex-wrap gap-2 sm:justify-end sm:shrink-0">
                 <button
                   onClick={() => toggleActivo(c)}
                   className="text-xs font-medium px-3 py-1.5 rounded-full bg-neutral-bg text-neutral-text hover:bg-brand-pink-light"

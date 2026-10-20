@@ -69,6 +69,13 @@ export default function PanelEstudiantesPage() {
   const [grupos, setGrupos] = useState<Grupo[]>([]);
   const [filtroGrupo, setFiltroGrupo] = useState(""); // "" = todos
 
+  // NUEVO (18/10/2026): exportar el listado de estudiantes en PDF con el
+  // membrete de Muvo RD Vial (GET /usuarios/exportar-pdf). Por defecto NO
+  // incluye cédula ni correo: son datos personales y este PDF suele
+  // entregarse a instituciones.
+  const [exportando, setExportando] = useState(false);
+  const [incluirContacto, setIncluirContacto] = useState(false);
+
   function queryParaPestana(p: Pestana) {
     if (p === "activas") return "activo=true&conDiploma=false";
     if (p === "graduadas") return "activo=true&conDiploma=true";
@@ -234,6 +241,47 @@ export default function PanelEstudiantesPage() {
     }
   }
 
+  async function exportarPDF() {
+    setExportando(true);
+    setMensaje(null);
+    try {
+      const params = new URLSearchParams();
+      if (filtroGrupo) params.set("grupoId", filtroGrupo);
+      if (incluirContacto) params.set("incluirContacto", "true");
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/usuarios/exportar-pdf?${params.toString()}`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+
+      if (!res.ok) {
+        // Los errores del backend vienen como JSON; el PDF, como binario.
+        const json = await res.json().catch(() => null);
+        setMensaje({
+          tipo: "error",
+          texto: json?.error || "No se pudo generar el PDF.",
+        });
+        return;
+      }
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const enlace = document.createElement("a");
+      enlace.href = url;
+      enlace.download = `listado-estudiantes-muvo-rd-vial-${new Date().toISOString().slice(0, 10)}.pdf`;
+      document.body.appendChild(enlace);
+      enlace.click();
+      enlace.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+
+      setMensaje({ tipo: "ok", texto: "PDF generado. Revisa tus descargas." });
+    } catch {
+      setMensaje({ tipo: "error", texto: "No pudimos conectar con el servidor." });
+    } finally {
+      setExportando(false);
+    }
+  }
+
   // Las 4 llaves reales de estadoPago + "sin_inscripcion". Si en el futuro se
   // agrega un valor nuevo a estadoPago en el backend, hay que agregarlo aquí
   // también o vuelve a pasar el mismo error (undefined.clase).
@@ -315,6 +363,41 @@ export default function PanelEstudiantesPage() {
               </label>
             </div>
           )}
+
+          {/* NUEVO (18/10/2026): exportar listado en PDF con membrete. */}
+          <div className="mb-6 rounded-lg border border-neutral-bg bg-white p-4">
+            <p className="text-sm font-medium text-brand-blue mb-1">
+              Exportar listado en PDF
+            </p>
+            <p className="text-xs text-neutral-text mb-3">
+              Hoja con el membrete de Muvo RD Vial: una fila por estudiante,
+              con el curso en el que se inscribió y si lo completó o está
+              pendiente.{" "}
+              {filtroGrupo
+                ? "Solo incluye el grupo elegido arriba."
+                : "Incluye todas las estudiantes activas (individuales y de grupo); no incluye cuentas archivadas."}
+            </p>
+            <label className="mb-3 flex items-start gap-2 text-xs text-neutral-text">
+              <input
+                type="checkbox"
+                checked={incluirContacto}
+                onChange={(e) => setIncluirContacto(e.target.checked)}
+                className="mt-0.5"
+              />
+              <span>
+                Incluir cédula y correo (solo uso interno — no lo marques si el
+                PDF se va a compartir con una institución).
+              </span>
+            </label>
+            <button
+              type="button"
+              onClick={exportarPDF}
+              disabled={exportando}
+              className="w-full sm:w-auto rounded-lg bg-brand-blue text-white px-5 py-2 text-sm font-medium hover:opacity-90 disabled:opacity-60"
+            >
+              {exportando ? "Generando PDF..." : "Descargar PDF"}
+            </button>
+          </div>
 
           {cargando && <p className="text-sm text-neutral-text">Cargando...</p>}
 
