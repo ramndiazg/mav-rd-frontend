@@ -2,11 +2,13 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useState,
   ReactNode,
 } from "react";
+import { useRevalidar } from "@/hooks/useRevalidar";
 
 type Rol = "estudiante" | "coordinadora" | "admin" | "conductor";
 
@@ -69,7 +71,18 @@ type AuthContextType = {
   login: (email: string, password: string) => Promise<ResultadoAuth>;
   registro: (datos: DatosRegistro) => Promise<ResultadoAuth>;
   logout: () => void;
+  // NUEVO (21/10/2026): vuelve a pedir el perfil al backend y actualiza
+  // `usuario` en silencio (sin pantalla de "Cargando..."). Devuelve true
+  // si pudo refrescar. Ver useRevalidar.ts para el porqué.
+  refrescarUsuario: () => Promise<boolean>;
+  // NUEVO (21/10/2026): lo llama /verificar-email al confirmar el correo —
+  // refresca esta pestaña y avisa a las demás pestañas abiertas de este
+  // mismo navegador.
+  notificarEmailVerificado: () => void;
 };
+
+// NUEVO (21/10/2026): canal entre pestañas del mismo navegador.
+const CANAL_AUTH = "muvo-auth";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -138,6 +151,81 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // NUEVO (21/10/2026): refresco silencioso del usuario. Lee el token de
+  // localStorage al momento de llamar (no del estado) para no depender de
+  // un closure viejo, y usa cache: "no-store" para que ningún caché del
+  // navegador responda con un perfil anterior.
+  const refrescarUsuario = useCallback(async (): Promise<boolean> => {
+    const tokenActual = window.localStorage.getItem("token");
+    if (!tokenActual) return false;
+
+    try {
+      const res = await fetch(`${API_URL}/auth/perfil`, {
+        headers: { Authorization: `Bearer ${tokenActual}` },
+        cache: "no-store",
+      });
+
+      // Mismo guard que verificarSesion(): si mientras tanto se hizo
+      // login/logout con otra cuenta, esta respuesta quedó obsoleta.
+      if (window.localStorage.getItem("token") !== tokenActual) return false;
+
+      // Token vencido o cuenta desactivada: la sesión ya no sirve.
+      if (res.status === 401) {
+        window.localStorage.removeItem("token");
+        setToken(null);
+        setUsuario(null);
+        return false;
+      }
+
+      const json = await res.json();
+      if (!json.success) return false;
+
+      // Si nada cambió se conserva el mismo objeto, para no provocar
+      // re-renders (ni efectos de RutaProtegida) en cada revalidación.
+      setUsuario((previo) =>
+        previo && JSON.stringify(previo) === JSON.stringify(json.data.usuario)
+          ? previo
+          : json.data.usuario,
+      );
+      return true;
+    } catch {
+      // Error de red: se conserva lo que ya hay en pantalla.
+      return false;
+    }
+  }, []);
+
+  // Revalida al volver a la pestaña (cubre "fui a Gmail y regresé") y, solo
+  // mientras la estudiante tiene el correo sin verificar, pregunta cada 6 s
+  // con la pestaña visible (cubre "verifiqué en otra ventana/app").
+  const esperandoVerificacion =
+    !!usuario && usuario.rol === "estudiante" && !usuario.emailVerificado;
+
+  useRevalidar(refrescarUsuario, {
+    activo: !!usuario,
+    intervaloMs: esperandoVerificacion ? 6000 : null,
+    minEntreEventosMs: 15000,
+  });
+
+  // Otra pestaña de este navegador confirmó el correo: refrescar ya.
+  useEffect(() => {
+    if (typeof BroadcastChannel === "undefined") return;
+    const canal = new BroadcastChannel(CANAL_AUTH);
+    canal.onmessage = (evento) => {
+      if (evento.data?.tipo === "email-verificado") {
+        void refrescarUsuario();
+      }
+    };
+    return () => canal.close();
+  }, [refrescarUsuario]);
+
+  const notificarEmailVerificado = useCallback(() => {
+    void refrescarUsuario();
+    if (typeof BroadcastChannel === "undefined") return;
+    const canal = new BroadcastChannel(CANAL_AUTH);
+    canal.postMessage({ tipo: "email-verificado" });
+    canal.close();
+  }, [refrescarUsuario]);
+
   async function login(email: string, password: string): Promise<ResultadoAuth> {
     try {
       const res = await fetch(`${API_URL}/auth/login`, {
@@ -194,7 +282,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ usuario, token, cargando, login, registro, logout }}
+      value={{
+        usuario,
+        token,
+        cargando,
+        login,
+        registro,
+        logout,
+        refrescarUsuario,
+        notificarEmailVerificado,
+      }}
     >
       {children}
     </AuthContext.Provider>

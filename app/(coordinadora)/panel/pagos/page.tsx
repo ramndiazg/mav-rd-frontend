@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRevalidar } from "@/hooks/useRevalidar";
 
 type Estudiante = {
   _id: string;
@@ -142,6 +143,28 @@ export default function PanelPagosPage() {
       cancelado = true;
     };
   }, [token, filtro]);
+
+  // NUEVO (21/10/2026): la lista de comprobantes se pedía solo al abrir la
+  // pantalla, así que un voucher nuevo no aparecía hasta recargar. Ahora se
+  // revisa en silencio al volver a la pestaña y cada 30 s con la pestaña
+  // visible. Solo reemplaza la lista: no toca el formulario de abajo ni los
+  // mensajes, y si falla por red conserva la lista actual.
+  useRevalidar(
+    async () => {
+      try {
+        const query = filtro ? `?estadoPago=${filtro}` : "";
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/inscripciones${query}`,
+          { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" },
+        );
+        const json = await res.json();
+        if (json.success) setInscripciones(json.data);
+      } catch {
+        // se conserva la lista actual
+      }
+    },
+    { activo: !!token && procesandoId === null, intervaloMs: 30000 },
+  );
 
   function cambiarFiltro(valor: "" | EstadoPago) {
     setCargandoLista(true);

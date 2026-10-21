@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { BookOpen, CheckCircle2, Lock, Trophy, ClipboardList, Phone, Mail, Clock, MapPin, Download, Share2, Copy, Check } from "lucide-react";
+import { BookOpen, CheckCircle2, Lock, Trophy, ClipboardList, Phone, Mail, Clock, MapPin, Download, Share2, Copy, Check, RefreshCw } from "lucide-react";
 import RutaProtegida from "@/components/auth/RutaProtegida";
 import { useAuth } from "@/contexts/AuthContext";
 import ProgresoCarretera from "@/components/dashboard/ProgresoCarretera";
 import { etiquetaPrograma } from "@/lib/programas";
+import { useRevalidar } from "@/hooks/useRevalidar";
 
 type Progreso = {
   sesionActualDesbloqueada: number;
@@ -84,11 +85,27 @@ function estadoSesion(numero: number, progreso: Progreso) {
 }
 
 function AvisoEmailSinVerificar() {
-  const { usuario, token } = useAuth();
+  const { usuario, token, refrescarUsuario } = useAuth();
   const [enviando, setEnviando] = useState(false);
+  const [comprobando, setComprobando] = useState(false);
   const [mensaje, setMensaje] = useState<string | null>(null);
 
   if (!usuario || usuario.emailVerificado) return null;
+
+  // NUEVO (21/10/2026): salida manual por si la actualización automática
+  // (AuthContext) tarda. Si el correo ya quedó verificado, `usuario` se
+  // actualiza y este aviso desaparece solo.
+  async function yaVerifique() {
+    setComprobando(true);
+    setMensaje(null);
+    const ok = await refrescarUsuario();
+    setComprobando(false);
+    setMensaje(
+      ok
+        ? "Aún no vemos la verificación. Abre el link del correo y vuelve aquí."
+        : "No pudimos comprobarlo. Intenta de nuevo.",
+    );
+  }
 
   async function reenviar() {
     setEnviando(true);
@@ -114,8 +131,15 @@ function AvisoEmailSinVerificar() {
   return (
     <div className="rounded-lg bg-brand-pink-light border border-brand-pink p-3 text-sm text-brand-blue mb-6 flex items-center justify-between gap-3 flex-wrap">
       <span>Verifica tu correo para poder inscribirte en el curso.</span>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         {mensaje && <span className="text-xs">{mensaje}</span>}
+        <button
+          onClick={yaVerifique}
+          disabled={comprobando}
+          className="text-xs font-medium px-3 py-1.5 rounded-full border border-brand-pink text-brand-pink hover:bg-brand-pink hover:text-white disabled:opacity-60 shrink-0"
+        >
+          {comprobando ? "Comprobando..." : "Ya verifiqué"}
+        </button>
         <button
           onClick={reenviar}
           disabled={enviando}
@@ -124,6 +148,32 @@ function AvisoEmailSinVerificar() {
           {enviando ? "Enviando..." : "Reenviar correo"}
         </button>
       </div>
+    </div>
+  );
+}
+
+// NUEVO (21/10/2026): le dice a la estudiante que la pantalla NO está
+// congelada (se revalida sola, ver useRevalidar) y le da un botón manual.
+function IndicadorActualizacion({
+  onActualizar,
+  actualizando,
+}: {
+  onActualizar: () => void;
+  actualizando: boolean;
+}) {
+  return (
+    <div className="mt-6 flex flex-col items-center gap-2">
+      <p className="text-xs text-neutral-text opacity-70">
+        Esta pantalla se actualiza sola cuando haya novedades.
+      </p>
+      <button
+        onClick={onActualizar}
+        disabled={actualizando}
+        className="inline-flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full border border-brand-blue text-brand-blue hover:bg-brand-blue hover:text-white disabled:opacity-60"
+      >
+        <RefreshCw size={12} className={actualizando ? "animate-spin" : ""} />
+        {actualizando ? "Actualizando..." : "Actualizar ahora"}
+      </button>
     </div>
   );
 }
@@ -595,26 +645,57 @@ function DashboardContenido() {
   // igual que el flujo estándar.
   const esEscolar = usuario?.grupoTipo === "colegio";
 
-  useEffect(() => {
-    let cancelado = false;
+  // CAMBIO (21/10/2026): antes esto era un useEffect que pedía todo UNA sola
+  // vez al montar — por eso, si la coordinadora confirmaba el pago, la
+  // estudiante seguía viendo "pendiente" hasta salir y volver a entrar. Se
+  // convirtió en una función reutilizable (`cargarTodo`) que se llama:
+  //   - al montar (con "Cargando...", como siempre),
+  //   - en silencio cada vez que la persona vuelve a la pestaña,
+  //   - en silencio cada 10 s MIENTRAS el pago está en revisión.
+  // Las llamadas en silencio no tocan `cargando` ni muestran error si
+  // fallan por red: se conserva lo que ya está en pantalla.
+  const ultimaSolicitud = useRef(0);
+  const estadoPagoPrevio = useRef<Inscripcion["estadoPago"] | null>(null);
+  const diplomaListoRef = useRef(false);
+  const [actualizando, setActualizando] = useState(false);
+  const [pagoRecienConfirmado, setPagoRecienConfirmado] = useState(false);
 
-    (async () => {
+  const cargarTodo = useCallback(
+    async (silencioso: boolean) => {
+      // Si llegan dos cargas casi juntas, solo vale la última.
+      const solicitud = ++ultimaSolicitud.current;
+      const vigente = () => solicitud === ultimaSolicitud.current;
+
       try {
         const resInscripcion = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/inscripciones/me`,
-          { headers: { Authorization: `Bearer ${token}` } },
+          { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" },
         );
         const jsonInscripcion = await resInscripcion.json();
 
-        if (cancelado) return;
+        if (!vigente()) return;
 
         if (!jsonInscripcion.success) {
-          setError(true);
+          if (!silencioso) setError(true);
           return;
         }
 
         const inscripcionActual: Inscripcion | null = jsonInscripcion.data;
+
+        // Avisa una sola vez cuando el pago pasa de "en revisión" a
+        // "pagado" mientras la estudiante está mirando la pantalla.
+        const previo = estadoPagoPrevio.current;
+        estadoPagoPrevio.current = inscripcionActual?.estadoPago ?? null;
+        if (
+          previo &&
+          previo !== "pagado" &&
+          inscripcionActual?.estadoPago === "pagado"
+        ) {
+          setPagoRecienConfirmado(true);
+        }
+
         setInscripcion(inscripcionActual);
+        setError(false);
 
         if (inscripcionActual?.estadoPago === "pagado") {
           // NUEVO (08/09/2026): el endpoint de "¿ya completé mi
@@ -628,16 +709,20 @@ function DashboardContenido() {
           const [resProgreso, resTest] = await Promise.all([
             fetch(`${process.env.NEXT_PUBLIC_API_URL}/progreso/me`, {
               headers: { Authorization: `Bearer ${token}` },
+              cache: "no-store",
             }),
             fetch(
               `${process.env.NEXT_PUBLIC_API_URL}/${endpointCuestionario}`,
-              { headers: { Authorization: `Bearer ${token}` } },
+              {
+                headers: { Authorization: `Bearer ${token}` },
+                cache: "no-store",
+              },
             ),
           ]);
           const jsonProgreso = await resProgreso.json();
           const jsonTest = await resTest.json();
 
-          if (cancelado) return;
+          if (!vigente()) return;
 
           if (jsonProgreso.success) setProgreso(jsonProgreso.data);
           if (jsonTest.success) setTestCompletado(jsonTest.completado);
@@ -645,22 +730,67 @@ function DashboardContenido() {
           // CAMBIO (19/10/2026): el diploma depende SOLO de haber
           // completado la teoría (cursoCompletado) — la práctica ya no es
           // requisito para nadie. Si todavía no existe, se genera aquí.
-          if (jsonProgreso.success && jsonProgreso.data.cursoCompletado) {
+          // (21/10/2026) Si ya se confirmó que existe, no se vuelve a
+          // consultar en cada revalidación.
+          if (
+            jsonProgreso.success &&
+            jsonProgreso.data.cursoCompletado &&
+            !diplomaListoRef.current
+          ) {
             const listo = await obtenerODiplomaListo(token);
-            if (!cancelado) setDiplomaListo(listo);
+            if (!vigente()) return;
+            diplomaListoRef.current = listo;
+            setDiplomaListo(listo);
           }
         }
       } catch {
-        if (!cancelado) setError(true);
+        if (vigente() && !silencioso) setError(true);
       } finally {
-        if (!cancelado) setCargando(false);
+        if (vigente()) setCargando(false);
       }
-    })();
+    },
+    [token, esEscolar],
+  );
 
+  useEffect(() => {
+    const solicitudes = ultimaSolicitud;
+    // Carga inicial. Se difiere un tick a propósito: la regla de lint
+    // react-hooks/set-state-in-effect no distingue que los setState de
+    // cargarTodo ocurren después de un await.
+    const arranque = setTimeout(() => {
+      void cargarTodo(false);
+    }, 0);
     return () => {
-      cancelado = true;
+      clearTimeout(arranque);
+      // Al desmontar (o si cambia esEscolar) se descarta lo que siga en vuelo.
+      solicitudes.current++;
     };
-  }, [token, esEscolar]);
+  }, [cargarTodo]);
+
+  // Pago en revisión: preguntar cada 10 s. En cualquier otro estado solo se
+  // revalida al volver a la pestaña (por si se aprobó una sesión, el chofer
+  // marcó la práctica, etc.).
+  const esperandoPago =
+    inscripcion?.estadoPago === "pendiente" ||
+    inscripcion?.estadoPago === "pendiente_verificacion";
+
+  useRevalidar(() => cargarTodo(true), {
+    activo: !!token,
+    intervaloMs: esperandoPago ? 10000 : null,
+  });
+
+  async function actualizarAhora() {
+    setActualizando(true);
+    await cargarTodo(true);
+    setActualizando(false);
+  }
+
+  // El aviso de "pago confirmado" se quita solo.
+  useEffect(() => {
+    if (!pagoRecienConfirmado) return;
+    const t = setTimeout(() => setPagoRecienConfirmado(false), 10000);
+    return () => clearTimeout(t);
+  }, [pagoRecienConfirmado]);
 
   async function reintentarDiploma() {
     setGenerandoDiploma(true);
@@ -687,6 +817,15 @@ function DashboardContenido() {
         </div>
 
         <AvisoEmailSinVerificar />
+
+        {pagoRecienConfirmado && (
+          <div className="rounded-lg bg-white border border-status-success p-3 text-sm text-brand-blue mb-6 flex items-center gap-2">
+            <CheckCircle2 size={18} className="text-status-success shrink-0" />
+            <span>
+              ¡Tu pago fue confirmado! Ya puedes empezar tu curso.
+            </span>
+          </div>
+        )}
 
         {cargando && (
           <p className="text-neutral-text text-sm text-center">Cargando...</p>
@@ -725,6 +864,10 @@ function DashboardContenido() {
               Una vez tu coordinadora confirme el pago, aquí vas a ver el
               acceso a las 4 sesiones del curso.
             </p>
+            <IndicadorActualizacion
+              onActualizar={actualizarAhora}
+              actualizando={actualizando}
+            />
           </div>
         )}
 
@@ -737,6 +880,10 @@ function DashboardContenido() {
               Estamos verificando tu depósito. Te avisaremos en cuanto quede
               confirmado — normalmente toma poco tiempo.
             </p>
+            <IndicadorActualizacion
+              onActualizar={actualizarAhora}
+              actualizando={actualizando}
+            />
           </div>
         )}
 

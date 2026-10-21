@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { CheckCircle2, UploadCloud, Clock, GraduationCap, Copy, Check } from "lucide-react";
 import RutaProtegida from "@/components/auth/RutaProtegida";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRevalidar } from "@/hooks/useRevalidar";
 
 // Migración de planes (06/09/2026): antes solo llegaba el precio desde
 // Configuracion; ahora GET /api/planes trae el plan completo, incluida la
@@ -201,6 +202,28 @@ function InscripcionContenido() {
       cancelado = true;
     };
   }, [token]);
+
+  // NUEVO (21/10/2026): la inscripción se pedía una sola vez al montar. Si
+  // la coordinadora confirmaba o rechazaba el pago con esta página abierta,
+  // seguía mostrando el estado viejo. Ahora se vuelve a pedir en silencio
+  // cuando la persona regresa a la pestaña. Lo que está escribiendo/subiendo
+  // vive en otros estados (archivo, mensaje...), así que no se pierde. No se
+  // revalida mientras se está enviando el comprobante.
+  useRevalidar(
+    async () => {
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/inscripciones/me`,
+          { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" },
+        );
+        const json = await res.json();
+        if (json.success) setInscripcion(json.data);
+      } catch {
+        // error de red: se conserva lo que ya hay en pantalla
+      }
+    },
+    { activo: !!token && !enviando },
+  );
 
   // NUEVO (10/2026): el curso de Auxiliar Escolar solo se ofrece si tiene un
   // plan ACTIVO (GET /planes devuelve únicamente los activos). null = todavía

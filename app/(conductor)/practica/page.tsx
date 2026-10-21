@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Phone, Mail, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRevalidar } from "@/hooks/useRevalidar";
 
 type Pendiente = {
   userId: string;
@@ -54,6 +55,29 @@ export default function PracticaPendientesPage() {
       cancelado = true;
     };
   }, [token]);
+
+  // NUEVO (21/10/2026): estudiantes que terminan la teoría deben aparecer
+  // en la lista del chofer sin que recargue. Se revisa al volver a la
+  // pestaña y cada 60 s con la pestaña visible; no se revalida mientras
+  // se está aprobando a alguien.
+  useRevalidar(
+    async () => {
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/practica/pendientes`,
+          { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" },
+        );
+        const json = await res.json();
+        if (json.success) {
+          setPendientes(json.data);
+          setError(false);
+        }
+      } catch {
+        // se conserva la lista actual
+      }
+    },
+    { activo: !!token && aprobando === null, intervaloMs: 60000 },
+  );
 
   async function aprobar(userId: string) {
     setAprobando(userId);

@@ -3,12 +3,17 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { useAuth } from "@/contexts/AuthContext";
 
 type Estado = "verificando" | "ok" | "error";
 
 function VerificarEmailContenido() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
+  // NUEVO (21/10/2026): al confirmar el correo se refresca la sesión de
+  // esta pestaña y se avisa a las otras pestañas del mismo navegador, para
+  // que el panel deje de pedir "verifica tu correo" sin recargar.
+  const { notificarEmailVerificado, refrescarUsuario } = useAuth();
 
   const [estado, setEstado] = useState<Estado>("verificando");
   const [mensajeError, setMensajeError] = useState("");
@@ -35,9 +40,14 @@ function VerificarEmailContenido() {
 
         if (json.success) {
           setEstado("ok");
+          notificarEmailVerificado();
         } else {
           setEstado("error");
           setMensajeError(json.error || "No se pudo verificar tu correo.");
+          // Si el link ya se había usado, puede que el correo SÍ esté
+          // verificado — se refresca igual para que "Ir a mi panel" lleve
+          // a un estado real.
+          void refrescarUsuario();
         }
       } catch {
         if (!cancelado) {
@@ -50,7 +60,7 @@ function VerificarEmailContenido() {
     return () => {
       cancelado = true;
     };
-  }, [token]);
+  }, [token, notificarEmailVerificado, refrescarUsuario]);
 
   return (
     <div className="w-full max-w-md bg-white rounded-xl p-8 text-center">
