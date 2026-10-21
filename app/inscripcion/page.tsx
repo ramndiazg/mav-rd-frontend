@@ -463,8 +463,12 @@ function InscripcionContenido() {
               Aprende a conducir con confianza
             </h1>
             <p className="text-sm md:text-base opacity-90">
-              Clases teóricas y prácticas guiadas por Muvo RD Vial —
-              embajadores de la educación vial.
+              Clases teóricas guiadas por Muvo RD Vial —
+              Embajadores de la Educación Vial.
+            </p>
+            <p className="text-sm md:text-base opacity-90">
+              Clases practicas en provincias seleccionadas
+              impartidas por conductores afiliados independientes.
             </p>
           </div>
         </div>
