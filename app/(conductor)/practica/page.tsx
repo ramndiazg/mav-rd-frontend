@@ -70,7 +70,7 @@ export default function PracticaPendientesPage() {
       const json = await res.json();
 
       if (json.success) {
-        setMensaje({ tipo: "ok", texto: "Práctica aprobada — ya puede recibir su diploma." });
+        setMensaje({ tipo: "ok", texto: "Práctica aprobada y registrada." });
         setPendientes((prev) => prev.filter((p) => p.userId !== userId));
       } else {
         setMensaje({ tipo: "error", texto: json.error || "No se pudo aprobar." });
@@ -89,7 +89,7 @@ export default function PracticaPendientesPage() {
       </h2>
       <p className="text-sm text-neutral-text mb-6">
         Terminaron toda la teoría. Apruébalas aquí en cuanto confirmes que
-        completaron su práctica de manejo contigo — eso habilita su diploma.
+        completaron su práctica de manejo contigo.
       </p>
 
       {cargando && <p className="text-sm text-neutral-text">Cargando...</p>}

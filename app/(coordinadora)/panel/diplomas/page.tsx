@@ -90,8 +90,10 @@ export default function PanelDiplomasPage() {
         Diplomas
       </h2>
       <p className="text-sm text-neutral-text mb-6">
-        Estudiantes que ya completaron y aprobaron las 3 sesiones, listas para
-        recibir su diploma.
+        Los diplomas se generan solos cuando la estudiante termina la
+        teoría. Aquí solo aparecen quienes completaron pero a quienes no se
+        les pudo emitir (por ejemplo, por un fallo temporal) — puedes
+        generárselo desde aquí.
       </p>
 
       {cargando && <p className="text-sm text-neutral-text">Cargando...</p>}

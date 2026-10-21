@@ -45,7 +45,28 @@ function DiplomaContenido() {
         if (json.success) {
           setDiploma(json.data);
         } else if (res.status === 404) {
-          setAunNoExiste(true);
+          // CAMBIO (19/10/2026): ya no se espera a la coordinadora. Si la
+          // estudiante completó la teoría y su diploma aún no existe
+          // (completó antes del cambio, o falló la emisión automática),
+          // se genera ahora mismo. Si todavía no termina la teoría, el
+          // backend responde 400 y se muestra el aviso de abajo.
+          const resGenerar = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/diplomas/me/generar`,
+            { method: "POST", headers: { Authorization: `Bearer ${token}` } },
+          );
+          const jsonGenerar = await resGenerar.json();
+          if (cancelado) return;
+
+          if (jsonGenerar.success) {
+            setDiploma(jsonGenerar.data);
+          } else if (resGenerar.status === 400) {
+            setAunNoExiste(true);
+          } else {
+            setError(
+              jsonGenerar.error ||
+              "No pudimos generar tu diploma en este momento. Intenta de nuevo en unos minutos.",
+            );
+          }
         } else {
           setError(json.error || "No pudimos cargar tu diploma.");
         }
@@ -303,12 +324,11 @@ function DiplomaContenido() {
         {!cargando && aunNoExiste && (
           <div className="mt-6 rounded-xl bg-white border border-neutral-bg p-8 text-center">
             <p className="text-neutral-text mb-2">
-              Todavía no tienes un diploma generado.
+              Todavía no tienes un diploma.
             </p>
             <p className="text-sm text-neutral-text">
-              Ya completaste y aprobaste todas las sesiones — pide a tu
-              coordinadora que lo genere. En cuanto lo haga, va a aparecer
-              aquí automáticamente.
+              Tu diploma se genera automáticamente en cuanto apruebas las 4
+              sesiones y sus exámenes. Sigue con tu curso desde tu panel.
             </p>
           </div>
         )}
@@ -323,7 +343,7 @@ function DiplomaContenido() {
                 ¡Felicidades!
               </h1>
               <p className="text-neutral-text text-sm mb-6">
-                Completaste el curso de educación vial de Muvo RD Vial
+                Completaste la teoría del curso de educación vial de Muvo RD Vial
               </p>
 
               <div className="rounded-lg bg-neutral-bg p-4 mb-6 text-left">

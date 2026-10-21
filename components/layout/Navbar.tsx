@@ -14,7 +14,11 @@ const enlaces = [
   { href: "/noticias", label: "Noticias" },
   { href: "/testimonios", label: "Testimonios" },
   { href: "/faq", label: "Preguntas Frecuentes" },
-  // { href: "/verificar-diploma", label: "Verificar Diploma" },
+  // CAMBIO (19/10/2026): se vuelve a mostrar (estaba comentado). Con 9
+  // enlaces la barra de escritorio queda justa, por eso más abajo se
+  // ensanchó el contenedor del header y se compactó el espaciado/letra en
+  // pantallas xl (ver comentario en <nav>).
+  { href: "/verificar-diploma", label: "Verificar Diploma" },
 ];
 
 export default function Navbar() {
@@ -30,7 +34,7 @@ export default function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 bg-brand-blue text-white">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
         <Link href="/" className="flex items-center gap-2 whitespace-nowrap shrink-0">
           <Image
             src="/logo-mav-rd.png"
@@ -50,12 +54,15 @@ export default function Navbar() {
         </Link>
 
         {/* Navegación de escritorio */}
-        <nav className="hidden items-center gap-4 xl:flex overflow-hidden">
+        {/* Con el enlace "Verificar Diploma" son 9 enlaces: entre xl y 2xl se
+            usa letra 13px y menos espacio para que no se recorte ninguno;
+            desde 2xl vuelve al tamaño de siempre. */}
+        <nav className="hidden items-center gap-3 xl:flex overflow-hidden 2xl:gap-4">
           {enlaces.map((enlace) => (
             <Link
               key={enlace.href}
               href={enlace.href}
-              className="whitespace-nowrap text-sm text-white/85 transition hover:text-white"
+              className="whitespace-nowrap text-[13px] text-white/85 transition hover:text-white 2xl:text-sm"
             >
               {enlace.label}
             </Link>
