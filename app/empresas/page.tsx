@@ -20,9 +20,9 @@ const beneficios = [
   },
   {
     icono: ShieldCheck,
-    titulo: "Responsabilidad social real",
+    titulo: "Una escuela dominicana de educación vial",
     detalle:
-      "Apoyas directamente la misión de una fundación dominicana sin fines de lucro dedicada a la educación vial.",
+      "Capacitas a tu equipo con Muvo RD Vial, una escuela local fundada en 2017 y dedicada a formar conductoras y conductores responsables.",
   },
   {
     icono: Users,

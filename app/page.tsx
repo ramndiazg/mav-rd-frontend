@@ -235,7 +235,7 @@ export default async function Home() {
 
   const heroTexto =
     contenido.inicio_hero_texto ||
-    "Muvo RD Vial es una fundación dominicana que enseña a mujeres y jóvenes a conducir con confianza, desde la teoría hasta el examen del INTRANT — presencial, en grupo, y sin prisa.";
+    "Muvo RD Vial es una escuela dominicana de formación vial que enseña a mujeres y jóvenes a conducir con confianza, desde la teoría hasta el examen del INTRANT — presencial, en grupo, y sin prisa.";
 
   const desdeTexto =
     contenido.inicio_desde_texto ||

@@ -541,7 +541,7 @@ function PantallaChoferesRecomendados({
           Si te gustaría reforzar lo aprendido con clases prácticas de{" "}
           {tema}, estos profesionales independientes pueden acompañarte.
           Son personas que conocemos y te recomendamos con gusto; no forman
-          parte de la fundación, así que las clases, horarios y tarifas los
+          parte de Muvo RD Vial, así que las clases, horarios y tarifas los
           acuerdas directamente con ellos, como mejor te convenga.
         </p>
       </div>

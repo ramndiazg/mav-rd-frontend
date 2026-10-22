@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Wallet,
@@ -26,6 +26,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRevalidar } from "@/hooks/useRevalidar";
 
 type Tarjeta = {
   href: string;
@@ -99,7 +100,10 @@ function GrupoTarjetas({
                 }`}
             >
               {conteo > 0 && (
-                <span className="absolute -top-2 -right-2 min-w-[22px] h-[22px] px-1 rounded-full bg-brand-pink text-white text-[11px] font-semibold flex items-center justify-center">
+                <span
+                  title={`${conteo} por atender`}
+                  className="absolute -top-2 -right-2 min-w-[22px] h-[22px] px-1 rounded-full bg-brand-pink text-white text-[11px] font-semibold flex items-center justify-center"
+                >
                   {conteo > 99 ? "99+" : conteo}
                 </span>
               )}
@@ -114,70 +118,68 @@ function GrupoTarjetas({
   );
 }
 
+// NUEVO (21/10/2026): contadores de "cosas por hacer" que el backend calcula
+// en GET /api/panel/pendientes (ver panelController.js para el criterio de
+// cada uno). Antes solo Pagos y Soporte tenían aviso, y para contarlos se
+// descargaban las listas completas.
+type Pendientes = {
+  pagos: number;
+  soporte: number;
+  diplomas: number;
+  grupos: number;
+  contabilidad: number;
+};
+
 export default function PanelInicioPage() {
   const { usuario, token } = useAuth();
   const esAdmin = usuario?.rol === "admin";
-  const [pendientesPago, setPendientesPago] = useState(0);
-  const [reportesAbiertos, setReportesAbiertos] = useState(0);
+  const [pendientes, setPendientes] = useState<Pendientes | null>(null);
 
-  useEffect(() => {
-    if (!token) return;
-    let cancelado = false;
-
-    queueMicrotask(async () => {
-      try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/inscripciones?estadoPago=pendiente_verificacion`,
-          { headers: { Authorization: `Bearer ${token}` } },
-        );
-        const json = await res.json();
-        if (!cancelado && json.success) {
-          setPendientesPago(json.data.length);
-        }
-      } catch {
-        // No es crítico para el resto de la pantalla de tarjetas.
-      }
-    });
-
-    return () => {
-      cancelado = true;
-    };
+  const cargarPendientes = useCallback(async () => {
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/panel/pendientes`,
+        { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" },
+      );
+      const json = await res.json();
+      if (json.success) setPendientes(json.data);
+    } catch {
+      // No es crítico para el resto de la pantalla de tarjetas: si falla
+      // por red se conservan los avisos que ya estaban.
+    }
   }, [token]);
 
   useEffect(() => {
     if (!token) return;
-    let cancelado = false;
-
-    queueMicrotask(async () => {
-      try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/reportes?estado=abierto`,
-          { headers: { Authorization: `Bearer ${token}` } },
-        );
-        const json = await res.json();
-        if (!cancelado && json.success) {
-          setReportesAbiertos(json.data.length);
-        }
-      } catch {
-        // No es crítico para el resto de la pantalla de tarjetas.
-      }
+    queueMicrotask(() => {
+      void cargarPendientes();
     });
+  }, [token, cargarPendientes]);
 
-    return () => {
-      cancelado = true;
-    };
-  }, [token]);
+  // Los avisos se ponen al día solos: al volver a la pestaña y cada 60 s
+  // con la pestaña visible (así un pago o reporte nuevo aparece sin recargar).
+  useRevalidar(cargarPendientes, { activo: !!token, intervaloMs: 60000 });
 
   return (
     <div>
       <GrupoTarjetas
         titulo="Gestión del curso"
         tarjetas={MODULOS_CURSO}
-        badges={{ "/panel/pagos": pendientesPago, "/panel/soporte": reportesAbiertos }}
+        badges={{
+          "/panel/pagos": pendientes?.pagos ?? 0,
+          "/panel/soporte": pendientes?.soporte ?? 0,
+          "/panel/diplomas": pendientes?.diplomas ?? 0,
+          "/panel/grupos": pendientes?.grupos ?? 0,
+        }}
       />
       <GrupoTarjetas titulo="Contenido público" tarjetas={MODULOS_CONTENIDO} />
       {esAdmin && (
-        <GrupoTarjetas titulo="Solo fundadora" tarjetas={MODULOS_ADMIN} acento />
+        <GrupoTarjetas
+          titulo="Solo fundadora"
+          tarjetas={MODULOS_ADMIN}
+          acento
+          badges={{ "/admin/contabilidad": pendientes?.contabilidad ?? 0 }}
+        />
       )}
     </div>
   );

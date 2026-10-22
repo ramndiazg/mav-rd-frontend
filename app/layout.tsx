@@ -48,7 +48,6 @@ const PALABRAS_CLAVE = [
   "clases de manejo para mujeres",
   "curso de manejo defensivo",
   "examen práctico INTRANT",
-  "Mujeres al Volante RD",
 ];
 
 export const metadata: Metadata = {
@@ -109,7 +108,6 @@ const JSON_LD_ORGANIZACION = {
   "@context": "https://schema.org",
   "@type": "EducationalOrganization",
   name: "Muvo RD Vial",
-  alternateName: "Mujeres al Volante RD",
   url: SITE_URL,
   logo: `${SITE_URL}/logo-mav-rd.png`,
   description: DESCRIPCION_SITIO,

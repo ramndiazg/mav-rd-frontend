@@ -38,7 +38,7 @@ export default function Navbar() {
         <Link href="/" className="flex items-center gap-2 whitespace-nowrap shrink-0">
           <Image
             src="/logo-mav-rd.png"
-            alt="Mujeres al Volante RD"
+            alt="Muvo RD Vial"
             width={40}
             height={40}
             priority
@@ -48,7 +48,7 @@ export default function Navbar() {
               Muvo <span className="text-brand-pink-light">RD Vial</span>
             </span>
             <span className="text-[11px] font-normal text-white/70">
-              ASFL Mujeres al Volante RD
+              Escuela de formación vial
             </span>
           </span>
         </Link>
