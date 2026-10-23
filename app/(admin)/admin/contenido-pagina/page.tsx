@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 
 type Tipo = "texto" | "html" | "url" | "json";
@@ -550,6 +551,19 @@ export default function ContenidoPaginaPage() {
                 <p className="text-xs text-neutral-text mt-1">{a.campos.length} elementos editables</p>
               </button>
             ))}
+            {/* NUEVO (23/10/2026): las preguntas frecuentes NO son bloques de
+                esta pantalla — viven en su propia colección (FAQ) y su editor
+                es /panel/faq. Esta tarjeta existe solo para que se encuentren
+                desde aquí, donde se espera editar "el contenido del sitio". */}
+            <Link
+              href="/panel/faq"
+              className="rounded-xl bg-white border border-neutral-bg p-6 text-left hover:border-brand-blue-light transition-colors"
+            >
+              <p className="font-display font-semibold text-brand-blue">Preguntas Frecuentes</p>
+              <p className="text-xs text-neutral-text mt-1">
+                Crear, editar, ordenar y activar o desactivar preguntas →
+              </p>
+            </Link>
           </div>
         </>
       )}
