@@ -643,7 +643,10 @@ function DashboardContenido() {
   // estudiante — mismo criterio que sesionController.js en el backend
   // (grupoTipo === "colegio"). Empresarial sigue usando TestPsicologico,
   // igual que el flujo estándar.
-  const esEscolar = usuario?.grupoTipo === "colegio";
+  // CAMBIO (23/10/2026): lo decide el backend (grupoUsaCuestionarioEscolar):
+  // un grupo colegio del programa auxiliar-escolar usa TestPsicologico.
+  const esEscolar =
+    usuario?.grupoUsaCuestionarioEscolar ?? usuario?.grupoTipo === "colegio";
 
   // CAMBIO (21/10/2026): antes esto era un useEffect que pedía todo UNA sola
   // vez al montar — por eso, si la coordinadora confirmaba el pago, la

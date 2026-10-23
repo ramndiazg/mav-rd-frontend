@@ -606,7 +606,9 @@ function PestanaRoster({
   // NUEVO (04/10/2026): la cédula depende del tipo de grupo. En colegio es
   // opcional (menores sin cédula); en empresa es obligatoria (adultos). El
   // backend aplica la misma regla — esto solo la anticipa en pantalla.
-  const esEmpresa = grupo.tipo === "empresa";
+  // CAMBIO (23/10/2026): también obligatoria en auxiliar-escolar (adultas).
+  const esEmpresa =
+    grupo.tipo === "empresa" || grupo.programa === "auxiliar-escolar";
   const etiquetaCedula = esEmpresa
     ? "Cédula (obligatoria)"
     : ETIQUETAS_COLUMNA.cedula;
@@ -672,7 +674,7 @@ function PestanaRoster({
       });
       if (indiceSinCedula !== -1) {
         setError(
-          `En grupos de empresa la cédula es obligatoria (revisa la fila ${indiceSinCedula + 1}).`,
+          `En grupos de empresa y en Auxiliar de Transporte Escolar la cédula es obligatoria (revisa la fila ${indiceSinCedula + 1}).`,
         );
         return;
       }
@@ -1373,7 +1375,9 @@ function PanelGrupoDetalleContenido() {
             Icono={ClipboardList}
             valor={`${resumen.cuestionariosCompletados}/${resumen.activas}`}
             etiqueta={
-              grupo.tipo === "colegio" ? "Cuestionarios completados" : "Perfiles completados"
+              grupo.tipo === "colegio" && grupo.programa !== "auxiliar-escolar"
+                ? "Cuestionarios completados"
+                : "Perfiles completados"
             }
           />
           <Indicador Icono={Award} valor={resumen.diplomas} etiqueta="Diplomas emitidos" />

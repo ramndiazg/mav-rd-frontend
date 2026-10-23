@@ -38,6 +38,11 @@ type Usuario = {
   // cuestionario de perfil le toca (TestPsicologico vs
   // CuestionarioEscolar).
   grupoTipo: "colegio" | "empresa" | null;
+  // NUEVO (23/10/2026): true si a esta estudiante le toca el
+  // CuestionarioEscolar (grupo colegio, salvo el programa
+  // auxiliar-escolar, que usa TestPsicologico). Úsalo en vez de comparar
+  // grupoTipo. Opcional por si el backend aún no está desplegado.
+  grupoUsaCuestionarioEscolar?: boolean;
 };
 
 type DatosRegistro = {
