@@ -23,6 +23,7 @@ import {
   School,
   MapPin,
   LifeBuoy,
+  Inbox,
   type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -50,6 +51,8 @@ const MODULOS_CURSO: Tarjeta[] = [
   { href: "/panel/grupos", titulo: "Grupos", descripcion: "Colegios y empresas inscritos en bloque", Icono: Building2 },
   // NUEVO: incidencias/errores/dudas reportadas por estudiantes
   { href: "/panel/soporte", titulo: "Soporte", descripcion: "Incidencias y dudas reportadas por estudiantes", Icono: LifeBuoy },
+  // NUEVO (22/10/2026): leads de los formularios de /empresas y /escolar
+  { href: "/panel/solicitudes", titulo: "Solicitudes", descripcion: "Empresas y colegios que piden información", Icono: Inbox },
 ];
 
 const MODULOS_CONTENIDO: Tarjeta[] = [
@@ -127,6 +130,7 @@ type Pendientes = {
   soporte: number;
   diplomas: number;
   grupos: number;
+  solicitudes: number;
   contabilidad: number;
 };
 
@@ -170,6 +174,7 @@ export default function PanelInicioPage() {
           "/panel/soporte": pendientes?.soporte ?? 0,
           "/panel/diplomas": pendientes?.diplomas ?? 0,
           "/panel/grupos": pendientes?.grupos ?? 0,
+          "/panel/solicitudes": pendientes?.solicitudes ?? 0,
         }}
       />
       <GrupoTarjetas titulo="Contenido público" tarjetas={MODULOS_CONTENIDO} />
