@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 
 const enlaces = [
@@ -25,12 +26,20 @@ export default function Navbar() {
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [menuUsuarioAbierto, setMenuUsuarioAbierto] = useState(false);
   const { usuario, cargando, logout } = useAuth();
+  // NUEVO (24/10/2026): en /us (curso Driver Prep USA) la cabecera es otra
+  // (components/us/UsHeader.tsx). Se compara con "/us" exacto o "/us/..." para
+  // no ocultarla en rutas que solo empiecen por esas letras. Va DESPUÉS de
+  // todos los hooks (regla de React).
+  const pathname = usePathname();
+  const enCursoUS = pathname === "/us" || pathname.startsWith("/us/");
 
   // Coordinadora y admin ya tienen su panel construido (Pagos, Aula Virtual,
   // Exámenes) — antes esto mandaba a "/" porque esas rutas no existían todavía.
   // CAMBIO (10/09/2026): apuntaba a /panel/pagos — mismo ajuste que el
   // login, ahora entra al dashboard del panel (/panel).
   const destinoPanel = usuario?.rol === "estudiante" ? "/dashboard" : "/panel";
+
+  if (enCursoUS) return null;
 
   return (
     <header className="sticky top-0 z-50 bg-brand-blue text-white">

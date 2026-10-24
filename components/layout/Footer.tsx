@@ -1,6 +1,14 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export default function Footer() {
+  // NUEVO (24/10/2026): en /us el pie es otro (components/us/UsFooter.tsx).
+  // Este archivo pasa a ser componente cliente solo para poder leer la ruta.
+  const pathname = usePathname();
+  if (pathname === "/us" || pathname.startsWith("/us/")) return null;
+
   return (
     <footer className="bg-brand-blue text-white/80">
       <div className="road-divider" />
