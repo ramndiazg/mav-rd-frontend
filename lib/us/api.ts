@@ -48,7 +48,7 @@ export function guardarTokenUS(token: string | null) {
 }
 
 type OpcionesUS = Omit<RequestInit, "body"> & {
-  body?: unknown; // se serializa a JSON
+  body?: unknown; // se serializa a JSON (un FormData se envía tal cual: subida de archivos)
   locale?: Locale; // idioma de los mensajes del servidor
   token?: string | null; // por defecto, el guardado
 };
@@ -66,18 +66,28 @@ export async function usFetch<T>(
   { body, locale, token, headers, ...resto }: OpcionesUS = {},
 ): Promise<T> {
   const tokenUsado = token === undefined ? leerTokenUS() : token;
+  const esFormData =
+    typeof FormData !== "undefined" && body instanceof FormData;
 
   let res: Response;
   try {
     res = await fetch(`${API_URL}${path}`, {
       ...resto,
       headers: {
-        ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
+        // Con FormData el navegador pone el Content-Type (con el boundary).
+        ...(body !== undefined && !esFormData
+          ? { "Content-Type": "application/json" }
+          : {}),
         ...(locale ? { "Accept-Language": locale } : {}),
         ...(tokenUsado ? { Authorization: `Bearer ${tokenUsado}` } : {}),
         ...headers,
       },
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      body:
+        body === undefined
+          ? undefined
+          : esFormData
+            ? (body as FormData)
+            : JSON.stringify(body),
     });
   } catch {
     throw new ApiErrorUS("network", 0, "red");

@@ -98,6 +98,19 @@ export type InscripcionUS = {
   updatedAt: string;
 };
 
+// Contrato común de los componentes de cada método de pago (los usa
+// PaymentMethodPicker). Un método nuevo (p. ej. PayPal) implementa esto:
+//  - `asegurarInscripcion(metodo)` crea/reutiliza la inscripción con ese método.
+//  - al terminar llama `onCompleto(inscripcion)`; la página decide a dónde ir.
+export type MetodoPagoProps = {
+  metodo: MetodoPagoId;
+  config: ConfigPagoUS;
+  precioCentavos: number;
+  inscripcionExistente: InscripcionUS | null;
+  asegurarInscripcion: (metodo: MetodoPagoId) => Promise<InscripcionUS>;
+  onCompleto: (inscripcion: InscripcionUS) => void;
+};
+
 export function formatearUSD(centavos: number, locale: Locale): string {
   return new Intl.NumberFormat(intlLocale(locale), {
     style: "currency",
