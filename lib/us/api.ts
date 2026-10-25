@@ -21,11 +21,20 @@ export const EVENTO_SESION_VENCIDA = "us-auth-expired";
 export class ApiErrorUS extends Error {
   status: number;
   code: string | null;
-  constructor(mensaje: string, status: number, code: string | null) {
+  // Cuerpo completo de la respuesta de error (algunos endpoints de RD traen
+  // datos extra, p. ej. /intentos-examen/reintentar: esperaActiva/disponibleEn).
+  cuerpo: Record<string, unknown> | null;
+  constructor(
+    mensaje: string,
+    status: number,
+    code: string | null,
+    cuerpo: Record<string, unknown> | null = null,
+  ) {
     super(mensaje);
     this.name = "ApiErrorUS";
     this.status = status;
     this.code = code;
+    this.cuerpo = cuerpo;
   }
 }
 
@@ -119,7 +128,12 @@ export async function usFetch<T>(
       : res.status === 429
         ? "limite"
         : null);
-  throw new ApiErrorUS(json?.error || `HTTP ${res.status}`, res.status, code);
+  throw new ApiErrorUS(
+    json?.error || `HTTP ${res.status}`,
+    res.status,
+    code,
+    json as Record<string, unknown> | null,
+  );
 }
 
 type Traductor = (
