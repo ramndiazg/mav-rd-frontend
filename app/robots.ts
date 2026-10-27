@@ -24,6 +24,17 @@ export default function robots(): MetadataRoute.Robots {
           "/examen",
           "/perfil",
           "/registro",
+          // NUEVO (24/10/2026): curso Driver Prep USA. Mismo criterio que RD:
+          // el registro no se rastrea (ataque de bots) y tampoco el pago ni
+          // el aula. /us, /us/login y /us/legal/* siguen abiertos; las
+          // pantallas de cuenta además llevan `noindex` en su metadata.
+          "/us/register",
+          "/us/enroll",
+          "/us/pay",
+          "/us/pending",
+          "/us/dashboard",
+          "/us/course",
+          "/us/exam",
         ],
       },
     ],

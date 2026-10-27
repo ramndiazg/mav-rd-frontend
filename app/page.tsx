@@ -192,6 +192,28 @@ async function obtenerPlanes(programa: string = "estandar"): Promise<Plan[]> {
   }
 }
 
+// NUEVO (24/10/2026): curso Driver Prep USA (para hispanos en EE. UU.). Su
+// tarjeta solo aparece si GET /api/us/config responde `activo: true`; apagar
+// el curso (panel → Pagos EE. UU. → Configuración) la oculta al instante. Si
+// el servidor no responde a tiempo o falla, la tarjeta simplemente no se
+// muestra: nunca debe romper ni demorar de más el resto del Home.
+async function obtenerCursoUS(): Promise<{ activo: boolean; precioCentavos: number | null }> {
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/us/config`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(8000),
+    });
+    const json = await res.json();
+    if (!json.success || !json.data?.activo) return { activo: false, precioCentavos: null };
+    return {
+      activo: true,
+      precioCentavos: Number.isInteger(json.data.precioCentavos) ? json.data.precioCentavos : null,
+    };
+  } catch {
+    return { activo: false, precioCentavos: null };
+  }
+}
+
 export default async function Home() {
   const [
     planes,
@@ -200,6 +222,7 @@ export default async function Home() {
     planesMontacargas,
     planesAuxiliarEscolar,
     contenido,
+    cursoUS,
   ] = await Promise.all([
     obtenerPlanes("estandar"),
     obtenerPlanes("motorizados"),
@@ -207,6 +230,7 @@ export default async function Home() {
     obtenerPlanes("montacargas"),
     obtenerPlanes("auxiliar-escolar"),
     obtenerContenidoInicio(),
+    obtenerCursoUS(),
   ]);
 
   // Un solo arreglo para pintar las tarjetas de Motorizados/Pesados/
@@ -225,9 +249,29 @@ export default async function Home() {
   // plan esté inactivo —o no exista— su tarjeta no aparece: así se puede
   // sembrar y probar en producción sin que el público lo vea, y lanzarlo es
   // activar el plan desde /admin/planes.
-  const categoriasVisibles = categorias.filter(
-    (c) => c.valor !== "auxiliar-escolar" || planesAuxiliarEscolar.length > 0,
-  );
+  // NUEVO (24/10/2026): tarjeta de Driver Prep USA, SIN imagen (el banner se
+  // dibuja con CSS: ver el map de abajo). Va al final y solo si el curso está
+  // activo; lleva a /us, que tiene su propia página, idioma y pago.
+  const precioUS =
+    cursoUS.precioCentavos !== null
+      ? ` Pago único: ${(cursoUS.precioCentavos / 100).toLocaleString("en-US", { style: "currency", currency: "USD" })}.`
+      : "";
+  const tarjetaUS = {
+    valor: "driver-prep-usa",
+    etiqueta: "Para hispanos en EE. UU. — Solo teoría",
+    nombre: "Driver Prep USA",
+    detalle: `Prepárate para el examen de conocimientos de tu licencia de manejo en Nueva York, Nueva Jersey, Florida y Massachusetts. Curso en español con glosario en inglés. Formación complementaria, no oficial.${precioUS}`,
+    imagen: "",
+    href: "/us",
+    cta: "Ver el curso",
+  };
+
+  const categoriasVisibles = [
+    ...categorias.filter(
+      (c) => c.valor !== "auxiliar-escolar" || planesAuxiliarEscolar.length > 0,
+    ),
+    ...(cursoUS.activo ? [tarjetaUS] : []),
+  ];
 
   const heroTitulo =
     contenido.inicio_hero_titulo ||
@@ -401,20 +445,41 @@ export default async function Home() {
               key={categoria.valor}
               className="overflow-hidden rounded-xl border border-brand-blue/10 bg-white shadow-sm transition hover:shadow-md"
             >
-              <div className="relative h-40 w-full">
-                <Image
-                  src={categoria.imagen}
-                  alt={categoria.nombre}
-                  fill
-                  // ACTUALIZADO (27/09/2026): object-left en vez del
-                  // object-cover centrado por defecto — el logo y el
-                  // texto de estos banners están pegados al borde
-                  // izquierdo del diseño, así que un recorte centrado se
-                  // los comía. Anclando a la izquierda, lo que se recorta
-                  // siempre es el margen "seguro" de la derecha.
-                  className="object-cover object-left"
-                />
-              </div>
+              {categoria.imagen ? (
+                <div className="relative h-40 w-full">
+                  <Image
+                    src={categoria.imagen}
+                    alt={categoria.nombre}
+                    fill
+                    // ACTUALIZADO (27/09/2026): object-left en vez del
+                    // object-cover centrado por defecto — el logo y el
+                    // texto de estos banners están pegados al borde
+                    // izquierdo del diseño, así que un recorte centrado se
+                    // los comía. Anclando a la izquierda, lo que se recorta
+                    // siempre es el margen "seguro" de la derecha.
+                    className="object-cover object-left"
+                  />
+                </div>
+              ) : (
+                // NUEVO (24/10/2026): banner dibujado con CSS para Driver Prep
+                // USA (no hay imagen). Si más adelante se diseña una, basta
+                // con ponerla en `tarjetaUS.imagen`.
+                <div className="flex h-40 w-full flex-col justify-between bg-gradient-to-br from-brand-blue to-brand-blue-light p-5 text-white">
+                  <p className="font-display text-sm font-semibold text-brand-yellow">
+                    🇺🇸 Para hispanos en EE. UU.
+                  </p>
+                  <div>
+                    <p className="font-display text-2xl font-bold">{categoria.nombre}</p>
+                    <p className="mt-2 flex gap-2 text-xs font-semibold">
+                      {["NY", "NJ", "FL", "MA"].map((estado) => (
+                        <span key={estado} className="rounded bg-white/20 px-1.5 py-0.5">
+                          {estado}
+                        </span>
+                      ))}
+                    </p>
+                  </div>
+                </div>
+              )}
               <div className="p-6">
                 <p className="font-display text-xs font-semibold uppercase tracking-wide text-brand-pink">
                   {categoria.etiqueta}
