@@ -24,6 +24,7 @@ import {
   MapPin,
   LifeBuoy,
   Inbox,
+  Globe,
   type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -38,6 +39,8 @@ type Tarjeta = {
 
 const MODULOS_CURSO: Tarjeta[] = [
   { href: "/panel/pagos", titulo: "Pagos", descripcion: "Confirmar inscripciones y pagos", Icono: Wallet },
+  // NUEVO (24/10/2026): curso Driver Prep USA (envíos de dinero desde EE. UU.)
+  { href: "/panel/pagos-us", titulo: "Pagos EE. UU.", descripcion: "Comprobantes de envíos de dinero del curso Driver Prep USA", Icono: Globe },
   { href: "/panel/estudiantes", titulo: "Estudiantes", descripcion: "Ver y gestionar estudiantes", Icono: Users },
   { href: "/panel/aula-virtual", titulo: "Aula virtual", descripcion: "Contenido de las sesiones", Icono: GraduationCap },
   { href: "/panel/examenes", titulo: "Exámenes", descripcion: "Bancos de preguntas", Icono: ClipboardCheck },
@@ -138,6 +141,9 @@ export default function PanelInicioPage() {
   const { usuario, token } = useAuth();
   const esAdmin = usuario?.rol === "admin";
   const [pendientes, setPendientes] = useState<Pendientes | null>(null);
+  // NUEVO (24/10/2026): pagos de EE. UU. por verificar (otro modelo y otro
+  // endpoint que los pagos de RD, por eso no viene en /panel/pendientes).
+  const [pagosUS, setPagosUS] = useState(0);
 
   const cargarPendientes = useCallback(async () => {
     try {
@@ -150,6 +156,18 @@ export default function PanelInicioPage() {
     } catch {
       // No es crítico para el resto de la pantalla de tarjetas: si falla
       // por red se conservan los avisos que ya estaban.
+    }
+
+    // Pagos de EE. UU. por verificar (limite=1: solo interesa el total).
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/us/admin/inscripciones?estadoPago=pendiente_verificacion&limite=1`,
+        { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" },
+      );
+      const json = await res.json();
+      if (json.success) setPagosUS(json.data.total ?? 0);
+    } catch {
+      // igual que arriba: no es crítico
     }
   }, [token]);
 
@@ -171,6 +189,7 @@ export default function PanelInicioPage() {
         tarjetas={MODULOS_CURSO}
         badges={{
           "/panel/pagos": pendientes?.pagos ?? 0,
+          "/panel/pagos-us": pagosUS,
           "/panel/soporte": pendientes?.soporte ?? 0,
           "/panel/diplomas": pendientes?.diplomas ?? 0,
           "/panel/grupos": pendientes?.grupos ?? 0,

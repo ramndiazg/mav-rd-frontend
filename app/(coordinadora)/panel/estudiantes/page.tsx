@@ -16,13 +16,18 @@ type Estudiante = {
   // NUEVO (09/09/2026): populado por el backend cuando la estudiante
   // pertenece a un Grupo (Escolar/Empresarial). null para autoregistro.
   grupoId: Grupo | null;
+  // NUEVO (24/10/2026): cuentas del curso Driver Prep USA (pais "US").
+  pais?: string;
+  estadoUS?: string | null;
 };
 
 type EstadoPago = "pendiente" | "pendiente_verificacion" | "pagado" | "rechazado";
 
 type Inscripcion = { userId: { _id: string }; estadoPago: EstadoPago };
 
-type EstadoMostrado = EstadoPago | "sin_inscripcion";
+// NUEVO (24/10/2026): "reembolsado" y "disputado" existen solo en los pagos de
+// EE. UU. (InscripcionUS).
+type EstadoMostrado = EstadoPago | "sin_inscripcion" | "reembolsado" | "disputado";
 
 type Progreso = {
   sesionActualDesbloqueada: number;
@@ -69,6 +74,10 @@ export default function PanelEstudiantesPage() {
   const [grupos, setGrupos] = useState<Grupo[]>([]);
   const [filtroGrupo, setFiltroGrupo] = useState(""); // "" = todos
 
+  // NUEVO (24/10/2026): "" = todas · "DO" = República Dominicana · "US" = curso
+  // de EE. UU. (el backend entiende ?pais=; "DO" incluye las cuentas viejas).
+  const [filtroPais, setFiltroPais] = useState("");
+
   // NUEVO (18/10/2026): exportar el listado de estudiantes en PDF con el
   // membrete de Muvo RD Vial (GET /usuarios/exportar-pdf). Por defecto NO
   // incluye cédula ni correo: son datos personales y este PDF suele
@@ -88,10 +97,12 @@ export default function PanelEstudiantesPage() {
       paginaBuscada: number,
       pestanaActual: Pestana,
       grupoIdFiltro: string,
+      paisFiltro: string,
     ) => {
       setCargando(true);
       try {
-        const filtroGrupoQuery = grupoIdFiltro ? `&grupoId=${grupoIdFiltro}` : "";
+        const filtroGrupoQuery =
+          (grupoIdFiltro ? `&grupoId=${grupoIdFiltro}` : "") + (paisFiltro ? `&pais=${paisFiltro}` : "");
         const [resUsuarios, resInscripciones] = await Promise.all([
           fetch(
             `${process.env.NEXT_PUBLIC_API_URL}/usuarios?rol=estudiante&${queryParaPestana(pestanaActual)}&search=${encodeURIComponent(termino)}&page=${paginaBuscada}&limit=${POR_PAGINA}${filtroGrupoQuery}`,
@@ -110,10 +121,37 @@ export default function PanelEstudiantesPage() {
         }
 
         if (jsonInscripciones.success) {
-          const mapa: Record<string, EstadoPago> = {};
+          const mapa: Record<string, EstadoMostrado> = {};
           jsonInscripciones.data.forEach((ins: Inscripcion) => {
             mapa[ins.userId._id] = ins.estadoPago;
           });
+
+          // NUEVO (24/10/2026): las cuentas de EE. UU. pagan en otro modelo
+          // (InscripcionUS), así que su estado se pide aparte y solo si la
+          // página trae alguna. Se leen hasta 5 páginas de 100 (las más
+          // recientes) — suficiente mientras el curso sea chico.
+          const hayUS = (jsonUsuarios.success ? jsonUsuarios.data : []).some(
+            (e: Estudiante) => e.pais === "US",
+          );
+          if (hayUS) {
+            try {
+              for (let p = 1; p <= 5; p++) {
+                const resUS = await fetch(
+                  `${process.env.NEXT_PUBLIC_API_URL}/us/admin/inscripciones?limite=100&pagina=${p}`,
+                  { headers: { Authorization: `Bearer ${token}` } },
+                );
+                const jsonUS = await resUS.json();
+                if (!jsonUS.success) break;
+                jsonUS.data.items.forEach((ins: { userId: string; estadoPago: string }) => {
+                  // "creado" = empezó pero aún no envió comprobante.
+                  mapa[ins.userId] = (ins.estadoPago === "creado" ? "pendiente" : ins.estadoPago) as EstadoMostrado;
+                });
+                if (p >= jsonUS.data.totalPaginas) break;
+              }
+            } catch {
+              // si falla, las cuentas de EE. UU. quedan como "Sin inscripción"
+            }
+          }
           const conEstado: Record<string, EstadoMostrado> = {};
           (jsonUsuarios.success ? jsonUsuarios.data : []).forEach((est: Estudiante) => {
             conEstado[est._id] = mapa[est._id] || "sin_inscripcion";
@@ -131,8 +169,8 @@ export default function PanelEstudiantesPage() {
 
   useEffect(() => {
     if (!token) return;
-    queueMicrotask(() => cargarLista("", 1, pestana, filtroGrupo));
-  }, [token, pestana, filtroGrupo, cargarLista]);
+    queueMicrotask(() => cargarLista("", 1, pestana, filtroGrupo, filtroPais));
+  }, [token, pestana, filtroGrupo, filtroPais, cargarLista]);
 
   // Lista de grupos para el filtro — se carga una sola vez, no depende
   // de pestaña/búsqueda/paginación.
@@ -165,15 +203,22 @@ export default function PanelEstudiantesPage() {
     setFiltroGrupo(nuevoGrupoId);
   }
 
+  // NUEVO (24/10/2026)
+  function cambiarFiltroPais(nuevo: string) {
+    setSeleccionada(null);
+    setPagina(1);
+    setFiltroPais(nuevo);
+  }
+
   function buscar(e: React.FormEvent) {
     e.preventDefault();
     setPagina(1);
-    cargarLista(busqueda, 1, pestana, filtroGrupo);
+    cargarLista(busqueda, 1, pestana, filtroGrupo, filtroPais);
   }
 
   function irAPagina(nuevaPagina: number) {
     setPagina(nuevaPagina);
-    cargarLista(busqueda, nuevaPagina, pestana, filtroGrupo);
+    cargarLista(busqueda, nuevaPagina, pestana, filtroGrupo, filtroPais);
   }
 
   async function seleccionar(est: Estudiante) {
@@ -230,7 +275,7 @@ export default function PanelEstudiantesPage() {
         });
         // La estudiante probablemente ya no pertenece a esta pestaña —
         // recargamos la lista de fondo para que quede consistente al volver.
-        cargarLista(busqueda, pagina, pestana, filtroGrupo);
+        cargarLista(busqueda, pagina, pestana, filtroGrupo, filtroPais);
       } else {
         setMensaje({ tipo: "error", texto: json.error || "No se pudo actualizar el estado." });
       }
@@ -291,6 +336,9 @@ export default function PanelEstudiantesPage() {
     pendiente_verificacion: { texto: "Voucher por verificar", clase: "bg-brand-blue-light text-white" },
     rechazado: { texto: "Voucher rechazado", clase: "bg-neutral-text text-white" },
     sin_inscripcion: { texto: "Sin inscripción", clase: "bg-neutral-bg text-neutral-text" },
+    // NUEVO (24/10/2026): solo pagos de EE. UU.
+    reembolsado: { texto: "Reembolsado", clase: "bg-brand-pink text-white" },
+    disputado: { texto: "En disputa", clase: "bg-brand-pink text-white" },
   };
 
   const pestanas: { id: Pestana; etiqueta: string }[] = [
@@ -344,6 +392,22 @@ export default function PanelEstudiantesPage() {
           {/* NUEVO (09/09/2026): filtrar por grupo — la forma más simple
               de ver "quiénes son compañeras del mismo colegio/empresa"
               sin romper la paginación por fecha de la lista general. */}
+          {/* NUEVO (24/10/2026): separar cuentas de RD y del curso de EE. UU. */}
+          <div className="mb-4">
+            <label className="text-xs text-neutral-text">
+              Filtrar por país
+              <select
+                value={filtroPais}
+                onChange={(e) => cambiarFiltroPais(e.target.value)}
+                className="block w-full mt-1 rounded-lg border border-neutral-bg px-3 py-2 text-sm"
+              >
+                <option value="">Todas</option>
+                <option value="DO">República Dominicana</option>
+                <option value="US">Estados Unidos (Driver Prep USA)</option>
+              </select>
+            </label>
+          </div>
+
           {grupos.length > 0 && (
             <div className="mb-6">
               <label className="text-xs text-neutral-text">
@@ -421,13 +485,18 @@ export default function PanelEstudiantesPage() {
                       {est.nombre} {est.apellido}
                     </p>
                     <p className="text-xs text-neutral-text">
-                      {est.cedula} · {est.email}
+                      {est.cedula ? `${est.cedula} · ` : ""}
+                      {est.email}
                     </p>
                     {/* NUEVO (09/09/2026): de qué institución es, si aplica —
                         antes no había forma de distinguir individual vs.
                         grupo en esta pantalla. */}
                     <p className="text-xs mt-0.5">
-                      {est.grupoId ? (
+                      {est.pais === "US" ? (
+                        <span className="inline-flex items-center gap-1 text-brand-blue font-medium">
+                          🇺🇸 EE. UU.{est.estadoUS ? ` · ${est.estadoUS}` : ""} · Driver Prep USA
+                        </span>
+                      ) : est.grupoId ? (
                         <span className="inline-flex items-center gap-1 text-brand-blue font-medium">
                           {est.grupoId.tipo === "colegio" ? "🏫" : "🏢"} {est.grupoId.nombreInstitucion}
                         </span>
@@ -478,7 +547,10 @@ export default function PanelEstudiantesPage() {
                   {seleccionada.nombre} {seleccionada.apellido}
                 </p>
                 <p className="text-xs text-neutral-text">
-                  {seleccionada.cedula} · {seleccionada.email}
+                  {seleccionada.cedula ? `${seleccionada.cedula} · ` : ""}
+                  {seleccionada.email}
+                  {seleccionada.pais === "US" &&
+                    ` · 🇺🇸 EE. UU.${seleccionada.estadoUS ? ` (${seleccionada.estadoUS})` : ""}`}
                 </p>
               </div>
               {seleccionada.activo ? (
