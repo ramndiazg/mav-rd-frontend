@@ -113,6 +113,37 @@ export const pago = definir(
       "Tu pago está en revisión especial. Te contactaremos por correo.",
     "pend.estado": "Estado del pago",
     "pend.volverPago": "Ir a pagar",
+
+    "pay.metodo.paypal": "PayPal",
+    "pay.metodo.paypal.desc":
+      "Pagas desde PayPal con un enlace que ya trae el monto. Luego nos dices el ID de la transacción y lo confirmamos.",
+    "pay.pp.paso1": "1. Paga en PayPal",
+    "pay.pp.instr1":
+      "Toca el botón: se abre PayPal con el monto ya escrito ({precio}).",
+    "pay.pp.instr2":
+      "Elige «Bienes y servicios» (Goods and services), no «Familiares y amigos».",
+    "pay.pp.instr3":
+      "Al terminar, copia el ID de transacción que aparece en el recibo de PayPal o en el correo que te envía.",
+    "pay.pp.boton": "Pagar {precio} con PayPal",
+    "pay.pp.abre":
+      "Se abre en una pestaña nueva; cuando termines, vuelve aquí.",
+    "pay.pp.buscar": "También puedes buscar a @{usuario} en la app de PayPal.",
+    "pay.pp.noDisponible":
+      "PayPal todavía no está disponible. Elige otro método.",
+    "pay.pp.id": "ID de transacción de PayPal",
+    "pay.pp.idAyuda":
+      "Son letras y números (por ejemplo, 5AB12345CD678901E). Lo encuentras en el recibo y en el correo de PayPal.",
+    "pay.pp.pagador":
+      "Nombre o correo de la cuenta de PayPal con la que pagaste",
+    "pay.pp.monto": "Monto pagado (USD)",
+    "pay.pp.fecha": "Fecha del pago",
+    "pay.pp.captura": "Captura del recibo de PayPal (opcional)",
+    "pay.pp.capturaAyuda":
+      "Ayuda a confirmar más rápido. La foto se reduce sola; máximo 5 MB.",
+    "pend.pp.metodo": "Método",
+    "pend.pp.id": "ID de transacción",
+    "pend.pp.pagador": "Pagaste con",
+    "pend.pp.verCaptura": "Ver la captura que enviaste",
   },
   {
     "enroll.titulo": "Choose your state",
@@ -225,5 +256,33 @@ export const pago = definir(
       "Your payment is under special review. We will contact you by email.",
     "pend.estado": "Payment status",
     "pend.volverPago": "Go to payment",
+
+    "pay.metodo.paypal": "PayPal",
+    "pay.metodo.paypal.desc":
+      "You pay from PayPal with a link that already has the amount. Then you tell us the transaction ID and we confirm it.",
+    "pay.pp.paso1": "1. Pay on PayPal",
+    "pay.pp.instr1":
+      "Tap the button: PayPal opens with the amount already filled in ({precio}).",
+    "pay.pp.instr2": "Choose “Goods and services”, not “Friends and family”.",
+    "pay.pp.instr3":
+      "When you finish, copy the transaction ID shown on the PayPal receipt or in the email PayPal sends you.",
+    "pay.pp.boton": "Pay {precio} with PayPal",
+    "pay.pp.abre": "It opens in a new tab; when you finish, come back here.",
+    "pay.pp.buscar": "You can also search for @{usuario} in the PayPal app.",
+    "pay.pp.noDisponible":
+      "PayPal is not available yet. Choose another method.",
+    "pay.pp.id": "PayPal transaction ID",
+    "pay.pp.idAyuda":
+      "Letters and numbers (for example, 5AB12345CD678901E). You can find it on the receipt and in the PayPal email.",
+    "pay.pp.pagador": "Name or email of the PayPal account you paid with",
+    "pay.pp.monto": "Amount paid (USD)",
+    "pay.pp.fecha": "Payment date",
+    "pay.pp.captura": "Screenshot of the PayPal receipt (optional)",
+    "pay.pp.capturaAyuda":
+      "It helps us confirm faster. The photo is shrunk automatically; 5 MB maximum.",
+    "pend.pp.metodo": "Method",
+    "pend.pp.id": "Transaction ID",
+    "pend.pp.pagador": "You paid with",
+    "pend.pp.verCaptura": "View the screenshot you sent",
   },
 );

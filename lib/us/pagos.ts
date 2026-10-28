@@ -10,6 +10,7 @@ import type { EstadoUS } from "./estados";
 export const METODOS_CONOCIDOS = [
   "remesa_deposito",
   "remesa_efectivo",
+  "paypal",
 ] as const;
 export type MetodoPagoId = (typeof METODOS_CONOCIDOS)[number];
 
@@ -66,10 +67,18 @@ export type DestinoEfectivo = {
   notas_en?: string;
 };
 
+// NUEVO (27/10/2026): usuario de PayPal.Me al que se paga (sin "@").
+export type DestinoPaypal = {
+  usuario?: string;
+  notas_es?: string;
+  notas_en?: string;
+};
+
 // GET /api/us/config/pago — requiere sesión; trae los datos de destino.
 export type ConfigPagoUS = ConfigUS & {
   destinoDeposito?: DestinoDeposito;
   destinoEfectivo?: DestinoEfectivo;
+  destinoPaypal?: DestinoPaypal;
 };
 
 export type RemesaUS = {
@@ -80,6 +89,16 @@ export type RemesaUS = {
   montoEnviadoCentavos: number;
   fechaEnvio: string;
   comprobanteUrl: string;
+};
+
+// NUEVO (27/10/2026): datos del pago con PayPal (InscripcionUS.pagoExterno).
+export type PagoExternoUS = {
+  proveedor: string;
+  idExterno: string;
+  pagador: string;
+  montoEnviadoCentavos: number;
+  fechaEnvio: string;
+  comprobanteUrl: string | null;
 };
 
 // GET /api/us/inscripcion/me
@@ -94,6 +113,7 @@ export type InscripcionUS = {
   fechaPago: string | null;
   notaRechazo: string | null;
   remesa: RemesaUS | null;
+  pagoExterno?: PagoExternoUS | null;
   createdAt: string;
   updatedAt: string;
 };

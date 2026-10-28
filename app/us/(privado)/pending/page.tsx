@@ -46,6 +46,7 @@ function PendingContenido() {
   }
 
   const remesa = inscripcion.remesa;
+  const paypal = inscripcion.pagoExterno?.proveedor === "paypal" ? inscripcion.pagoExterno : null;
   const horas = config?.plazoConfirmacionHoras ?? 24;
 
   return (
@@ -133,6 +134,36 @@ function PendingContenido() {
           >
             {t("pend.verRecibo")}
           </a>
+        </div>
+      )}
+
+      {paypal && estado !== "rechazado" && (
+        <div className="mt-8 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-neutral-bg">
+          <h2 className="font-semibold text-brand-blue">{t("pend.detalle")}</h2>
+          <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
+            <dt className="text-neutral-text/70">{t("pend.pp.metodo")}</dt>
+            <dd className="text-neutral-text">PayPal</dd>
+            <dt className="text-neutral-text/70">{t("pend.pp.id")}</dt>
+            <dd className="break-all text-neutral-text">{paypal.idExterno}</dd>
+            <dt className="text-neutral-text/70">{t("pend.pp.pagador")}</dt>
+            <dd className="break-all text-neutral-text">{paypal.pagador}</dd>
+            <dt className="text-neutral-text/70">{t("pend.monto")}</dt>
+            <dd className="text-neutral-text">{formatearUSD(paypal.montoEnviadoCentavos, locale)}</dd>
+            <dt className="text-neutral-text/70">{t("pend.fecha")}</dt>
+            <dd className="text-neutral-text">
+              {formatearFecha(paypal.fechaEnvio, locale, { dateStyle: "medium", timeZone: "UTC" })}
+            </dd>
+          </dl>
+          {paypal.comprobanteUrl && (
+            <a
+              href={paypal.comprobanteUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 inline-block text-sm font-medium text-brand-blue underline"
+            >
+              {t("pend.pp.verCaptura")}
+            </a>
+          )}
         </div>
       )}
     </section>

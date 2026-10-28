@@ -84,7 +84,9 @@ export const comun = definir(
     "err.fecha_invalida": "La fecha del envío no es válida.",
     "err.comprobante_invalido": "Sube la foto del recibo antes de enviar.",
     "err.ref_duplicada":
-      "Ese número de control ya fue registrado con esa agencia.",
+      "Ese número de control o de transacción ya fue registrado.",
+    "err.transaccion_invalida":
+      "El ID de transacción de PayPal no es válido. Cópialo tal como aparece en el recibo de PayPal.",
     "err.motivo_requerido": "Escribe el motivo.",
     "err.monto_recibido_invalido": "Escribe los pesos (RD$) que recibiste.",
     "err.config_clave_invalida": "Esa clave de configuración no existe.",
@@ -183,7 +185,9 @@ export const comun = definir(
     "err.comprobante_invalido":
       "Upload the photo of your receipt before submitting.",
     "err.ref_duplicada":
-      "That control number was already registered with that agency.",
+      "That control or transaction number was already registered.",
+    "err.transaccion_invalida":
+      "The PayPal transaction ID is not valid. Copy it exactly as it appears on your PayPal receipt.",
     "err.motivo_requerido": "Enter the reason.",
     "err.monto_recibido_invalido":
       "Enter the amount received in Dominican pesos (RD$).",

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, type ComponentType } from "react";
-import { Banknote, Landmark } from "lucide-react";
+import { Banknote, Landmark, Wallet } from "lucide-react";
+import PayPalForm from "@/components/us/PayPalForm";
 import RemittanceForm from "@/components/us/RemittanceForm";
 import { useUsLocale } from "@/contexts/UsLocaleContext";
 import type { DictKey } from "@/lib/us/dict";
@@ -21,15 +22,17 @@ import {
 const FORMULARIOS: Record<MetodoPagoId, ComponentType<MetodoPagoProps>> = {
   remesa_deposito: RemittanceForm,
   remesa_efectivo: RemittanceForm,
+  paypal: PayPalForm, // NUEVO (27/10/2026)
 };
 
 const ICONOS: Record<MetodoPagoId, typeof Landmark> = {
   remesa_deposito: Landmark,
   remesa_efectivo: Banknote,
+  paypal: Wallet,
 };
 
 // Orden en pantalla: el depósito primero (es el recomendado).
-const ORDEN: MetodoPagoId[] = ["remesa_deposito", "remesa_efectivo"];
+const ORDEN: MetodoPagoId[] = ["remesa_deposito", "remesa_efectivo", "paypal"];
 
 export default function PaymentMethodPicker({
   config,
@@ -70,7 +73,7 @@ export default function PaymentMethodPicker({
         <legend className="mb-3 font-display text-lg font-semibold text-brand-blue">
           {t("pay.metodo.titulo")}
         </legend>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {disponibles.map((metodo, indice) => {
             const Icono = ICONOS[metodo];
             const activo = metodo === elegido;

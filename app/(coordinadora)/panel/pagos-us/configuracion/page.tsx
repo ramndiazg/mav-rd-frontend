@@ -26,6 +26,7 @@ type ConfigUS = {
   us_agencias: Agencia[];
   us_destino_deposito: Record<string, string>;
   us_destino_efectivo: Record<string, string>;
+  us_destino_paypal: Record<string, string>; // NUEVO (27/10/2026)
   us_plazo_confirmacion_horas: number;
   us_estados_activos: string[];
   us_contabilizar: boolean;
@@ -34,6 +35,7 @@ type ConfigUS = {
 const METODOS = [
   { id: "remesa_deposito", etiqueta: "Depósito a cuenta bancaria" },
   { id: "remesa_efectivo", etiqueta: "Retiro en efectivo" },
+  { id: "paypal", etiqueta: "PayPal (enlace PayPal.Me, verificación manual)" }, // NUEVO (27/10/2026)
 ];
 
 const ESTADOS = [
@@ -140,6 +142,7 @@ export default function ConfiguracionUSPage() {
       us_agencias: cfg.us_agencias,
       us_destino_deposito: cfg.us_destino_deposito,
       us_destino_efectivo: cfg.us_destino_efectivo,
+      us_destino_paypal: cfg.us_destino_paypal,
       us_plazo_confirmacion_horas: cfg.us_plazo_confirmacion_horas,
       us_estados_activos: cfg.us_estados_activos,
       us_contabilizar: cfg.us_contabilizar,
@@ -348,6 +351,43 @@ export default function ConfiguracionUSPage() {
             <input
               value={cfg.us_destino_efectivo.notas_en ?? ""}
               onChange={(e) => actualizar("us_destino_efectivo", { ...cfg.us_destino_efectivo, notas_en: e.target.value })}
+              className={estiloInput}
+            />
+          </label>
+        </div>
+      </section>
+
+      <section className="rounded-xl border border-neutral-bg bg-white p-5">
+        <h3 className="font-semibold text-brand-blue">Datos de PayPal</h3>
+        <p className="text-xs text-neutral-text">
+          Usa el usuario de PayPal.Me de la fundadora (por ejemplo <strong>MariaDG424</strong>; acepta también @usuario o
+          el enlace completo). La estudiante paga con un enlace que ya trae el monto y luego te dice el ID de la
+          transacción. Debe ser una cuenta <strong>Business</strong> (o un enlace marcado como comercial): PayPal no
+          permite cobrar ventas en una cuenta personal.
+        </p>
+        <div className="mt-3 grid gap-3">
+          <label className="block text-sm text-neutral-text">
+            Usuario de PayPal.Me
+            <input
+              value={cfg.us_destino_paypal?.usuario ?? ""}
+              onChange={(e) => actualizar("us_destino_paypal", { ...cfg.us_destino_paypal, usuario: e.target.value })}
+              placeholder="MariaDG424"
+              className={estiloInput}
+            />
+          </label>
+          <label className="block text-sm text-neutral-text">
+            Nota para la estudiante (español)
+            <input
+              value={cfg.us_destino_paypal?.notas_es ?? ""}
+              onChange={(e) => actualizar("us_destino_paypal", { ...cfg.us_destino_paypal, notas_es: e.target.value })}
+              className={estiloInput}
+            />
+          </label>
+          <label className="block text-sm text-neutral-text">
+            Nota para la estudiante (inglés)
+            <input
+              value={cfg.us_destino_paypal?.notas_en ?? ""}
+              onChange={(e) => actualizar("us_destino_paypal", { ...cfg.us_destino_paypal, notas_en: e.target.value })}
               className={estiloInput}
             />
           </label>

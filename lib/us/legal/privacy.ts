@@ -20,7 +20,7 @@ export const privacidad: DocumentoBilingue = {
         titulo: "Qué datos recopilamos",
         lista: [
           "Cuenta: nombre, apellido, teléfono, correo electrónico, fecha de nacimiento, estado, ciudad (opcional) e idioma. La contraseña se guarda cifrada; nosotros no podemos verla.",
-          "Pago: los datos del envío de dinero (agencia o app, número de control, nombre de quien envió, monto y fecha) y la foto del recibo que subes. Sube solo el recibo: no debe mostrar datos que no sean del envío.",
+          "Pago: los datos del envío de dinero (agencia o app, número de control, nombre de quien envió, monto y fecha) y la foto del recibo que subes; o, si pagas con PayPal, el ID de la transacción, el nombre o correo de la cuenta con que pagaste, el monto, la fecha y, si la subes, la captura del recibo. Sube solo el recibo: no debe mostrar datos que no sean del pago.",
           "Uso del Curso: los materiales que marcas como vistos, tus intentos de examen, respuestas y notas.",
           "Datos técnicos: dirección IP, tipo de dispositivo y navegador, y el resultado de la verificación anti-robots, para proteger el sitio.",
         ],
@@ -49,7 +49,7 @@ export const privacidad: DocumentoBilingue = {
           "Autoridades, cuando una ley o una orden válida lo exija.",
         ],
         cierre: [
-          "Las agencias de envío y los bancos que uses para pagar tienen sus propias políticas de privacidad; no controlamos cómo tratan tus datos.",
+          "Las agencias de envío, los bancos y PayPal que uses para pagar tienen sus propias políticas de privacidad; no controlamos cómo tratan tus datos.",
         ],
       },
       {
@@ -111,7 +111,7 @@ export const privacidad: DocumentoBilingue = {
         titulo: "What data we collect",
         lista: [
           "Account: first name, last name, phone, email, date of birth, state, city (optional) and language. Your password is stored encrypted; we cannot see it.",
-          "Payment: the money transfer details (agency or app, control number, sender’s name, amount and date) and the photo of the receipt you upload. Upload only the receipt: it should not show information that is not about the transfer.",
+          "Payment: the money transfer details (agency or app, control number, sender’s name, amount and date) and the photo of the receipt you upload; or, if you pay with PayPal, the transaction ID, the name or email of the account you paid with, the amount, the date and, if you upload it, the screenshot of the receipt. Upload only the receipt: it should not show information that is not about the payment.",
           "Course use: the materials you mark as viewed, your exam attempts, answers and scores.",
           "Technical data: IP address, device and browser type, and the result of the anti-bot check, to protect the site.",
         ],
@@ -140,7 +140,7 @@ export const privacidad: DocumentoBilingue = {
           "Authorities, when a law or a valid order requires it.",
         ],
         cierre: [
-          "The transfer agencies and banks you use to pay have their own privacy policies; we do not control how they handle your data.",
+          "The transfer agencies, banks and PayPal that you use to pay have their own privacy policies; we do not control how they handle your data.",
         ],
       },
       {

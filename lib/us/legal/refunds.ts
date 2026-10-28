@@ -41,7 +41,7 @@ export const reembolsos: DocumentoBilingue = {
       {
         titulo: "Lo que no se reembolsa",
         lista: [
-          "Las comisiones o cargos que te cobró la agencia o el banco por el envío, y las diferencias de cambio.",
+          "Las comisiones o cargos que te cobró la agencia, el banco o PayPal por el envío o el pago, y las diferencias de cambio.",
           "No reprobar o aprobar el examen oficial, ni obtener o no la licencia: el Curso no lo garantiza.",
           "Las cuentas cerradas por fraude o por incumplir los términos y condiciones.",
         ],
@@ -55,7 +55,7 @@ export const reembolsos: DocumentoBilingue = {
       {
         titulo: "Cómo y cuándo te devolvemos el dinero",
         parrafos: [
-          "Cuando aprobamos el reembolso, enviamos el dinero por el medio que acordemos (envío de dinero o depósito a la cuenta que nos indiques) en un plazo de [[10 días hábiles]]. El reembolso es por el precio del Curso en USD. Los costos de enviar la devolución [[se descuentan del monto reembolsado]].",
+          "Cuando aprobamos el reembolso, enviamos el dinero por el medio que acordemos (envío de dinero o depósito a la cuenta que nos indiques) en un plazo de [[10 días hábiles]]. El reembolso es por el precio del Curso en USD. Los costos de enviar la devolución [[se descuentan del monto reembolsado]]. Si pagaste con PayPal, hacemos el reembolso desde PayPal a la misma cuenta con la que pagaste.",
         ],
       },
       {
@@ -107,7 +107,7 @@ export const reembolsos: DocumentoBilingue = {
       {
         titulo: "What is not refunded",
         lista: [
-          "Fees or charges the agency or bank made you pay for the transfer, and exchange-rate differences.",
+          "Fees or charges the agency, bank or PayPal made you pay for the transfer or payment, and exchange-rate differences.",
           "Failing or passing the official exam, or getting or not getting the license: the Course does not guarantee it.",
           "Accounts closed for fraud or for breaking the terms and conditions.",
         ],
@@ -121,7 +121,7 @@ export const reembolsos: DocumentoBilingue = {
       {
         titulo: "How and when we return the money",
         parrafos: [
-          "Once we approve the refund, we send the money by the means we agree on (money transfer or deposit to the account you tell us) within [[10 business days]]. The refund is for the Course price in USD. The cost of sending the refund is [[deducted from the amount refunded]].",
+          "Once we approve the refund, we send the money by the means we agree on (money transfer or deposit to the account you tell us) within [[10 business days]]. The refund is for the Course price in USD. The cost of sending the refund is [[deducted from the amount refunded]]. If you paid with PayPal, we refund through PayPal to the same account you paid with.",
         ],
       },
       {

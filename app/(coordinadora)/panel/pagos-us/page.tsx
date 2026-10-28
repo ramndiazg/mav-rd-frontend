@@ -28,6 +28,15 @@ type Item = {
   montoRecibidoRD?: number;
   createdAt: string;
   updatedAt: string;
+  // NUEVO (27/10/2026): pago con PayPal (enlace PayPal.Me + ID de transacción).
+  pagoExterno?: {
+    proveedor: string;
+    idExterno: string;
+    pagador: string;
+    montoEnviadoCentavos: number;
+    fechaEnvio: string;
+    comprobanteUrl: string | null;
+  };
   remesa?: {
     via: "deposito" | "efectivo";
     agencia: string;
@@ -85,6 +94,10 @@ const MOTIVOS_RAPIDOS = [
 
 const usd = (centavos: number) =>
   (centavos / 100).toLocaleString("en-US", { style: "currency", currency: "USD" });
+
+// NUEVO (27/10/2026)
+const etiquetaMetodo = (metodo: string) =>
+  metodo === "remesa_deposito" ? "Depósito a cuenta" : metodo === "paypal" ? "PayPal" : "Retiro en efectivo";
 
 const fechaHora = (iso: string) =>
   new Date(iso).toLocaleString("es-DO", { dateStyle: "medium", timeStyle: "short" });
@@ -259,6 +272,7 @@ export default function PanelPagosUSPage() {
           <option value="">Todos los métodos</option>
           <option value="remesa_deposito">Depósito a cuenta</option>
           <option value="remesa_efectivo">Retiro en efectivo</option>
+          <option value="paypal">PayPal</option>
         </select>
       </div>
 
@@ -282,17 +296,19 @@ export default function PanelPagosUSPage() {
       <div className="grid gap-3">
         {datos?.items.map((item) => {
           const r = item.remesa;
+          const pp = item.pagoExterno?.proveedor === "paypal" ? item.pagoExterno : null;
+          const imagenRecibo = r?.comprobanteUrl || pp?.comprobanteUrl || null;
           const estado = ETIQUETA_ESTADO[item.estadoPago] ?? ETIQUETA_ESTADO.creado;
           const abierta = accion?.id === item._id ? accion.tipo : null;
           return (
             <div key={item._id} className="rounded-lg border border-neutral-bg bg-white p-4">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="flex items-start gap-3">
-                  {r?.comprobanteUrl && (
-                    <a href={r.comprobanteUrl} target="_blank" rel="noopener noreferrer" title="Ver el recibo completo">
+                  {imagenRecibo && (
+                    <a href={imagenRecibo} target="_blank" rel="noopener noreferrer" title="Ver el recibo completo">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
-                        src={r.comprobanteUrl}
+                        src={imagenRecibo}
                         alt="Recibo del envío"
                         className="h-20 w-20 rounded-lg border border-neutral-bg object-cover hover:opacity-80"
                       />
@@ -312,8 +328,27 @@ export default function PanelPagosUSPage() {
                     )}
                     <p className="mt-1 text-xs text-neutral-text">
                       Precio del curso <strong>{usd(item.montoCentavos)}</strong> ·{" "}
-                      {item.metodoPago === "remesa_deposito" ? "Depósito a cuenta" : "Retiro en efectivo"}
+                      {etiquetaMetodo(item.metodoPago)}
                     </p>
+                    {pp && (
+                      <ul className="mt-1 space-y-0.5 text-xs text-neutral-text">
+                        <li>
+                          ID de transacción de PayPal: <strong className="break-all">{pp.idExterno}</strong>
+                        </li>
+                        <li>
+                          Pagó con: <strong>{pp.pagador}</strong>
+                        </li>
+                        <li>
+                          Monto pagado: <strong>{usd(pp.montoEnviadoCentavos)}</strong> · Fecha:{" "}
+                          {new Date(pp.fechaEnvio).toLocaleDateString("es-DO", { dateStyle: "medium", timeZone: "UTC" })}
+                        </li>
+                        <li>Registrado el {fechaHora(item.updatedAt)}</li>
+                        <li className="text-neutral-text/80">
+                          Busca este ID en la actividad de tu cuenta de PayPal y comprueba que el monto coincide antes de
+                          confirmar.
+                        </li>
+                      </ul>
+                    )}
                     {r && (
                       <ul className="mt-1 space-y-0.5 text-xs text-neutral-text">
                         <li>
@@ -374,7 +409,7 @@ export default function PanelPagosUSPage() {
               {abierta === "confirmar" && (
                 <div className="mt-4 rounded-lg bg-neutral-bg p-4">
                   <label className="block text-sm text-neutral-text">
-                    Pesos que recibiste (RD$)
+                    {item.metodoPago === "paypal" ? "Pesos recibidos (RD$) — opcional con PayPal" : "Pesos que recibiste (RD$)"}
                     <input
                       type="number"
                       inputMode="decimal"
@@ -386,8 +421,9 @@ export default function PanelPagosUSPage() {
                     />
                   </label>
                   <p className="mt-1 text-xs text-neutral-text">
-                    Anota lo que llegó en pesos según el estado de cuenta o lo cobrado en la agencia: es lo que entra
-                    a la contabilidad. No incluyas la comisión del envío.
+                    {item.metodoPago === "paypal"
+                      ? "El dinero queda en dólares en tu cuenta de PayPal. Si todavía no lo has pasado a tu banco, déjalo vacío y registra el ingreso en la contabilidad cuando lo recibas en pesos."
+                      : "Anota lo que llegó en pesos según el estado de cuenta o lo cobrado en la agencia: es lo que entra a la contabilidad. No incluyas la comisión del envío."}
                   </p>
                   <div className="mt-3 flex gap-2">
                     <button
@@ -445,8 +481,10 @@ export default function PanelPagosUSPage() {
               {abierta === "reembolsar" && (
                 <div className="mt-4 rounded-lg bg-neutral-bg p-4">
                   <p className="text-sm text-neutral-text">
-                    Esto cierra el acceso de la estudiante al curso y registra la salida en la contabilidad. El dinero
-                    hay que devolverlo aparte (remesa o depósito).
+                    Esto cierra el acceso de la estudiante al curso y registra la salida en la contabilidad.{" "}
+                    {item.metodoPago === "paypal"
+                      ? "El dinero hay que devolverlo aparte: en PayPal, abre la transacción en tu actividad y usa «Reembolsar»."
+                      : "El dinero hay que devolverlo aparte (remesa o depósito)."}
                   </p>
                   <textarea
                     value={nota}

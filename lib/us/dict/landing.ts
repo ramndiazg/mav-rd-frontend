@@ -85,6 +85,10 @@ export const landing = definir(
     "land.faq.6.q": "¿Y si necesito un reembolso?",
     "land.faq.6.a": "Consulta la política de reembolsos antes de pagar.",
 
+    "land.como.2.d.paypal":
+      "Pagas con PayPal desde un enlace, o envías dinero desde EE. UU. con la app o agencia que prefieras (depósito a cuenta o retiro en efectivo).",
+    "land.faq.3.a.paypal":
+      "Con PayPal (desde un enlace que ya trae el monto) o con un envío de dinero (depósito a cuenta o retiro en efectivo). Después nos das el ID de la transacción o subes el recibo y nosotros lo confirmamos.",
     "land.cta.titulo": "Empieza hoy a prepararte",
     "land.cta.texto":
       "Crea tu cuenta gratis; solo pagas cuando decidas inscribirte.",
@@ -170,6 +174,10 @@ export const landing = definir(
     "land.faq.6.q": "What if I need a refund?",
     "land.faq.6.a": "Please read the refund policy before you pay.",
 
+    "land.como.2.d.paypal":
+      "You pay with PayPal from a link, or send money from the U.S. with the app or agency you prefer (deposit to an account or cash pickup).",
+    "land.faq.3.a.paypal":
+      "With PayPal (from a link that already has the amount) or with a money transfer (deposit to an account or cash pickup). Then you give us the transaction ID or upload the receipt and we confirm it.",
     "land.cta.titulo": "Start getting ready today",
     "land.cta.texto":
       "Create your account for free; you only pay when you decide to enroll.",

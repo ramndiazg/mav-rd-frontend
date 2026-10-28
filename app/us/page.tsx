@@ -60,6 +60,8 @@ export default function UsLandingPage() {
       ? formatearUSD(config.precioCentavos, locale)
       : null;
   const horas = config?.plazoConfirmacionHoras ?? 24;
+  // NUEVO (27/10/2026): si PayPal está activo, los textos de "cómo pagar" lo mencionan.
+  const conPaypal = !!config?.metodos?.includes("paypal");
 
   const destinoPrincipal = usuario ? "/us/dashboard" : "/us/register";
   const textoPrincipal = usuario ? t("nav.miCurso") : t("land.hero.cta");
@@ -189,7 +191,7 @@ export default function UsLandingPage() {
                   {t(`land.como.${n}.t` as DictKey)}
                 </h3>
                 <p className="mt-1 text-sm leading-relaxed text-neutral-text/80">
-                  {t(`land.como.${n}.d` as DictKey)}
+                  {t((n === 2 && conPaypal ? "land.como.2.d.paypal" : `land.como.${n}.d`) as DictKey)}
                 </p>
               </li>
             ))}
@@ -214,7 +216,7 @@ export default function UsLandingPage() {
                 />
               </summary>
               <p className="mt-2 leading-relaxed text-neutral-text/85">
-                {t(`land.faq.${n}.a` as DictKey, { horas })}
+                {t((n === 3 && conPaypal ? "land.faq.3.a.paypal" : `land.faq.${n}.a`) as DictKey, { horas })}
                 {n === 6 && (
                   <>
                     {" "}
