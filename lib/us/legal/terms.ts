@@ -1,7 +1,6 @@
 import type { DocumentoBilingue } from "@/lib/us/legalConfig";
 
-// BORRADOR sujeto a revisión legal. Los textos entre [[ ]] son decisiones o
-// datos pendientes (ver lib/us/legalConfig.ts).
+// VERSIÓN FINAL (27/10/2026), revisada con la asesora legal de la fundación.
 export const terminos: DocumentoBilingue = {
   es: {
     titulo: "Términos y condiciones",
@@ -28,7 +27,7 @@ export const terminos: DocumentoBilingue = {
         titulo: "Quién puede usar el Curso",
         lista: [
           "Debes tener al menos 16 años.",
-          "Si eres menor de 18 años, declaras que tu madre, padre o tutor conoce y acepta estos términos y el pago del Curso. [[!Confirmar esta cláusula con asesoría legal.]]",
+          "Si eres menor de 18 años, declaras que tu madre, padre o tutor conoce y acepta estos términos y el pago del Curso.",
           "Debes darnos información verdadera y mantenerla al día.",
         ],
       },
@@ -101,7 +100,7 @@ export const terminos: DocumentoBilingue = {
       {
         titulo: "Ley aplicable y reclamos",
         parrafos: [
-          "[[Estos términos se rigen por las leyes de la República Dominicana y las controversias se someten a los tribunales competentes de Santo Domingo.]] [[!Confirmar con asesoría legal, incluidas las leyes de protección al consumidor que puedan aplicar en el estado de la estudiante.]]",
+          "Estos términos se rigen por las leyes de la República Dominicana y las controversias se someten a los tribunales competentes de Santo Domingo.",
           "Antes de iniciar un reclamo formal, escríbenos para intentar resolverlo: {contacto}.",
         ],
       },
@@ -139,7 +138,7 @@ export const terminos: DocumentoBilingue = {
         titulo: "Who can use the Course",
         lista: [
           "You must be at least 16 years old.",
-          "If you are under 18, you declare that your mother, father or guardian knows and accepts these terms and the payment for the Course. [[!Confirm this clause with legal counsel.]]",
+          "If you are under 18, you declare that your mother, father or guardian knows and accepts these terms and the payment for the Course.",
           "You must give us truthful information and keep it up to date.",
         ],
       },
@@ -212,7 +211,7 @@ export const terminos: DocumentoBilingue = {
       {
         titulo: "Governing law and claims",
         parrafos: [
-          "[[These terms are governed by the laws of the Dominican Republic and disputes are submitted to the competent courts of Santo Domingo.]] [[!Confirm with legal counsel, including any consumer protection laws that may apply in the student’s state.]]",
+          "These terms are governed by the laws of the Dominican Republic and disputes are submitted to the competent courts of Santo Domingo.",
           "Before starting a formal claim, please write to us to try to resolve it: {contacto}.",
         ],
       },

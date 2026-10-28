@@ -1,29 +1,28 @@
-// NUEVO (24/10/2026): configuración común de las páginas legales de /us.
+// NUEVO (24/10/2026), VERSIÓN FINAL (27/10/2026): configuración común de las
+// páginas legales de /us. Los tres textos (lib/us/legal/*.ts) fueron revisados
+// con la asesora legal de la fundación el 27/10/2026.
 //
-// *** ANTES DE LANZAR ***
-//  1. Una abogada debe revisar los tres textos (lib/us/legal/*.ts).
-//  2. Decidir los valores marcados en esos textos:
-//       [[ valor ]]   = decisión pendiente con un valor propuesto. Con
-//                       LEGAL_EN_REVISION = true se resalta; con false pasa a
-//                       texto normal (el valor propuesto queda como definitivo).
-//       [[! nota ]]   = nota interna para quien revisa. Se ve resaltada en el
-//                       borrador y DESAPARECE al poner la bandera en false.
-//  3. Poner LEGAL_EN_REVISION = false y actualizar LEGAL_ACTUALIZADO.
+// Si algún día se vuelve a editar un texto y se quiere publicar como borrador:
+//   - poner LEGAL_EN_REVISION = true (muestra un aviso de borrador);
+//   - dentro de los textos, [[ valor ]] marca una decisión pendiente (se
+//     resalta en borrador y pasa a texto normal al publicar) y [[! nota ]] una
+//     nota interna (se resalta en borrador y NO se publica).
+// Al publicar de nuevo: LEGAL_EN_REVISION = false y actualizar LEGAL_ACTUALIZADO.
 
-export const LEGAL_EN_REVISION = true;
+export const LEGAL_EN_REVISION = false;
 
 // Fecha de la última versión (YYYY-MM-DD).
-export const LEGAL_ACTUALIZADO = "2026-10-24";
+export const LEGAL_ACTUALIZADO = "2026-10-27";
 
-// Nombre de quien ofrece el curso (razón social). Variable opcional; hasta
-// definirla se usa el nombre comercial.
+// Nombre de quien ofrece el curso (razón social). Variable opcional
+// NEXT_PUBLIC_US_ENTITY_NAME; si no existe se usa el nombre comercial.
 export const LEGAL_ENTIDAD =
   process.env.NEXT_PUBLIC_US_ENTITY_NAME || "Muvo RD Vial";
 
-// Correo de contacto/soporte del curso. Variable opcional; si no existe, los
-// textos muestran un marcador "por definir" (el sitio de RD no tiene un correo
-// público de soporte que se pueda reutilizar).
-export const LEGAL_CONTACTO = process.env.NEXT_PUBLIC_US_SUPPORT_EMAIL || "";
+// Correo de contacto y soporte del curso (el de la fundadora). Se puede cambiar
+// sin tocar el código con la variable NEXT_PUBLIC_US_SUPPORT_EMAIL.
+export const LEGAL_CONTACTO =
+  process.env.NEXT_PUBLIC_US_SUPPORT_EMAIL || "mariadiazmuvo@gmail.com";
 
 export type SeccionLegal = {
   titulo: string;
@@ -47,9 +46,5 @@ export type TipoLegal = "terms" | "privacy" | "refunds";
 export function resolverMarcadores(texto: string): string {
   return texto
     .replaceAll("{entidad}", LEGAL_ENTIDAD)
-    .replaceAll(
-      "{contacto}",
-      LEGAL_CONTACTO ||
-        "[[correo de contacto por definir / contact email to be defined]]",
-    );
+    .replaceAll("{contacto}", LEGAL_CONTACTO);
 }

@@ -1,6 +1,6 @@
 import type { DocumentoBilingue } from "@/lib/us/legalConfig";
 
-// BORRADOR sujeto a revisión legal. Describe lo que el sistema HACE hoy
+// VERSIÓN FINAL (27/10/2026), revisada con la asesora legal. Describe lo que el sistema HACE hoy
 // (cuenta, comprobantes en Cloudinary, correos con Resend, captcha Turnstile,
 // sesión y preferencias en el almacenamiento local, sin analítica ni
 // publicidad). Si cambia el sistema, hay que actualizar este texto.
@@ -61,7 +61,7 @@ export const privacidad: DocumentoBilingue = {
       {
         titulo: "Cuánto tiempo los guardamos",
         parrafos: [
-          "Guardamos tus datos mientras tu cuenta esté activa y el tiempo necesario para cumplir obligaciones legales y contables, como los registros de pagos. Si nos pides borrar tu cuenta, eliminamos o anonimizamos lo que no estemos obligados a conservar. [[!Definir con contabilidad y asesoría legal el plazo de conservación de los registros de pago y escribirlo aquí.]]",
+          "Guardamos tus datos mientras tu cuenta esté activa y el tiempo necesario para cumplir obligaciones legales y contables, como los registros de pagos. Si nos pides borrar tu cuenta, eliminamos o anonimizamos lo que no estemos obligados a conservar.",
         ],
       },
       {
@@ -152,7 +152,7 @@ export const privacidad: DocumentoBilingue = {
       {
         titulo: "How long we keep it",
         parrafos: [
-          "We keep your data while your account is active and for as long as needed to meet legal and accounting obligations, such as payment records. If you ask us to delete your account, we delete or anonymize whatever we are not required to keep. [[!Define with accounting and legal counsel the retention period for payment records and write it here.]]",
+          "We keep your data while your account is active and for as long as needed to meet legal and accounting obligations, such as payment records. If you ask us to delete your account, we delete or anonymize whatever we are not required to keep.",
         ],
       },
       {
