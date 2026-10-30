@@ -252,7 +252,7 @@ export default async function Home() {
   // activar el plan desde /admin/planes.
   // NUEVO (24/10/2026): tarjeta de Driver Prep USA. Va al final y solo si el
   // curso está activo; lleva a /us, que tiene su propia página, idioma y pago.
-  // ACTUALIZADO (28/10/2026): usa la imagen public/inscripcion/teoria-6.jpg
+  // ACTUALIZADO (28/10/2026): usa la imagen public/inscripcion/Curso de Conductores en Estados Unidos.jpg
   // (BannerCursoUS dibuja un banner de reserva si el archivo no carga).
   const precioUS =
     cursoUS.precioCentavos !== null
@@ -263,7 +263,7 @@ export default async function Home() {
     etiqueta: "Para hispanos en EE. UU. — Solo teoría",
     nombre: "Driver Prep USA",
     detalle: `Prepárate para el examen de conocimientos de tu licencia de manejo en Nueva York, Nueva Jersey, Florida y Massachusetts. Curso en español con glosario en inglés. Formación complementaria, no oficial.${precioUS}`,
-    imagen: "/inscripcion/teoria-6.jpg",
+    imagen: "/inscripcion/Curso de Conductores en Estados Unidos.jpg",
     href: "/us",
     cta: "Ver el curso",
   };
