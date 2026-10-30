@@ -262,7 +262,7 @@ export default function ConfiguracionUSPage() {
         </p>
       </div>
 
-      <section className={estiloSeccion} aria-labelledby="lista-pendientes">
+      {/* <section className={estiloSeccion} aria-labelledby="lista-pendientes">
         <h3 id="lista-pendientes" className="font-semibold text-brand-blue">
           Antes de abrir el curso
         </h3>
@@ -286,7 +286,7 @@ export default function ConfiguracionUSPage() {
             ? "Todo está completo. Antes de abrir el curso al público, haz una compra de prueba con una cuenta tuya."
             : "Completa lo que falta para poder abrir el curso."}
         </p>
-      </section>
+      </section> */}
 
       <section className={estiloSeccion}>
         <h3 className="font-semibold text-brand-blue">Abrir o cerrar el curso</h3>
