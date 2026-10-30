@@ -1,4 +1,5 @@
 import Image from "next/image";
+import BannerCursoUS from "@/components/us/BannerCursoUS";
 import Link from "next/link";
 import {
   Eye,
@@ -249,9 +250,10 @@ export default async function Home() {
   // plan esté inactivo —o no exista— su tarjeta no aparece: así se puede
   // sembrar y probar en producción sin que el público lo vea, y lanzarlo es
   // activar el plan desde /admin/planes.
-  // NUEVO (24/10/2026): tarjeta de Driver Prep USA, SIN imagen (el banner se
-  // dibuja con CSS: ver el map de abajo). Va al final y solo si el curso está
-  // activo; lleva a /us, que tiene su propia página, idioma y pago.
+  // NUEVO (24/10/2026): tarjeta de Driver Prep USA. Va al final y solo si el
+  // curso está activo; lleva a /us, que tiene su propia página, idioma y pago.
+  // ACTUALIZADO (28/10/2026): usa la imagen public/inscripcion/teoria-6.jpg
+  // (BannerCursoUS dibuja un banner de reserva si el archivo no carga).
   const precioUS =
     cursoUS.precioCentavos !== null
       ? ` Pago único: ${(cursoUS.precioCentavos / 100).toLocaleString("en-US", { style: "currency", currency: "USD" })}.`
@@ -261,7 +263,7 @@ export default async function Home() {
     etiqueta: "Para hispanos en EE. UU. — Solo teoría",
     nombre: "Driver Prep USA",
     detalle: `Prepárate para el examen de conocimientos de tu licencia de manejo en Nueva York, Nueva Jersey, Florida y Massachusetts. Curso en español con glosario en inglés. Formación complementaria, no oficial.${precioUS}`,
-    imagen: "",
+    imagen: "/inscripcion/teoria-6.jpg",
     href: "/us",
     cta: "Ver el curso",
   };
@@ -445,7 +447,9 @@ export default async function Home() {
               key={categoria.valor}
               className="overflow-hidden rounded-xl border border-brand-blue/10 bg-white shadow-sm transition hover:shadow-md"
             >
-              {categoria.imagen ? (
+              {categoria.valor === "driver-prep-usa" ? (
+                <BannerCursoUS src={categoria.imagen} alt={categoria.nombre} />
+              ) : (
                 <div className="relative h-40 w-full">
                   <Image
                     src={categoria.imagen}
@@ -459,25 +463,6 @@ export default async function Home() {
                     // siempre es el margen "seguro" de la derecha.
                     className="object-cover object-left"
                   />
-                </div>
-              ) : (
-                // NUEVO (24/10/2026): banner dibujado con CSS para Driver Prep
-                // USA (no hay imagen). Si más adelante se diseña una, basta
-                // con ponerla en `tarjetaUS.imagen`.
-                <div className="flex h-40 w-full flex-col justify-between bg-gradient-to-br from-brand-blue to-brand-blue-light p-5 text-white">
-                  <p className="font-display text-sm font-semibold text-brand-yellow">
-                    🇺🇸 Para hispanos en EE. UU.
-                  </p>
-                  <div>
-                    <p className="font-display text-2xl font-bold">{categoria.nombre}</p>
-                    <p className="mt-2 flex gap-2 text-xs font-semibold">
-                      {["NY", "NJ", "FL", "MA"].map((estado) => (
-                        <span key={estado} className="rounded bg-white/20 px-1.5 py-0.5">
-                          {estado}
-                        </span>
-                      ))}
-                    </p>
-                  </div>
                 </div>
               )}
               <div className="p-6">
